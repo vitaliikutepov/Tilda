@@ -9,7 +9,9 @@
 - `random-squares-hover/random-squares-hover.html` — готовый код для вставки в Tilda
   (Настройки сайта → Ещё → HTML-код для вставки внутрь BODY, либо блок T123 на странице).
 - `random-squares-hover/random-squares-hover.js` — тот же скрипт отдельным файлом.
-- `random-squares-hover/demo.html` — локальная демо-страница (открыть в браузере).
+- `random-squares-hover/icon-card2.html` — SVG-иконка для второй карточки (`card-animation2`)
+  с уже проставленными классами; отдельный скрипт для неё не нужен.
+- `random-squares-hover/demo.html` — локальная демо-страница с обеими карточками.
 
 Требования к разметке:
 

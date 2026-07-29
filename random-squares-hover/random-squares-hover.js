@@ -24,10 +24,11 @@
   function rememberInitial(rect) {
     if (rect.dataset.origFill === undefined) {
       rect.dataset.origFill = rect.getAttribute('fill') || IDLE_FILL;
+      // Если атрибута fill-opacity нет (у красных квадратов), по умолчанию 1.
       rect.dataset.origOpacity =
         rect.getAttribute('fill-opacity') ||
         rect.dataset.finalOpacity ||
-        IDLE_OPACITY;
+        '1';
     }
   }
 
