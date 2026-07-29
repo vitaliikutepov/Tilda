@@ -11,7 +11,9 @@
 - `random-squares-hover/random-squares-hover.js` — тот же скрипт отдельным файлом.
 - `random-squares-hover/icon-card2.html` — SVG-иконка для второй карточки (`card-animation2`)
   с уже проставленными классами; отдельный скрипт для неё не нужен.
-- `random-squares-hover/demo.html` — локальная демо-страница с обеими карточками.
+- `random-squares-hover/icon-card3.html` — SVG-иконка для третьей карточки (`card-animation3`)
+  в том же формате.
+- `random-squares-hover/demo.html` — локальная демо-страница со всеми тремя карточками.
 
 Требования к разметке:
 
