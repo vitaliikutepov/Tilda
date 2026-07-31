@@ -1,0 +1,228 @@
+<!--
+  Panorama Slider для Tilda Zero Block
+  ------------------------------------
+  1. В Zero Block добавьте HTML-элемент и задайте ему класс: panorama
+  2. Вставьте этот код целиком в HTML-элемент
+  3. Замените ссылки в массиве IMAGES на свои 10 фото (соотношение 2×3)
+-->
+
+<script>
+(function () {
+  // ========== ЗАМЕНИТЕ НА СВОИ 10 ФОТО (2×3) ==========
+  var IMAGES = [
+    "https://static.tildacdn.com/tild3432-3430-4661-b861-633639383164/samuelzeller168234.jpg",
+    "https://static.tildacdn.com/tild3432-3430-4661-b861-633639383164/samuelzeller168234.jpg",
+    "https://static.tildacdn.com/tild3432-3430-4661-b861-633639383164/samuelzeller168234.jpg",
+    "https://static.tildacdn.com/tild3432-3430-4661-b861-633639383164/samuelzeller168234.jpg",
+    "https://static.tildacdn.com/tild3432-3430-4661-b861-633639383164/samuelzeller168234.jpg",
+    "https://static.tildacdn.com/tild3432-3430-4661-b861-633639383164/samuelzeller168234.jpg",
+    "https://static.tildacdn.com/tild3432-3430-4661-b861-633639383164/samuelzeller168234.jpg",
+    "https://static.tildacdn.com/tild3432-3430-4661-b861-633639383164/samuelzeller168234.jpg",
+    "https://static.tildacdn.com/tild3432-3430-4661-b861-633639383164/samuelzeller168234.jpg",
+    "https://static.tildacdn.com/tild3432-3430-4661-b861-633639383164/samuelzeller168234.jpg"
+  ];
+  // ====================================================
+
+  // Сила 3D-панорамы (можно подкрутить)
+  var PANORAMA = {
+    rotate: 22,
+    depth: 160,
+    scale: 0.08
+  };
+
+  var CSS_HREF = "https://cdnjs.cloudflare.com/ajax/libs/Swiper/11.0.5/swiper-bundle.min.css";
+  var JS_SRC = "https://cdnjs.cloudflare.com/ajax/libs/Swiper/11.0.5/swiper-bundle.min.js";
+
+  var STYLES = [
+    ".panorama{--panorama-radius:14px;--panorama-bullet:#111;width:100%;max-width:100%;position:relative;box-sizing:border-box}",
+    ".panorama *,.panorama *::before,.panorama *::after{box-sizing:border-box}",
+    ".panorama .swiper{width:100%;overflow:hidden;overflow-x:clip;perspective:1400px;",
+    "-webkit-mask-image:url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 500' preserveAspectRatio='none'%3E%3Cpath fill='%23fff' d='M0 115C120 45 280 12 600 12C920 12 1080 45 1200 115L1200 385C1080 455 920 488 600 488C280 488 120 455 0 385Z'/%3E%3C/svg%3E\");",
+    "mask-image:url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 500' preserveAspectRatio='none'%3E%3Cpath fill='%23fff' d='M0 115C120 45 280 12 600 12C920 12 1080 45 1200 115L1200 385C1080 455 920 488 600 488C280 488 120 455 0 385Z'/%3E%3C/svg%3E\");",
+    "-webkit-mask-size:100% 100%;mask-size:100% 100%;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;-webkit-mask-position:center;mask-position:center}",
+    ".panorama .swiper-wrapper{align-items:center;transform-style:preserve-3d}",
+    ".panorama .swiper-slide{width:calc((100% - 200px) / 3);height:auto;flex-shrink:0;transform-style:preserve-3d}",
+    "@media (max-width:1024px){.panorama .swiper-slide{width:calc((100% - 160px) / 2)}}",
+    "@media (max-width:767px){.panorama{--panorama-radius:10px}.panorama .swiper-slide{width:calc((100% - 72px) / 1)}}",
+    ".panorama .panorama-slide-inner{width:100%;aspect-ratio:2/3;border-radius:var(--panorama-radius);overflow:hidden;transform-origin:center center;will-change:transform;backface-visibility:hidden;background:#d9d9d9}",
+    ".panorama .panorama-slide-inner img{display:block;width:100%;height:100%;object-fit:cover;user-select:none;-webkit-user-drag:none;pointer-events:none}",
+    ".panorama .panorama-controls{display:flex;align-items:center;justify-content:center;gap:18px;margin-top:22px}",
+    ".panorama .panorama-prev,.panorama .panorama-next{width:42px;height:42px;border:0;padding:0;border-radius:50%;background:rgba(0,0,0,.08);color:#111;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:background .2s ease,transform .2s ease}",
+    ".panorama .panorama-prev:hover,.panorama .panorama-next:hover{background:rgba(0,0,0,.14);transform:scale(1.05)}",
+    ".panorama .panorama-prev svg,.panorama .panorama-next svg{width:18px;height:18px;display:block}",
+    ".panorama .panorama-pagination{position:static!important;width:fit-content!important;display:flex;align-items:center;gap:8px}",
+    ".panorama .panorama-bullet{width:8px;height:8px;border-radius:100px;background:var(--panorama-bullet);opacity:.2;cursor:pointer;display:block}",
+    ".panorama .panorama-bullet.panorama-bullet-active{opacity:1}"
+  ].join("");
+
+  var ARROW_PREV =
+    '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M15 6l-6 6 6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  var ARROW_NEXT =
+    '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+  function loadCss(href) {
+    return new Promise(function (resolve) {
+      if (document.querySelector('link[data-panorama-swiper="1"]')) {
+        resolve();
+        return;
+      }
+      var link = document.createElement("link");
+      link.rel = "stylesheet";
+      link.href = href;
+      link.setAttribute("data-panorama-swiper", "1");
+      link.onload = function () { resolve(); };
+      link.onerror = function () { resolve(); };
+      document.head.appendChild(link);
+    });
+  }
+
+  function loadScript(src) {
+    return new Promise(function (resolve, reject) {
+      if (typeof window.Swiper !== "undefined") {
+        resolve();
+        return;
+      }
+      if (document.querySelector('script[data-panorama-swiper="1"]')) {
+        var wait = setInterval(function () {
+          if (typeof window.Swiper !== "undefined") {
+            clearInterval(wait);
+            resolve();
+          }
+        }, 40);
+        return;
+      }
+      var script = document.createElement("script");
+      script.src = src;
+      script.async = true;
+      script.setAttribute("data-panorama-swiper", "1");
+      script.onload = function () { resolve(); };
+      script.onerror = function () { reject(new Error("Swiper load failed")); };
+      document.head.appendChild(script);
+    });
+  }
+
+  function injectStyles() {
+    if (document.getElementById("panorama-slider-styles")) return;
+    var style = document.createElement("style");
+    style.id = "panorama-slider-styles";
+    style.textContent = STYLES;
+    document.head.appendChild(style);
+  }
+
+  function buildMarkup(root) {
+    if (root.querySelector(".swiper.panorama-swiper")) return;
+
+    var slides = IMAGES.map(function (src, i) {
+      return (
+        '<div class="swiper-slide">' +
+          '<div class="panorama-slide-inner">' +
+            '<img src="' + src + '" alt="Photo ' + (i + 1) + '" loading="eager" decoding="async" />' +
+          "</div>" +
+        "</div>"
+      );
+    }).join("");
+
+    root.innerHTML =
+      '<div class="swiper panorama-swiper">' +
+        '<div class="swiper-wrapper">' +
+          slides +
+        "</div>" +
+      "</div>" +
+      '<div class="panorama-controls">' +
+        '<button type="button" class="panorama-prev" aria-label="Previous">' + ARROW_PREV + "</button>" +
+        '<div class="panorama-pagination"></div>' +
+        '<button type="button" class="panorama-next" aria-label="Next">' + ARROW_NEXT + "</button>" +
+      "</div>";
+  }
+
+  function applyPanoramaEffect(swiper) {
+    swiper.slides.forEach(function (slide) {
+      var inner = slide.querySelector(".panorama-slide-inner");
+      if (!inner) return;
+
+      var progress = Math.max(-2.5, Math.min(2.5, slide.progress || 0));
+      var abs = Math.abs(progress);
+      var rotateY = progress * PANORAMA.rotate;
+      var translateZ = (Math.cos(abs * 0.55) - 1) * PANORAMA.depth;
+      var scale = Math.max(1 - abs * PANORAMA.scale, 0.8);
+
+      inner.style.transform =
+        "translate3d(0, 0, " + translateZ + "px) rotateY(" + rotateY + "deg) scale(" + scale + ")";
+    });
+  }
+
+  function setPanoramaTransition(swiper, duration) {
+    swiper.slides.forEach(function (slide) {
+      var inner = slide.querySelector(".panorama-slide-inner");
+      if (inner) inner.style.transitionDuration = duration + "ms";
+    });
+  }
+
+  function initRoot(root) {
+    if (root.dataset.panoramaReady === "1") return;
+    buildMarkup(root);
+
+    var swiper = new Swiper(root.querySelector(".panorama-swiper"), {
+      direction: "horizontal",
+      loop: true,
+      loopAdditionalSlides: 4,
+      grabCursor: true,
+      mousewheel: false,
+      centeredSlides: true,
+      initialSlide: 0,
+      freeMode: false,
+      slidesPerView: "auto",
+      spaceBetween: 16,
+      speed: 650,
+      watchSlidesProgress: true,
+      navigation: {
+        nextEl: root.querySelector(".panorama-next"),
+        prevEl: root.querySelector(".panorama-prev")
+      },
+      pagination: {
+        el: root.querySelector(".panorama-pagination"),
+        bulletClass: "panorama-bullet",
+        bulletActiveClass: "panorama-bullet-active",
+        clickable: true
+      },
+      breakpoints: {
+        0: { spaceBetween: 10 },
+        768: { spaceBetween: 14 },
+        1025: { spaceBetween: 16 }
+      },
+      on: {
+        init: function (swiper) { applyPanoramaEffect(swiper); },
+        setTranslate: function (swiper) { applyPanoramaEffect(swiper); },
+        setTransition: function (swiper, duration) { setPanoramaTransition(swiper, duration); },
+        progress: function (swiper) { applyPanoramaEffect(swiper); },
+        resize: function (swiper) { applyPanoramaEffect(swiper); }
+      }
+    });
+
+    root.dataset.panoramaReady = "1";
+    root._panoramaSwiper = swiper;
+  }
+
+  function boot() {
+    injectStyles();
+    Promise.all([loadCss(CSS_HREF), loadScript(JS_SRC)])
+      .then(function () {
+        var roots = document.querySelectorAll(".panorama");
+        roots.forEach(initRoot);
+      })
+      .catch(function (err) {
+        console.error("[panorama]", err);
+      });
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", boot);
+  } else {
+    boot();
+  }
+
+  // Tilda иногда дорисовывает Zero Block позже
+  setTimeout(boot, 400);
+  setTimeout(boot, 1200);
+})();
+</script>
