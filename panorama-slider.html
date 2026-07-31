@@ -1,0 +1,180 @@
+<!-- ============================================================
+     PANORAMA SLIDER для Tilda Zero Block
+
+     Как подключить:
+     1. В Zero Block добавьте элемент Shape (фрейм) нужного
+        размера и в его настройках (Settings -> CSS Class Name)
+        укажите класс:  panorama
+     2. Добавьте в этот же Zero Block элемент "HTML"
+        и вставьте в него весь код из этого файла.
+     3. Замените ссылки в массиве IMAGES на свои 10 фотографий
+        (соотношение сторон 2:3, вертикальные).
+
+     Управления нет — только автопроигрывание,
+     медленное плавное движение слева направо.
+============================================================ -->
+
+<style>
+  .panorama{
+    overflow: hidden;
+  }
+  .pnrm-stage{
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    perspective: 1100px;
+    perspective-origin: 50% 50%;
+  }
+  .pnrm-card{
+    position: absolute;
+    left: 0;
+    top: 50%;
+    border-radius: 16px;
+    overflow: hidden;
+    will-change: transform;
+    backface-visibility: hidden;
+  }
+  .pnrm-card img{
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    pointer-events: none;
+    user-select: none;
+    -webkit-user-drag: none;
+  }
+</style>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ==================== НАСТРОЙКИ ==================== */
+
+  /* 10 ссылок на фотографии (замените на свои) */
+  var IMAGES = [
+    'https://static.tildacdn.com/tild3432-3430-4661-b861-633639383164/samuelzeller168234.jpg',
+    'https://static.tildacdn.com/tild3432-3430-4661-b861-633639383164/samuelzeller168234.jpg',
+    'https://static.tildacdn.com/tild3432-3430-4661-b861-633639383164/samuelzeller168234.jpg',
+    'https://static.tildacdn.com/tild3432-3430-4661-b861-633639383164/samuelzeller168234.jpg',
+    'https://static.tildacdn.com/tild3432-3430-4661-b861-633639383164/samuelzeller168234.jpg',
+    'https://static.tildacdn.com/tild3432-3430-4661-b861-633639383164/samuelzeller168234.jpg',
+    'https://static.tildacdn.com/tild3432-3430-4661-b861-633639383164/samuelzeller168234.jpg',
+    'https://static.tildacdn.com/tild3432-3430-4661-b861-633639383164/samuelzeller168234.jpg',
+    'https://static.tildacdn.com/tild3432-3430-4661-b861-633639383164/samuelzeller168234.jpg',
+    'https://static.tildacdn.com/tild3432-3430-4661-b861-633639383164/samuelzeller168234.jpg'
+  ];
+
+  var SPEED       = 30;    /* скорость движения, px в секунду            */
+  var MAX_ANGLE   = 45;    /* наклон крайних карточек, градусы           */
+  var DEPTH       = 240;   /* насколько края выступают вперёд, px        */
+  var GAP         = 14;    /* расстояние между карточками, px            */
+  var CARD_HEIGHT = 0.46;  /* высота карточки относительно фрейма (0–1)  */
+  var RATIO       = 2 / 3; /* соотношение сторон фотографий (ширина/высота) */
+
+  /* =================================================== */
+
+  var frame, stage, cards = [];
+  var cardW = 0, cardH = 0, step = 0, total = 0;
+  var scroll = 0, lastT = null;
+
+  function mod(v, m) { return ((v % m) + m) % m; }
+
+  function build() {
+    var H = frame.clientHeight;
+    var W = frame.clientWidth;
+    if (!H || !W) return;
+
+    cardH = Math.round(H * CARD_HEIGHT);
+    cardW = Math.round(cardH * RATIO);
+    step  = cardW + GAP;
+
+    /* дублируем набор, пока лента не перекроет фрейм с запасом */
+    var copies = Math.max(2, Math.ceil((W + 2 * step) / (IMAGES.length * step)) + 1);
+
+    stage.innerHTML = '';
+    cards = [];
+    for (var c = 0; c < copies; c++) {
+      for (var i = 0; i < IMAGES.length; i++) {
+        var card = document.createElement('div');
+        card.className = 'pnrm-card';
+        card.style.width  = cardW + 'px';
+        card.style.height = cardH + 'px';
+        card.style.marginTop = (-cardH / 2) + 'px';
+        var img = document.createElement('img');
+        img.src = IMAGES[i];
+        img.alt = '';
+        card.appendChild(img);
+        stage.appendChild(card);
+        cards.push(card);
+      }
+    }
+    total = cards.length * step;
+    layout();
+  }
+
+  function layout() {
+    var W = frame.clientWidth;
+    var half = W / 2;
+
+    for (var i = 0; i < cards.length; i++) {
+      /* положение карточки с зацикливанием: scroll растёт -> движение вправо */
+      var x = mod(i * step + scroll, total) - step;
+
+      /* карточки за пределами фрейма прячем, иначе перспектива
+         «затягивает» дальние дубли обратно в кадр */
+      if (x + cardW < -GAP || x > W + GAP) {
+        cards[i].style.visibility = 'hidden';
+        continue;
+      }
+      cards[i].style.visibility = 'visible';
+
+      /* -1 у левого края фрейма, 0 в центре, +1 у правого */
+      var n = (x + cardW / 2 - half) / half;
+      if (n > 1.2) n = 1.2;
+      if (n < -1.2) n = -1.2;
+
+      var angle = -n * MAX_ANGLE;         /* крайние карточки разворачиваются
+                                             внешним краем к зрителю          */
+      var z = (n * n) * DEPTH;            /* и плавно выступают вперёд        */
+
+      cards[i].style.transform =
+        'translate3d(' + x.toFixed(2) + 'px,0,' + z.toFixed(2) + 'px)' +
+        ' rotateY(' + angle.toFixed(2) + 'deg)';
+      cards[i].style.zIndex = String(100 + Math.round(Math.abs(n) * 50));
+    }
+  }
+
+  function tick(t) {
+    if (lastT === null) lastT = t;
+    var dt = Math.min((t - lastT) / 1000, 0.05); /* защита от рывка после сна вкладки */
+    lastT = t;
+    scroll += SPEED * dt;
+    layout();
+    requestAnimationFrame(tick);
+  }
+
+  function init() {
+    frame = document.querySelector('.panorama');
+    if (!frame) return false;
+
+    stage = document.createElement('div');
+    stage.className = 'pnrm-stage';
+    frame.appendChild(stage);
+
+    build();
+    window.addEventListener('resize', build);
+    requestAnimationFrame(tick);
+    return true;
+  }
+
+  /* Zero Block рендерится скриптами Тильды с задержкой,
+     поэтому ждём появления фрейма .panorama */
+  if (!init()) {
+    var tries = 0;
+    var timer = setInterval(function () {
+      if (init() || ++tries > 40) clearInterval(timer);
+    }, 250);
+  }
+})();
+</script>
