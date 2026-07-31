@@ -134,13 +134,14 @@
       if (n > 1.2) n = 1.2;
       if (n < -1.2) n = -1.2;
 
-      var angle = n * MAX_ANGLE;          /* крайние карточки разворачиваются */
-      var z = -(n * n) * DEPTH;           /* и плавно уходят вглубь           */
+      var angle = -n * MAX_ANGLE;         /* крайние карточки разворачиваются
+                                             внешним краем к зрителю          */
+      var z = (n * n) * DEPTH;            /* и плавно выступают вперёд        */
 
       cards[i].style.transform =
         'translate3d(' + x.toFixed(2) + 'px,0,' + z.toFixed(2) + 'px)' +
         ' rotateY(' + angle.toFixed(2) + 'deg)';
-      cards[i].style.zIndex = String(100 - Math.round(Math.abs(n) * 50));
+      cards[i].style.zIndex = String(100 + Math.round(Math.abs(n) * 50));
     }
   }
 
