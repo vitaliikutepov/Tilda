@@ -24,8 +24,10 @@
      - активный слайд по центру, боковые — в 2 раза меньше
        и с маской (сверху 100% -> снизу 0% прозрачность);
      - автопролистывание каждые 5 секунд, прогресс — фиолетовое
-       кольцо #8742EE (2px) вокруг кнопки slider-right;
-     - анимация смены — 1.5 секунды.
+       кольцо #8742EE (2px) вплотную к кнопке slider-right;
+     - при наведении курсора на слайды автопролистывание на паузе;
+     - анимация смены — 1.5 секунды; текст slider-text меняется
+       фейдом, стрелки при этом плавно скользят под новую ширину.
 ============================================================ -->
 
 <style>
@@ -70,7 +72,8 @@
     margin-top: calc(var(--msl-h) / -2);
     border-radius: 24px;
     overflow: hidden;
-    background: #e9e4f6;
+    /* фон не задаём: у слайдов с прозрачным PNG не должно быть подложки */
+    background: transparent;
     pointer-events: auto;
     will-change: transform;
 
@@ -164,17 +167,24 @@
   .slider-left .tn-atom, .slider-right .tn-atom {
     cursor: pointer;
   }
+  /* текст меняется фейдом, а ширина элемента анимируется,
+     чтобы стрелки плавно «скользили», а не прыгали */
+  .slider-text {
+    transition: width 0.6s cubic-bezier(.45, 0, .25, 1);
+    white-space: nowrap;
+    text-align: center;
+  }
   .slider-text .tn-atom {
-    transition: opacity 0.35s ease;
+    transition: opacity 0.3s ease;
   }
 
-  /* кольцо прогресса автопролистывания вокруг slider-right */
+  /* кольцо прогресса автопролистывания — вплотную к кнопке slider-right */
   .msl-ring {
     position: absolute;
-    left: -6px;
-    top: -6px;
-    width: calc(100% + 12px);
-    height: calc(100% + 12px);
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
     pointer-events: none;
     overflow: visible;
     z-index: 5;
@@ -221,11 +231,15 @@
 
   var active = 0;
   var cards = [];
+  var textEl = null;
   var textAtom = null;
-  var textTimer = null;
+  var textTimers = [];
+  var measurer = null;
   var ring = null;
   var ringLen = 0;
   var autoplayStart = null;
+  var hoverCount = 0;   /* курсор над слайдами -> автоплей на паузе */
+  var lastFrame = null;
 
   function q(sel) { return document.querySelector(sel); }
 
@@ -276,6 +290,11 @@
           else if (rel === SLIDES - 1) prev();
         });
       })(i - 1);
+      /* наведение на слайд ставит автопролистывание на паузу */
+      card.addEventListener('pointerenter', function () { hoverCount++; });
+      card.addEventListener('pointerleave', function () {
+        hoverCount = Math.max(0, hoverCount - 1);
+      });
       stage.appendChild(card);
       cards.push(card);
     }
@@ -290,14 +309,37 @@
     setText();
   }
 
+  /* ширина текста измеряется невидимым дублёром с тем же шрифтом */
+  function textWidth(str) {
+    if (!measurer) {
+      measurer = document.createElement('span');
+      measurer.style.cssText =
+        'position:absolute;left:-9999px;top:0;visibility:hidden;white-space:nowrap;';
+      var cs = getComputedStyle(textAtom);
+      measurer.style.font = cs.font;
+      measurer.style.letterSpacing = cs.letterSpacing;
+      measurer.style.textTransform = cs.textTransform;
+      document.body.appendChild(measurer);
+    }
+    measurer.textContent = str;
+    return Math.ceil(measurer.getBoundingClientRect().width);
+  }
+
+  /* смена текста: фейд-аут (0.3с) -> пока текст скрыт, ширина элемента
+     плавно меняется и стрелки «скользят» (0.6с) -> фейд-ин (0.3с) */
   function setText() {
     if (!textAtom) return;
-    clearTimeout(textTimer);
+    textTimers.forEach(clearTimeout);
+    textTimers = [];
+    var str = SLIDE_TEXTS[active % SLIDE_TEXTS.length] || '';
     textAtom.style.opacity = '0';
-    textTimer = setTimeout(function () {
-      textAtom.textContent = SLIDE_TEXTS[active % SLIDE_TEXTS.length] || '';
+    textTimers.push(setTimeout(function () {
+      textEl.style.width = textWidth(str) + 'px';
+      textAtom.textContent = str;
+    }, 300));
+    textTimers.push(setTimeout(function () {
       textAtom.style.opacity = '1';
-    }, 350);
+    }, 950));
   }
 
   function next() {
@@ -320,7 +362,8 @@
     svg.setAttribute('viewBox', '0 0 100 100');
     svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
 
-    var r = 48;
+    /* r=49 при stroke 2px: кольцо ложится прямо на край кнопки, без отступа */
+    var r = 49;
     ringLen = 2 * Math.PI * r;
 
     function circle(extra) {
@@ -355,6 +398,11 @@
   /* --- автопролистывание + анимация кольца --- */
   function loop(now) {
     if (autoplayStart === null) autoplayStart = now;
+    if (lastFrame === null) lastFrame = now;
+    /* при наведении на слайд таймер «замирает» вместе с кольцом */
+    if (hoverCount > 0) autoplayStart += now - lastFrame;
+    lastFrame = now;
+
     var p = (now - autoplayStart) / AUTOPLAY_MS;
     if (p >= 1) {
       next(); /* сбрасывает autoplayStart */
@@ -369,7 +417,7 @@
     var frame = q('.main-slider');
     build(frame);
 
-    var textEl = q('.slider-text');
+    textEl = q('.slider-text');
     if (textEl) textAtom = textEl.querySelector('.tn-atom') || textEl;
 
     var left = q('.slider-left');
@@ -381,7 +429,11 @@
     }
 
     /* первый текст без задержки; позиции уже расставлены в build() */
-    if (textAtom) textAtom.textContent = SLIDE_TEXTS[0];
+    if (textAtom) {
+      textAtom.textContent = SLIDE_TEXTS[0];
+      /* стартовая ширина, от которой будет анимироваться «скольжение» */
+      textEl.style.width = textWidth(SLIDE_TEXTS[0]) + 'px';
+    }
 
     autoplayStart = performance.now();
     requestAnimationFrame(loop);
