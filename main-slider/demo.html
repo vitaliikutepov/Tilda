@@ -668,6 +668,8 @@
   }
 
   /* --- кольцо прогресса вокруг slider-right --- */
+  var ringLen = 0;
+
   function buildRing(btn) {
     var NS = 'http://www.w3.org/2000/svg';
     var svg = document.createElementNS(NS, 'svg');
@@ -675,33 +677,43 @@
     svg.setAttribute('viewBox', '0 0 100 100');
     svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
 
-    /* r=49 + stroke 2px non-scaling: кольцо на самом краю кнопки.
-       pathLength=1 — прогресс 0…1 без ошибок длины окружности.
-       Подложки нет — иначе кольцо визуально «замыкалось» раньше срока. */
+    /* Без vector-effect:non-scaling-stroke — в Chrome он ломает
+       stroke-dasharray (дуга рисуется неверно). Толщину 2px считаем
+       в user units viewBox относительно реального размера кнопки.
+       Подложки нет — иначе кольцо «замыкалось» раньше срока. */
+    var btnSize = btn.getBoundingClientRect().width || 56;
+    var strokeUser = RING_WIDTH * (100 / btnSize);
+    /* радиус: край кнопки минус половина толщины штриха */
+    var r = 50 - strokeUser / 2;
+
     ring = document.createElementNS(NS, 'circle');
     ring.setAttribute('cx', '50');
     ring.setAttribute('cy', '50');
-    ring.setAttribute('r', '49');
+    ring.setAttribute('r', String(r));
     ring.setAttribute('fill', 'none');
     ring.setAttribute('stroke', RING_COLOR);
-    ring.setAttribute('stroke-width', String(RING_WIDTH));
-    ring.setAttribute('vector-effect', 'non-scaling-stroke');
+    ring.setAttribute('stroke-width', String(strokeUser));
     ring.setAttribute('stroke-linecap', 'butt');
-    ring.setAttribute('pathLength', '1');
-    ring.setAttribute('stroke-dasharray', '1');
-    ring.setAttribute('stroke-dashoffset', '1');
     ring.setAttribute('transform', 'rotate(-90 50 50)');
     svg.appendChild(ring);
 
     var cs = getComputedStyle(btn);
     if (cs.position === 'static') btn.style.position = 'relative';
     btn.appendChild(svg);
+
+    ringLen = ring.getTotalLength();
+    /* прогресс = длина видимого штриха (dash), gap ≥ длина окружности.
+       Так надёжнее, чем крутить stroke-dashoffset. */
+    setRingProgress(0);
   }
 
   function setRingProgress(p) {
-    if (!ring) return;
+    if (!ring || !ringLen) return;
     p = Math.max(0, Math.min(1, p));
-    ring.setAttribute('stroke-dashoffset', String(1 - p));
+    var dash = p * ringLen;
+    /* при p=0 — нулевой штрих; gap всегда с запасом, чтобы не зацикливался */
+    ring.setAttribute('stroke-dasharray', dash + ' ' + (ringLen + 1));
+    ring.setAttribute('stroke-dashoffset', '0');
   }
 
   /* --- автопролистывание + анимация кольца --- */
