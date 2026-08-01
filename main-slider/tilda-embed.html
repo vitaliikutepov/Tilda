@@ -215,16 +215,41 @@
     transition: opacity 0.5s ease;
   }
 
-  /* кольцо прогресса автопролистывания — вплотную к кнопке slider-right */
+  /* кольцо прогресса — conic-gradient вплотную к кнопке.
+     Без SVG-dasharray/подложки: незаполненная часть реально пустая,
+     поэтому «полное» кольцо = момент смены слайда, без ложной паузы. */
   .msl-ring {
     position: absolute;
     left: 0;
     top: 0;
     width: 100%;
     height: 100%;
+    border-radius: 50%;
     pointer-events: none;
-    overflow: visible;
     z-index: 5;
+    background: conic-gradient(
+      from 0deg,
+      var(--msl-ring-color, #8742EE) calc(var(--msl-p, 0) * 1turn),
+      transparent 0
+    );
+    -webkit-mask: radial-gradient(farthest-side,
+      transparent calc(100% - var(--msl-ring-w, 2px)),
+      #000 calc(100% - var(--msl-ring-w, 2px)));
+    mask: radial-gradient(farthest-side,
+      transparent calc(100% - var(--msl-ring-w, 2px)),
+      #000 calc(100% - var(--msl-ring-w, 2px)));
+  }
+
+  /* до готовности: без transition и невидимы — иначе при первой
+     отрисовке / ресайзе Тильды слайды «прыгают» 1.5с */
+  .msl-stage:not(.msl-ready) {
+    opacity: 0;
+  }
+  .msl-stage:not(.msl-ready) .msl-card {
+    transition: none !important;
+  }
+  .msl-stage.msl-ready {
+    opacity: 1;
   }
 </style>
 
@@ -290,9 +315,9 @@
   var textTimers = [];
   var measurer = null;
   var ring = null;
-  var ringLen = 0;
   var autoplayStart = null;
   var lastFrame = null;
+  var currentBp = null;
 
   function q(sel) { return document.querySelector(sel); }
 
@@ -496,70 +521,59 @@
 
   /* --- кольцо прогресса вокруг slider-right --- */
   function buildRing(btn) {
-    var NS = 'http://www.w3.org/2000/svg';
-    var svg = document.createElementNS(NS, 'svg');
-    svg.setAttribute('class', 'msl-ring');
-    svg.setAttribute('viewBox', '0 0 100 100');
-    svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
-
-    /* r=49 при stroke 2px: кольцо ложится прямо на край кнопки, без отступа */
-    var r = 49;
-    ringLen = 2 * Math.PI * r;
-
-    function circle(extra) {
-      var c = document.createElementNS(NS, 'circle');
-      c.setAttribute('cx', '50');
-      c.setAttribute('cy', '50');
-      c.setAttribute('r', String(r));
-      c.setAttribute('fill', 'none');
-      c.setAttribute('stroke', RING_COLOR);
-      c.setAttribute('stroke-width', String(RING_WIDTH));
-      c.setAttribute('vector-effect', 'non-scaling-stroke');
-      if (extra) extra(c);
-      return c;
-    }
-
-    /* подложка кольца */
-    svg.appendChild(circle(function (c) { c.setAttribute('opacity', '0.2'); }));
-    /* заполняющаяся часть.
-       butt (не round): круглые концы визуально «смыкают» кольцо
-       чуть раньше реального конца дуги — из-за этого после
-       «полного» кольца казалась пауза до смены слайда. */
-    ring = circle(function (c) {
-      c.setAttribute('stroke-linecap', 'butt');
-      c.setAttribute('stroke-dasharray', String(ringLen));
-      c.setAttribute('stroke-dashoffset', String(ringLen));
-      c.setAttribute('transform', 'rotate(-90 50 50)');
-    });
-    svg.appendChild(ring);
+    ring = document.createElement('div');
+    ring.className = 'msl-ring';
+    ring.style.setProperty('--msl-p', '0');
+    ring.style.setProperty('--msl-ring-color', RING_COLOR);
+    ring.style.setProperty('--msl-ring-w', RING_WIDTH + 'px');
 
     var cs = getComputedStyle(btn);
     if (cs.position === 'static') btn.style.position = 'relative';
-    btn.appendChild(svg);
+    btn.appendChild(ring);
+  }
+
+  function setRingProgress(p) {
+    if (ring) ring.style.setProperty('--msl-p', String(Math.max(0, Math.min(1, p))));
   }
 
   /* --- автопролистывание + анимация кольца --- */
   function loop(now) {
     if (autoplayStart === null) autoplayStart = now;
     if (lastFrame === null) lastFrame = now;
-    /* Пауза при наведении на слайд. Состояние :hover проверяется
-       каждый кадр: события pointerenter/leave теряются, когда слайд
-       уезжает из-под неподвижного курсора во время анимации, — из-за
-       этого таймер «залипал» (кольцо стояло заполненным до движения
-       мыши). Проверка по :hover самокорректируется. */
-    var hovered = stageEl && stageEl.querySelector('.msl-card:hover');
+    /* Пауза только при наведении на ЦЕНТРАЛЬНЫЙ слайд.
+       :hover каждый кадр — не залипает, когда слайд уезжает
+       из-под неподвижного курсора. */
+    var hovered = stageEl && stageEl.querySelector('.msl-pos--center:hover');
     if (hovered) autoplayStart += now - lastFrame;
     lastFrame = now;
 
     var p = (now - autoplayStart) / AUTOPLAY_MS;
     if (p >= 1) {
-      /* кольцо дорисовываем до конца и в этом же кадре листаем */
-      if (ring) ring.setAttribute('stroke-dashoffset', '0');
-      next(now); /* сбрасывает autoplayStart в now — без лишней паузы */
+      setRingProgress(1);
+      next(now); /* сбрасывает autoplayStart в now */
       p = 0;
     }
-    if (ring) ring.setAttribute('stroke-dashoffset', String(ringLen * (1 - p)));
+    setRingProgress(p);
     requestAnimationFrame(loop);
+  }
+
+  function breakpointId() {
+    var w = window.innerWidth;
+    if (w >= 1920) return '1920';
+    if (w >= 1366) return '1366';
+    if (w >= 1024) return '1024';
+    if (w >= 768) return '768';
+    return '320';
+  }
+
+  /* включаем transition только после стабильной первой отрисовки */
+  function markReady() {
+    if (!stageEl || stageEl.classList.contains('msl-ready')) return;
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () {
+        if (stageEl) stageEl.classList.add('msl-ready');
+      });
+    });
   }
 
   /* --- инициализация --- */
@@ -585,15 +599,49 @@
       textEl.style.width = textWidth(SLIDE_TEXTS[0]) + 'px';
     }
 
-    /* при смене брейкпоинта у групп меняются координаты элементов —
-       пересобираем контент карточек */
+    /* пересобираем композицию только при реальной смене брейкпоинта —
+       Тильда шлёт resize при инициализации, из-за чего слайды «прыгали» */
+    currentBp = breakpointId();
     var resizeTimer = null;
+    var initAt = Date.now();
     window.addEventListener('resize', function () {
       clearTimeout(resizeTimer);
       resizeTimer = setTimeout(function () {
+        if (Date.now() - initAt < 1000) return; /* игнор стартовых resize */
+        var bp = breakpointId();
+        if (bp === currentBp) return;
+        currentBp = bp;
+        stageEl.classList.remove('msl-ready'); /* без transition на пересборке */
         for (var i = 0; i < cards.length; i++) fillFaces(cards[i], i + 1);
+        markReady();
       }, 250);
     });
+
+    /* ждём загрузки картинок (или таймаут) — потом показываем сцену */
+    var imgs = stageEl.querySelectorAll('img');
+    var pending = imgs.length;
+    var settled = false;
+    function settle() {
+      if (settled) return;
+      settled = true;
+      markReady();
+    }
+    if (!pending) settle();
+    else {
+      for (var i = 0; i < imgs.length; i++) {
+        if (imgs[i].complete) {
+          if (--pending === 0) settle();
+        } else {
+          imgs[i].addEventListener('load', function () {
+            if (--pending === 0) settle();
+          });
+          imgs[i].addEventListener('error', function () {
+            if (--pending === 0) settle();
+          });
+        }
+      }
+      setTimeout(settle, 1500);
+    }
 
     autoplayStart = performance.now();
     requestAnimationFrame(loop);
