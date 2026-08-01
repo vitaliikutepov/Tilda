@@ -215,29 +215,18 @@
     transition: opacity 0.5s ease;
   }
 
-  /* кольцо прогресса — conic-gradient вплотную к кнопке.
-     Без SVG-dasharray/подложки: незаполненная часть реально пустая,
-     поэтому «полное» кольцо = момент смены слайда, без ложной паузы. */
+  /* кольцо прогресса — SVG stroke (ровный antialias-край),
+     вплотную к кнопке. Подложки нет: незаполненная часть пустая,
+     поэтому «полное» кольцо = момент смены слайда. */
   .msl-ring {
     position: absolute;
     left: 0;
     top: 0;
     width: 100%;
     height: 100%;
-    border-radius: 50%;
     pointer-events: none;
+    overflow: visible;
     z-index: 5;
-    background: conic-gradient(
-      from 0deg,
-      var(--msl-ring-color, #8742EE) calc(var(--msl-p, 0) * 1turn),
-      transparent 0
-    );
-    -webkit-mask: radial-gradient(farthest-side,
-      transparent calc(100% - var(--msl-ring-w, 2px)),
-      #000 calc(100% - var(--msl-ring-w, 2px)));
-    mask: radial-gradient(farthest-side,
-      transparent calc(100% - var(--msl-ring-w, 2px)),
-      #000 calc(100% - var(--msl-ring-w, 2px)));
   }
 
   /* до готовности: без transition и невидимы — иначе при первой
@@ -521,19 +510,39 @@
 
   /* --- кольцо прогресса вокруг slider-right --- */
   function buildRing(btn) {
-    ring = document.createElement('div');
-    ring.className = 'msl-ring';
-    ring.style.setProperty('--msl-p', '0');
-    ring.style.setProperty('--msl-ring-color', RING_COLOR);
-    ring.style.setProperty('--msl-ring-w', RING_WIDTH + 'px');
+    var NS = 'http://www.w3.org/2000/svg';
+    var svg = document.createElementNS(NS, 'svg');
+    svg.setAttribute('class', 'msl-ring');
+    svg.setAttribute('viewBox', '0 0 100 100');
+    svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+
+    /* r=49 + stroke 2px non-scaling: кольцо на самом краю кнопки.
+       pathLength=1 — прогресс 0…1 без ошибок длины окружности.
+       Подложки нет — иначе кольцо визуально «замыкалось» раньше срока. */
+    ring = document.createElementNS(NS, 'circle');
+    ring.setAttribute('cx', '50');
+    ring.setAttribute('cy', '50');
+    ring.setAttribute('r', '49');
+    ring.setAttribute('fill', 'none');
+    ring.setAttribute('stroke', RING_COLOR);
+    ring.setAttribute('stroke-width', String(RING_WIDTH));
+    ring.setAttribute('vector-effect', 'non-scaling-stroke');
+    ring.setAttribute('stroke-linecap', 'butt');
+    ring.setAttribute('pathLength', '1');
+    ring.setAttribute('stroke-dasharray', '1');
+    ring.setAttribute('stroke-dashoffset', '1');
+    ring.setAttribute('transform', 'rotate(-90 50 50)');
+    svg.appendChild(ring);
 
     var cs = getComputedStyle(btn);
     if (cs.position === 'static') btn.style.position = 'relative';
-    btn.appendChild(ring);
+    btn.appendChild(svg);
   }
 
   function setRingProgress(p) {
-    if (ring) ring.style.setProperty('--msl-p', String(Math.max(0, Math.min(1, p))));
+    if (!ring) return;
+    p = Math.max(0, Math.min(1, p));
+    ring.setAttribute('stroke-dashoffset', String(1 - p));
   }
 
   /* --- автопролистывание + анимация кольца --- */
