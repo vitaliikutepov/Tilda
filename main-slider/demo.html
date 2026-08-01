@@ -90,7 +90,12 @@
      В реальной Тильде это обычный Zero Block, скрипт его скроет.
 ========================================================= -->
 <div id="rec2651850801">
-  <div class="tn-elem slide1"><div class="tn-atom"><img data-slide="1" data-mob="0" alt=""></div></div>
+  <!-- slide1 — группа из трёх картинок (как физическая tn-group в Тильде) -->
+  <div class="tn-group slide1" style="position:relative;width:1260px;height:709px;">
+    <div class="tn-elem" style="position:absolute;left:0;top:0;width:1260px;height:709px;"><div class="tn-atom"><img data-slide="1" data-mob="0" alt=""></div></div>
+    <div class="tn-elem" style="position:absolute;left:40px;top:54px;width:179px;height:201px;"><div class="tn-atom"><img data-decor="A" alt=""></div></div>
+    <div class="tn-elem" style="position:absolute;left:954px;top:400px;width:296px;height:296px;"><div class="tn-atom"><img data-decor="B" alt=""></div></div>
+  </div>
   <div class="tn-elem slide2"><div class="tn-atom"><img data-slide="2" data-mob="0" alt=""></div></div>
   <div class="tn-elem slide3"><div class="tn-atom"><img data-slide="3" data-mob="0" alt=""></div></div>
   <div class="tn-elem slide4"><div class="tn-atom"><img data-slide="4" data-mob="0" alt=""></div></div>
@@ -123,7 +128,7 @@
 /* генерируем плейсхолдеры-картинки 16:9 для демо */
 (function () {
   var colors = ['#8742EE', '#5B8DEF', '#F2617A', '#2FB980', '#F5A623', '#7E57C2'];
-  document.querySelectorAll('#rec2651850801 img').forEach(function (img) {
+  document.querySelectorAll('#rec2651850801 img[data-slide]').forEach(function (img) {
     var n = img.getAttribute('data-slide');
     var mob = img.getAttribute('data-mob') === '1';
     var label = (mob ? 'MOB ' : 'Слайд ') + n;
@@ -134,6 +139,17 @@
       '<circle cx="200" cy="780" r="160" fill="rgba(255,255,255,0.10)"/>' +
       '<text x="50%" y="52%" font-family="sans-serif" font-size="150" font-weight="700" ' +
       'fill="#fff" text-anchor="middle" dominant-baseline="middle">' + label + '</text>' +
+      '</svg>';
+    img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+  });
+  /* декоративные картинки внутри группы slide1 */
+  document.querySelectorAll('#rec2651850801 img[data-decor]').forEach(function (img) {
+    var label = img.getAttribute('data-decor');
+    var svg =
+      '<svg xmlns="http://www.w3.org/2000/svg" width="300" height="300">' +
+      '<circle cx="150" cy="150" r="140" fill="#ffce3d"/>' +
+      '<text x="50%" y="55%" font-family="sans-serif" font-size="120" font-weight="700" ' +
+      'fill="#7a4c00" text-anchor="middle" dominant-baseline="middle">' + label + '</text>' +
       '</svg>';
     img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
   });
@@ -174,8 +190,17 @@
 ============================================================ -->
 
 <style>
-  /* блок-источник контента скрыт */
-  #rec2651850801 { display: none !important; }
+  /* Блок-источник контента скрыт, но продолжает рассчитывать layout:
+     это нужно, чтобы читать реальные позиции элементов внутри групп
+     (.slide1 может быть группой из нескольких картинок). */
+  #rec2651850801 {
+    position: absolute !important;
+    top: -100000px !important;
+    left: 0 !important;
+    width: 100% !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+  }
 
   /* фрейм не должен резать боковые слайды */
   .main-slider,
@@ -233,11 +258,13 @@
     mask-repeat: no-repeat;
     mask-position: 0 0;
 
+    /* изинг с быстрым стартом: слайд трогается сразу после заполнения
+       кольца / клика, без ощущения задержки */
     transition:
-      transform 1.5s cubic-bezier(.45, 0, .25, 1),
-      opacity 1.5s cubic-bezier(.45, 0, .25, 1),
-      -webkit-mask-position 1.5s cubic-bezier(.45, 0, .25, 1),
-      mask-position 1.5s cubic-bezier(.45, 0, .25, 1);
+      transform 1.5s cubic-bezier(.25, .1, .25, 1),
+      opacity 1.5s cubic-bezier(.25, .1, .25, 1),
+      -webkit-mask-position 1.5s cubic-bezier(.25, .1, .25, 1),
+      mask-position 1.5s cubic-bezier(.25, .1, .25, 1);
   }
 
   /* позиции карусели */
@@ -310,13 +337,15 @@
   .slider-left .tn-atom, .slider-right .tn-atom {
     cursor: pointer;
   }
-  /* текст меняется фейдом, а ширина элемента анимируется,
-     чтобы стрелки плавно «скользили», а не прыгали.
+  /* Текст меняется в три фазы: фейд-аут 0.5с (ширина не трогается,
+     старый текст не режется) -> ширина едет 0.5с, стрелки скользят,
+     пока текст скрыт -> фейд-ин 0.5с.
      overflow + min-width:0 — иначе при удлинении текста flex
      мгновенно раздувает блок (min-width:auto = ширина контента)
-     и стрелки «прыгают» наружу, хотя внутрь едут плавно. */
+     и стрелки «прыгают» наружу. Сами transition дублируются
+     инлайном из скрипта — надёжнее против пересчётов Тильды. */
   .slider-text {
-    transition: width 1s cubic-bezier(.45, 0, .25, 1);
+    transition: width 0.5s cubic-bezier(.25, .1, .25, 1);
     white-space: nowrap;
     text-align: center;
     overflow: hidden;
@@ -391,29 +420,83 @@
 
   function q(sel) { return document.querySelector(sel); }
 
-  /* --- достаём картинку/контент слайда из блока-источника --- */
+  /* координаты без учёта transform (сбс-анимации Тильды не мешают) */
+  function pageOffset(el) {
+    var x = 0, y = 0;
+    while (el) {
+      x += el.offsetLeft;
+      y += el.offsetTop;
+      el = el.offsetParent;
+    }
+    return { x: x, y: y };
+  }
+
+  /* .slideN — группа из нескольких элементов: собираем все картинки,
+     сохраняя их позиции и порядок слоёв внутри рамки группы */
+  function compositeHTML(groupEl) {
+    var elems = groupEl.querySelectorAll('.tn-elem');
+    if (elems.length < 2) return null;
+    var gw = groupEl.offsetWidth, gh = groupEl.offsetHeight;
+    if (!gw || !gh) return null;
+    var g = pageOffset(groupEl);
+    var pct = function (v, base) { return (v / base * 100).toFixed(3); };
+    var html = '';
+    for (var i = 0; i < elems.length; i++) {
+      var e = elems[i];
+      var img = e.querySelector('img');
+      var src = img && (img.getAttribute('data-original') || img.getAttribute('src'));
+      if (!src || !e.offsetWidth) continue;
+      var o = pageOffset(e);
+      html += '<img src="' + src + '" alt="" style="position:absolute;' +
+        'left:' + pct(o.x - g.x, gw) + '%;' +
+        'top:' + pct(o.y - g.y, gh) + '%;' +
+        'width:' + pct(e.offsetWidth, gw) + '%;' +
+        'height:' + pct(e.offsetHeight, gh) + '%;' +
+        'object-fit:fill;">';
+    }
+    return html || null;
+  }
+
+  function elementHTML(el) {
+    var comp = compositeHTML(el);
+    if (comp) return comp;
+
+    var img = el.querySelector('img');
+    var src = img && (img.getAttribute('data-original') || img.getAttribute('src'));
+    if (src) return '<img src="' + src + '" alt="">';
+
+    var atom = el.querySelector('.tn-atom') || el;
+    var bg = (atom.getAttribute('data-original') || '');
+    if (!bg && atom.style) {
+      var m = (atom.style.backgroundImage || '').match(/url\(["']?([^"')]+)/);
+      if (m) bg = m[1];
+    }
+    if (bg) return '<img src="' + bg + '" alt="">';
+
+    /* не картинка — переносим содержимое как есть */
+    if (atom.innerHTML && atom.innerHTML.replace(/\s/g, '')) {
+      return '<div style="width:100%;height:100%;">' + atom.innerHTML + '</div>';
+    }
+    return null;
+  }
+
+  /* --- достаём контент слайда из блока-источника --- */
   function faceHTML(n, mobile) {
     var root = q(SOURCE_BLOCK) || document;
     var el = root.querySelector('.' + (mobile ? MOBILE_CLASS : DESKTOP_CLASS) + n);
+    /* мобильной версии нет — показываем десктопную, а не заглушку */
+    if (!el && mobile) el = root.querySelector('.' + DESKTOP_CLASS + n);
     if (el) {
-      var img = el.querySelector('img');
-      var src = img && (img.getAttribute('data-original') || img.getAttribute('src'));
-      if (src) return '<img src="' + src + '" alt="">';
-
-      var atom = el.querySelector('.tn-atom') || el;
-      var bg = (atom.getAttribute('data-original') || '');
-      if (!bg && atom.style) {
-        var m = (atom.style.backgroundImage || '').match(/url\(["']?([^"')]+)/);
-        if (m) bg = m[1];
-      }
-      if (bg) return '<img src="' + bg + '" alt="">';
-
-      /* не картинка — переносим содержимое как есть */
-      if (atom.innerHTML && atom.innerHTML.replace(/\s/g, '')) {
-        return '<div style="width:100%;height:100%;">' + atom.innerHTML + '</div>';
-      }
+      var res = elementHTML(el);
+      if (res) return res;
     }
     return '<div class="msl-ph">' + n + '</div>';
+  }
+
+  function fillFaces(card, n) {
+    card.innerHTML =
+      '<div class="msl-face msl-face--desktop">' + faceHTML(n, false) + '</div>' +
+      '<div class="msl-face msl-face--mobile">'  + faceHTML(n, true)  + '</div>';
   }
 
   /* --- построение слайдера --- */
@@ -427,9 +510,7 @@
       /* позиционный класс сразу при создании, чтобы при загрузке
          не проигрывалась анимация «разлёта» из центра */
       card.className = 'msl-card msl-pos--' + POS[(i - 1 - active + SLIDES) % SLIDES];
-      card.innerHTML =
-        '<div class="msl-face msl-face--desktop">' + faceHTML(i, false) + '</div>' +
-        '<div class="msl-face msl-face--mobile">'  + faceHTML(i, true)  + '</div>';
+      fillFaces(card, i);
       (function (idx) {
         card.addEventListener('click', function () {
           /* клик по боковому слайду тоже переключает */
@@ -473,25 +554,39 @@
     return Math.ceil(measurer.getBoundingClientRect().width);
   }
 
-  /* смена текста: фейд-аут 0.5с → подмена текста → фейд-ин 0.5с.
-     Ширина (.slider-text) анимируется сразу вместе с фейдом,
-     чтобы стрелки плавно скользили в обе стороны. */
+  /* смена текста в три фазы (итого 1.5с, как анимация слайдов):
+     0
+     фейд-аут старого текста 0.5с, ширина не трогается —
+       старый текст не режется схлопывающимся боксом;
+     0.5с
+     текст скрыт: подмена строки + ширина плавно едет 0.5с,
+       стрелки в это время скользят;
+     1.0с
+     фейд-ин нового текста 0.5с. */
   function setText() {
     if (!textAtom) return;
     var str = SLIDE_TEXTS[active % SLIDE_TEXTS.length] || '';
     textTimers.forEach(clearTimeout);
     textTimers = [];
 
-    /* сразу тянем ширину под новый текст — стрелки едут параллельно фейду */
-    textEl.style.width = textWidth(str) + 'px';
+    /* transition инлайном: стили Тильды их не перебьют */
+    textAtom.style.transition = 'opacity 0.5s ease';
+    textEl.style.transition = 'width 0.5s cubic-bezier(.25,.1,.25,1)';
+
+    /* фиксируем текущую ширину в px: Тильда при пересчётах может
+       вернуть width:auto, а переход auto->px не анимируется (скачок) */
+    textEl.style.width = textEl.getBoundingClientRect().width + 'px';
+
     textAtom.style.opacity = '0';
 
     textTimers.push(setTimeout(function () {
       textAtom.textContent = str;
-      /* форсируем reflow, чтобы transition opacity точно отыграл фейд-ин */
-      void textAtom.offsetWidth;
-      textAtom.style.opacity = '1';
+      textEl.style.width = textWidth(str) + 'px';
     }, 500));
+
+    textTimers.push(setTimeout(function () {
+      textAtom.style.opacity = '1';
+    }, 1000));
   }
 
   function next(t) {
@@ -592,17 +687,28 @@
       textEl.style.width = textWidth(SLIDE_TEXTS[0]) + 'px';
     }
 
+    /* при смене брейкпоинта у групп меняются координаты элементов —
+       пересобираем контент карточек */
+    var resizeTimer = null;
+    window.addEventListener('resize', function () {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(function () {
+        for (var i = 0; i < cards.length; i++) fillFaces(cards[i], i + 1);
+      }, 250);
+    });
+
     autoplayStart = performance.now();
     requestAnimationFrame(loop);
   }
 
-  /* ждём, пока Tilda отрисует зеро-блоки */
+  /* ждём, пока Tilda отрисует зеро-блоки и разложит элементы */
   function waitAndInit() {
     var started = Date.now();
     (function poll() {
       var frame = q('.main-slider');
       var source = q(SOURCE_BLOCK + ' .' + DESKTOP_CLASS + '1');
-      if (frame && (source || Date.now() - started > 6000)) {
+      var ready = source && source.offsetWidth > 0; /* t396 закончил layout */
+      if (frame && (ready || Date.now() - started > 6000)) {
         init();
         return;
       }
