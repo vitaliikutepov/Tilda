@@ -262,7 +262,9 @@
 
     for (var i = 1; i <= SLIDES; i++) {
       var card = document.createElement('div');
-      card.className = 'msl-card';
+      /* позиционный класс сразу при создании, чтобы при загрузке
+         не проигрывалась анимация «разлёта» из центра */
+      card.className = 'msl-card msl-pos--' + POS[(i - 1 - active + SLIDES) % SLIDES];
       card.innerHTML =
         '<div class="msl-face msl-face--desktop">' + faceHTML(i, false) + '</div>' +
         '<div class="msl-face msl-face--mobile">'  + faceHTML(i, true)  + '</div>';
@@ -378,9 +380,8 @@
       buildRing(right);
     }
 
-    /* первый текст без задержки */
+    /* первый текст без задержки; позиции уже расставлены в build() */
     if (textAtom) textAtom.textContent = SLIDE_TEXTS[0];
-    render();
 
     autoplayStart = performance.now();
     requestAnimationFrame(loop);
