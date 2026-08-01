@@ -3,10 +3,12 @@
 
      Как подключить:
      1. Зеро-блок #rec2651850801 — источник контента.
-        В нём должны лежать 6 элементов (картинок):
-          .slide1 … .slide6         — версии для экранов от 768px
-          .mob-slide1 … .mob-slide6 — версии для экранов до 768px
-        (классы задаются в Settings -> CSS Class Name).
+        В нём должны лежать 6 элементов/групп (классы задаются
+        в Settings -> CSS Class Name). Соответствие задаётся
+        явно в массиве SLIDE_SOURCES в скрипте ниже:
+          Слайд 1 — .slide1 / .mob-slide1
+          Слайд 2 — .slide2 / .mob-slide2
+          … и так до слайда 6.
         Сам блок будет скрыт — на странице он не отображается.
      2. В другом зеро-блоке:
         - добавьте Shape (фрейм) и дайте ему класс  main-slider
@@ -17,7 +19,11 @@
           (текст подменяется скриптом под каждый слайд).
      3. Добавьте в любой из этих блоков (или в настройки страницы)
         элемент "HTML" и вставьте весь код из этого файла.
-     4. Тексты для слайдов поменяйте в массиве SLIDE_TEXTS ниже.
+     4. Тексты для слайдов поменяйте в массиве SLIDE_TEXTS,
+        классы источников — в массиве SLIDE_SOURCES (ниже в скрипте).
+     5. Если слайд — группа из нескольких картинок, нижний слой
+        статичен, а все слои над ним слегка «парят» (случайное
+        движение до 20px и поворот до 15 градусов).
 
      Поведение:
      - 6 слайдов формата 16:9, крутятся по кругу;
@@ -161,6 +167,19 @@
     .msl-face--mobile  { display: block; }
   }
 
+  /* парение декоративных элементов внутри слайда-группы
+     (нижний слой статичен, слои над ним плавают со случайными
+     параметрами — см. compositeHTML) */
+  @keyframes msl-float {
+    0%   { transform: translate(0, 0) rotate(0deg); }
+    50%  { transform: translate(var(--msl-fx, 0px), var(--msl-fy, -10px)) rotate(var(--msl-fr, 5deg)); }
+    100% { transform: translate(0, 0) rotate(0deg); }
+  }
+  .msl-float {
+    animation: msl-float var(--msl-fd, 5s) ease-in-out infinite;
+    will-change: transform;
+  }
+
   /* заглушка, если элемент-источник не найден */
   .msl-ph {
     width: 100%;
@@ -215,13 +234,27 @@
 
   /* ==================== НАСТРОЙКИ ==================== */
 
-  var SOURCE_BLOCK  = '#rec2651850801'; /* зеро-блок с контентом слайдов   */
-  var SLIDES        = 6;                /* количество слайдов              */
-  var DESKTOP_CLASS = 'slide';          /* .slide1 … .slide6  (768px+)     */
-  var MOBILE_CLASS  = 'mob-slide';      /* .mob-slide1 … .mob-slide6       */
-  var AUTOPLAY_MS   = 8000;             /* автопролистывание, мс           */
-  var RING_COLOR    = '#8742EE';        /* цвет кольца прогресса           */
-  var RING_WIDTH    = 2;                /* толщина кольца, px              */
+  var SOURCE_BLOCK = '#rec2651850801';  /* зеро-блок с контентом слайдов   */
+
+  /* классы элементов-источников для каждого слайда:
+     desktop — экраны от 768px, mobile — до 768px.
+     Если mobile-элемента нет на странице, показывается desktop. */
+  var SLIDE_SOURCES = [
+    { desktop: 'slide1', mobile: 'mob-slide1' },  /* Слайд 1 */
+    { desktop: 'slide2', mobile: 'mob-slide2' },  /* Слайд 2 */
+    { desktop: 'slide3', mobile: 'mob-slide3' },  /* Слайд 3 */
+    { desktop: 'slide4', mobile: 'mob-slide4' },  /* Слайд 4 */
+    { desktop: 'slide5', mobile: 'mob-slide5' },  /* Слайд 5 */
+    { desktop: 'slide6', mobile: 'mob-slide6' }   /* Слайд 6 */
+  ];
+
+  var AUTOPLAY_MS = 8000;               /* автопролистывание, мс           */
+  var RING_COLOR  = '#8742EE';          /* цвет кольца прогресса           */
+  var RING_WIDTH  = 2;                  /* толщина кольца, px              */
+
+  /* парение элементов слайда-группы (все слои над нижним) */
+  var FLOAT_MAX_SHIFT  = 20;            /* максимальное движение, px       */
+  var FLOAT_MAX_ROTATE = 15;            /* максимальный поворот, градусы   */
 
   /* тексты под каждый слайд (временные, по 4-5 слов) */
   var SLIDE_TEXTS = [
@@ -234,6 +267,8 @@
   ];
 
   /* =================================================== */
+
+  var SLIDES = SLIDE_SOURCES.length;
 
   /* rel = (i - active + N) % N  ->  позиция в карусели.
      Следующий слайд (rel 1) стоит слева и приходит в центр,
@@ -249,6 +284,7 @@
 
   var active = 0;
   var cards = [];
+  var stageEl = null;
   var textEl = null;
   var textAtom = null;
   var textTimers = [];
@@ -256,7 +292,6 @@
   var ring = null;
   var ringLen = 0;
   var autoplayStart = null;
-  var hoverCount = 0;   /* курсор над слайдами -> автоплей на паузе */
   var lastFrame = null;
 
   function q(sel) { return document.querySelector(sel); }
@@ -272,8 +307,23 @@
     return { x: x, y: y };
   }
 
+  /* случайные параметры парения: движение до FLOAT_MAX_SHIFT px,
+     поворот до FLOAT_MAX_ROTATE градусов, у каждого элемента свои */
+  function floatStyle() {
+    var rnd = function (min, max) { return min + Math.random() * (max - min); };
+    var sign = function () { return Math.random() < 0.5 ? -1 : 1; };
+    var shift = rnd(FLOAT_MAX_SHIFT * 0.4, FLOAT_MAX_SHIFT);
+    var angle = rnd(shift / FLOAT_MAX_SHIFT, 1) * Math.PI * 2;
+    return '--msl-fx:' + (Math.cos(angle) * shift).toFixed(1) + 'px;' +
+      '--msl-fy:' + (Math.sin(angle) * shift).toFixed(1) + 'px;' +
+      '--msl-fr:' + (sign() * rnd(FLOAT_MAX_ROTATE * 0.3, FLOAT_MAX_ROTATE)).toFixed(1) + 'deg;' +
+      '--msl-fd:' + rnd(4, 7).toFixed(2) + 's;' +
+      'animation-delay:-' + rnd(0, 4).toFixed(2) + 's;';
+  }
+
   /* .slideN — группа из нескольких элементов: собираем все картинки,
-     сохраняя их позиции и порядок слоёв внутри рамки группы */
+     сохраняя их позиции и порядок слоёв внутри рамки группы.
+     Нижний слой статичен, все слои над ним слегка «парят». */
   function compositeHTML(groupEl) {
     var elems = groupEl.querySelectorAll('.tn-elem');
     if (elems.length < 2) return null;
@@ -282,18 +332,23 @@
     var g = pageOffset(groupEl);
     var pct = function (v, base) { return (v / base * 100).toFixed(3); };
     var html = '';
+    var isBase = true;
     for (var i = 0; i < elems.length; i++) {
       var e = elems[i];
       var img = e.querySelector('img');
       var src = img && (img.getAttribute('data-original') || img.getAttribute('src'));
       if (!src || !e.offsetWidth) continue;
       var o = pageOffset(e);
-      html += '<img src="' + src + '" alt="" style="position:absolute;' +
+      html += '<img src="' + src + '" alt=""' +
+        (isBase ? '' : ' class="msl-float"') +
+        ' style="position:absolute;' +
         'left:' + pct(o.x - g.x, gw) + '%;' +
         'top:' + pct(o.y - g.y, gh) + '%;' +
         'width:' + pct(e.offsetWidth, gw) + '%;' +
         'height:' + pct(e.offsetHeight, gh) + '%;' +
-        'object-fit:fill;">';
+        'object-fit:fill;' +
+        (isBase ? '' : floatStyle()) + '">';
+      isBase = false;
     }
     return html || null;
   }
@@ -324,9 +379,10 @@
   /* --- достаём контент слайда из блока-источника --- */
   function faceHTML(n, mobile) {
     var root = q(SOURCE_BLOCK) || document;
-    var el = root.querySelector('.' + (mobile ? MOBILE_CLASS : DESKTOP_CLASS) + n);
+    var srcCfg = SLIDE_SOURCES[n - 1];
+    var el = root.querySelector('.' + (mobile ? srcCfg.mobile : srcCfg.desktop));
     /* мобильной версии нет — показываем десктопную, а не заглушку */
-    if (!el && mobile) el = root.querySelector('.' + DESKTOP_CLASS + n);
+    if (!el && mobile) el = root.querySelector('.' + srcCfg.desktop);
     if (el) {
       var res = elementHTML(el);
       if (res) return res;
@@ -360,15 +416,11 @@
           else if (rel === SLIDES - 1) prev();
         });
       })(i - 1);
-      /* наведение на слайд ставит автопролистывание на паузу */
-      card.addEventListener('pointerenter', function () { hoverCount++; });
-      card.addEventListener('pointerleave', function () {
-        hoverCount = Math.max(0, hoverCount - 1);
-      });
       stage.appendChild(card);
       cards.push(card);
     }
     host.appendChild(stage);
+    stageEl = stage;
   }
 
   function render() {
@@ -490,8 +542,13 @@
   function loop(now) {
     if (autoplayStart === null) autoplayStart = now;
     if (lastFrame === null) lastFrame = now;
-    /* при наведении на слайд таймер «замирает» вместе с кольцом */
-    if (hoverCount > 0) autoplayStart += now - lastFrame;
+    /* Пауза при наведении на слайд. Состояние :hover проверяется
+       каждый кадр: события pointerenter/leave теряются, когда слайд
+       уезжает из-под неподвижного курсора во время анимации, — из-за
+       этого таймер «залипал» (кольцо стояло заполненным до движения
+       мыши). Проверка по :hover самокорректируется. */
+    var hovered = stageEl && stageEl.querySelector('.msl-card:hover');
+    if (hovered) autoplayStart += now - lastFrame;
     lastFrame = now;
 
     var p = (now - autoplayStart) / AUTOPLAY_MS;
@@ -547,7 +604,7 @@
     var started = Date.now();
     (function poll() {
       var frame = q('.main-slider');
-      var source = q(SOURCE_BLOCK + ' .' + DESKTOP_CLASS + '1');
+      var source = q(SOURCE_BLOCK + ' .' + SLIDE_SOURCES[0].desktop);
       var ready = source && source.offsetWidth > 0; /* t396 закончил layout */
       if (frame && (ready || Date.now() - started > 6000)) {
         init();
