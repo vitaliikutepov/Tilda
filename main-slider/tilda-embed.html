@@ -23,7 +23,7 @@
      - 6 слайдов формата 16:9, крутятся по кругу;
      - активный слайд по центру, боковые — в 2 раза меньше
        и с маской (сверху 100% -> снизу 0% прозрачность);
-     - автопролистывание каждые 5 секунд, прогресс — фиолетовое
+     - автопролистывание каждые 8 секунд, прогресс — фиолетовое
        кольцо #8742EE (2px) вплотную к кнопке slider-right;
      - при наведении курсора на слайды автопролистывание на паузе;
      - анимация смены — 1.5 секунды; текст slider-text меняется
@@ -168,14 +168,19 @@
     cursor: pointer;
   }
   /* текст меняется фейдом, а ширина элемента анимируется,
-     чтобы стрелки плавно «скользили», а не прыгали */
+     чтобы стрелки плавно «скользили», а не прыгали.
+     overflow + min-width:0 — иначе при удлинении текста flex
+     мгновенно раздувает блок (min-width:auto = ширина контента)
+     и стрелки «прыгают» наружу, хотя внутрь едут плавно. */
   .slider-text {
-    transition: width 0.6s cubic-bezier(.45, 0, .25, 1);
+    transition: width 1s cubic-bezier(.45, 0, .25, 1);
     white-space: nowrap;
     text-align: center;
+    overflow: hidden;
+    min-width: 0 !important;
   }
   .slider-text .tn-atom {
-    transition: opacity 0.3s ease;
+    transition: opacity 0.5s ease;
   }
 
   /* кольцо прогресса автопролистывания — вплотную к кнопке slider-right */
@@ -201,7 +206,7 @@
   var SLIDES        = 6;                /* количество слайдов              */
   var DESKTOP_CLASS = 'slide';          /* .slide1 … .slide6  (768px+)     */
   var MOBILE_CLASS  = 'mob-slide';      /* .mob-slide1 … .mob-slide6       */
-  var AUTOPLAY_MS   = 5000;             /* автопролистывание, мс           */
+  var AUTOPLAY_MS   = 8000;             /* автопролистывание, мс           */
   var RING_COLOR    = '#8742EE';        /* цвет кольца прогресса           */
   var RING_WIDTH    = 2;                /* толщина кольца, px              */
 
@@ -325,32 +330,36 @@
     return Math.ceil(measurer.getBoundingClientRect().width);
   }
 
-  /* смена текста: фейд-аут (0.3с) -> пока текст скрыт, ширина элемента
-     плавно меняется и стрелки «скользят» (0.6с) -> фейд-ин (0.3с) */
+  /* смена текста: фейд-аут 0.5с → подмена текста → фейд-ин 0.5с.
+     Ширина (.slider-text) анимируется сразу вместе с фейдом,
+     чтобы стрелки плавно скользили в обе стороны. */
   function setText() {
     if (!textAtom) return;
+    var str = SLIDE_TEXTS[active % SLIDE_TEXTS.length] || '';
     textTimers.forEach(clearTimeout);
     textTimers = [];
-    var str = SLIDE_TEXTS[active % SLIDE_TEXTS.length] || '';
+
+    /* сразу тянем ширину под новый текст — стрелки едут параллельно фейду */
+    textEl.style.width = textWidth(str) + 'px';
     textAtom.style.opacity = '0';
+
     textTimers.push(setTimeout(function () {
-      textEl.style.width = textWidth(str) + 'px';
       textAtom.textContent = str;
-    }, 300));
-    textTimers.push(setTimeout(function () {
+      /* форсируем reflow, чтобы transition opacity точно отыграл фейд-ин */
+      void textAtom.offsetWidth;
       textAtom.style.opacity = '1';
-    }, 950));
+    }, 500));
   }
 
-  function next() {
+  function next(t) {
     active = (active + 1) % SLIDES;
-    autoplayStart = performance.now();
+    autoplayStart = (typeof t === 'number') ? t : performance.now();
     render();
   }
 
-  function prev() {
+  function prev(t) {
     active = (active - 1 + SLIDES) % SLIDES;
-    autoplayStart = performance.now();
+    autoplayStart = (typeof t === 'number') ? t : performance.now();
     render();
   }
 
@@ -381,9 +390,12 @@
 
     /* подложка кольца */
     svg.appendChild(circle(function (c) { c.setAttribute('opacity', '0.2'); }));
-    /* заполняющаяся часть */
+    /* заполняющаяся часть.
+       butt (не round): круглые концы визуально «смыкают» кольцо
+       чуть раньше реального конца дуги — из-за этого после
+       «полного» кольца казалась пауза до смены слайда. */
     ring = circle(function (c) {
-      c.setAttribute('stroke-linecap', 'round');
+      c.setAttribute('stroke-linecap', 'butt');
       c.setAttribute('stroke-dasharray', String(ringLen));
       c.setAttribute('stroke-dashoffset', String(ringLen));
       c.setAttribute('transform', 'rotate(-90 50 50)');
@@ -405,7 +417,9 @@
 
     var p = (now - autoplayStart) / AUTOPLAY_MS;
     if (p >= 1) {
-      next(); /* сбрасывает autoplayStart */
+      /* кольцо дорисовываем до конца и в этом же кадре листаем */
+      if (ring) ring.setAttribute('stroke-dashoffset', '0');
+      next(now); /* сбрасывает autoplayStart в now — без лишней паузы */
       p = 0;
     }
     if (ring) ring.setAttribute('stroke-dashoffset', String(ringLen * (1 - p)));
