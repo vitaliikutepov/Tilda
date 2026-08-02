@@ -25,11 +25,6 @@
         с классом  slider-animation-object  слегка «парят»
         (случайное движение до 20px и поворот до 15 градусов),
         остальные слои статичны.
-     6. Blur-плашки: у shape с backdrop-filter в Тильде (и у
-        картинок с классом slider-blur-object) блюр имитируется —
-        размытая копия фона слайда обрезается маской по форме
-        объекта. Настоящий backdrop-filter на слайдере не работает
-        из-за CSS-маски фейда на карточке.
 
      Поведение:
      - 6 слайдов формата 16:9, крутятся по кругу;
@@ -182,25 +177,8 @@
     height: 100%;
     object-fit: cover;
   }
-  .msl-face .msl-shape,
-  .msl-face .msl-blur-plate {
+  .msl-face .msl-shape {
     box-sizing: border-box;
-    overflow: hidden;
-  }
-  .msl-blur-fill {
-    pointer-events: none;
-  }
-  .msl-blur-tint {
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-  }
-  .msl-blur-plate > img {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: fill;
   }
   .msl-face--desktop { display: block; }
   @media (max-width: 767px) {
@@ -381,91 +359,41 @@
       'animation-delay:-' + rnd(0, 4).toFixed(2) + 's;';
   }
 
-  /* читаем backdrop-filter с элемента или atom («none» — не пустая строка) */
-  function readBackdropFilter(el) {
-    var atom = el.querySelector('.tn-atom') || el;
-    var cs = getComputedStyle(atom);
-    var ce = getComputedStyle(el);
-    var bfAtom = cs.backdropFilter || cs.webkitBackdropFilter;
-    var bfElem = ce.backdropFilter || ce.webkitBackdropFilter;
-    if (bfAtom && bfAtom !== 'none') return bfAtom;
-    if (bfElem && bfElem !== 'none') return bfElem;
-    return '';
-  }
-
-  function readBlurPx(el, fallback) {
-    var m = (readBackdropFilter(el) || '').match(/blur\(([^)]+)\)/);
-    return m ? m[1] : (fallback || '9px');
-  }
-
-  /* стили заливки/обводки shape без backdrop-filter */
-  function shapeTintStyles(el) {
+  /* стили shape/плашек: background + backdrop-filter + radius */
+  function shapeStyles(el) {
     var atom = el.querySelector('.tn-atom') || el;
     var cs = getComputedStyle(atom);
     var ce = getComputedStyle(el);
     var s = '';
-    if (cs.backgroundImage && cs.backgroundImage !== 'none') {
-      s += 'background-image:' + cs.backgroundImage + ';';
+    var bgImg = cs.backgroundImage;
+    var bgCol = cs.backgroundColor;
+    if (bgImg && bgImg !== 'none') s += 'background-image:' + bgImg + ';';
+    if (bgCol && bgCol !== 'rgba(0, 0, 0, 0)' && bgCol !== 'transparent') {
+      s += 'background-color:' + bgCol + ';';
     }
-    if (cs.backgroundColor && cs.backgroundColor !== 'rgba(0, 0, 0, 0)' &&
-        cs.backgroundColor !== 'transparent') {
-      s += 'background-color:' + cs.backgroundColor + ';';
+    /* "none" — truthy-строка, поэтому проверяем явно; filter может
+       быть на .tn-elem (Тильда), а background — на .tn-atom */
+    var bfAtom = cs.backdropFilter || cs.webkitBackdropFilter;
+    var bfElem = ce.backdropFilter || ce.webkitBackdropFilter;
+    var bf = (bfAtom && bfAtom !== 'none') ? bfAtom :
+             (bfElem && bfElem !== 'none') ? bfElem : '';
+    if (bf) {
+      s += 'backdrop-filter:' + bf + ';-webkit-backdrop-filter:' + bf + ';';
     }
     var radius = (cs.borderRadius && cs.borderRadius !== '0px') ? cs.borderRadius :
                  (ce.borderRadius && ce.borderRadius !== '0px') ? ce.borderRadius : '';
     if (radius) s += 'border-radius:' + radius + ';';
-    if (cs.boxShadow && cs.boxShadow !== 'none') s += 'box-shadow:' + cs.boxShadow + ';';
-    if (cs.opacity && cs.opacity !== '1') s += 'opacity:' + cs.opacity + ';';
+    if (cs.boxShadow && cs.boxShadow !== 'none') {
+      s += 'box-shadow:' + cs.boxShadow + ';';
+    }
+    if (cs.opacity && cs.opacity !== '1') {
+      s += 'opacity:' + cs.opacity + ';';
+    }
     return s;
   }
 
-  /* url() в inline style: только одинарные кавычки, иначе " ломает атрибут */
-  function cssUrl(u) {
-    return "url('" + String(u).replace(/'/g, '%27') + "')";
-  }
-
-  /*
-   * Имитация backdrop-filter: размытая копия фона слайда, совмещённая
-   * по координатам. Обрезка — снаружи (overflow плашки или mask на
-   * обёртке .msl-blur-clip по alpha PNG). Настоящий backdrop-filter
-   * внутри .msl-card не работает из-за CSS-маски фейда на карточке.
-   */
-  function blurFillHTML(baseSrc, leftPct, topPct, wPct, hPct, blurPx) {
-    var lp = parseFloat(leftPct), tp = parseFloat(topPct);
-    var wp = parseFloat(wPct), hp = parseFloat(hPct);
-    if (!wp || !hp || !baseSrc) return '';
-    /* размер/сдвиг фона в % от плашки, чтобы совпасть со слайдом */
-    var fl = (-lp / wp * 100);
-    var ft = (-tp / hp * 100);
-    var fw = (100 / wp * 100);
-    var fh = (100 / hp * 100);
-    /* чуть расширяем, чтобы края blur не давали пустую кайму */
-    var pad = 6;
-    return '<div class="msl-blur-fill" style="' +
-      'position:absolute;left:' + (fl - pad) + '%;top:' + (ft - pad) + '%;' +
-      'width:' + (fw + pad * 2) + '%;height:' + (fh + pad * 2) + '%;' +
-      'background-image:' + cssUrl(baseSrc) + ';background-size:100% 100%;background-repeat:no-repeat;' +
-      'filter:blur(' + blurPx + ');"></div>';
-  }
-
-  /* обёртка: fill + опциональная mask по PNG-объекту */
-  function blurPlateInner(baseSrc, leftPct, topPct, wPct, hPct, blurPx, maskUrl, tintHTML) {
-    var fill = blurFillHTML(baseSrc, leftPct, topPct, wPct, hPct, blurPx);
-    if (maskUrl) {
-      var mu = cssUrl(maskUrl);
-      return '<div class="msl-blur-clip" style="position:absolute;inset:0;' +
-        '-webkit-mask-image:' + mu + ';-webkit-mask-size:100% 100%;' +
-        '-webkit-mask-repeat:no-repeat;-webkit-mask-position:center;' +
-        'mask-image:' + mu + ';mask-size:100% 100%;' +
-        'mask-repeat:no-repeat;mask-position:center;">' + fill + '</div>' +
-        (tintHTML || '');
-    }
-    return fill + (tintHTML || '');
-  }
-
-  /* .slideN — группа: картинки + shape/плашки.
-     Парят .slider-animation-object; blur — shape с backdrop-filter
-     или картинки с классом slider-blur-object. */
+  /* .slideN — группа: картинки + shape/плашки (в т.ч. с backdrop-filter).
+     Парят только элементы с классом slider-animation-object. */
   function compositeHTML(groupEl) {
     var elems = groupEl.querySelectorAll('.tn-elem');
     var isGroup = groupEl.classList.contains('tn-group') || elems.length >= 2;
@@ -474,76 +402,45 @@
     if (!gw || !gh) return null;
     var g = pageOffset(groupEl);
     var pct = function (v, base) { return (v / base * 100).toFixed(3); };
-
-    /* нижний (первый) image-слой = фон слайда для имитации blur */
-    var baseSrc = '';
-    for (var b = 0; b < elems.length; b++) {
-      var bi = elems[b].querySelector('img');
-      var bs = bi && (bi.getAttribute('data-original') || bi.getAttribute('src'));
-      if (bs) { baseSrc = bs; break; }
-    }
-
     var html = '';
     for (var i = 0; i < elems.length; i++) {
       var e = elems[i];
       if (!e.offsetWidth || !e.offsetHeight) continue;
       var o = pageOffset(e);
-      var leftPct = pct(o.x - g.x, gw);
-      var topPct = pct(o.y - g.y, gh);
-      var wPct = pct(e.offsetWidth, gw);
-      var hPct = pct(e.offsetHeight, gh);
       var box =
-        'position:absolute;left:' + leftPct + '%;top:' + topPct + '%;' +
-        'width:' + wPct + '%;height:' + hPct + '%;';
+        'position:absolute;' +
+        'left:' + pct(o.x - g.x, gw) + '%;' +
+        'top:' + pct(o.y - g.y, gh) + '%;' +
+        'width:' + pct(e.offsetWidth, gw) + '%;' +
+        'height:' + pct(e.offsetHeight, gh) + '%;';
       var animate = e.classList.contains('slider-animation-object');
-      var wantBlurImg = e.classList.contains('slider-blur-object');
-      var floatCls = animate ? ' msl-float' : '';
-      var floatInline = animate ? floatStyle() : '';
+      var cls = (animate ? 'msl-float' : '');
 
       var img = e.querySelector('img');
       var src = img && (img.getAttribute('data-original') || img.getAttribute('src'));
       if (src) {
-        if (wantBlurImg && baseSrc) {
-          /* PNG-объект: размытый фон по маске alpha самого изображения */
-          html += '<div class="msl-blur-plate' + floatCls + '" style="' + box + floatInline + '">' +
-            blurPlateInner(baseSrc, leftPct, topPct, wPct, hPct, readBlurPx(e, '9px'), src, '') +
-            '<img src="' + src + '" alt="">' +
-            '</div>';
-        } else {
-          html += '<img src="' + src + '" alt=""' +
-            (animate ? ' class="msl-float"' : '') +
-            ' style="' + box + 'object-fit:fill;' + floatInline + '">';
-        }
+        html += '<img src="' + src + '" alt=""' +
+          (cls ? ' class="' + cls + '"' : '') +
+          ' style="' + box + 'object-fit:fill;' +
+          (animate ? floatStyle() : '') + '">';
         continue;
       }
 
+      /* shape / плашка с фоном или backdrop-filter */
       var typ = e.getAttribute('data-elem-type');
-      var bf = readBackdropFilter(e);
-      var tint = shapeTintStyles(e);
-      if (typ === 'shape' || bf || tint.indexOf('background') !== -1) {
-        if (bf && baseSrc) {
-          /* shape с backdrop-filter → имитация blur (обрезка overflow + radius) */
-          var radius = '';
-          var rm = tint.match(/border-radius:[^;]+;/);
-          if (rm) radius = rm[0];
-          html += '<div class="msl-blur-plate' + floatCls + '" style="' +
-            box + radius + 'overflow:hidden;' + floatInline + '">' +
-            blurPlateInner(
-              baseSrc, leftPct, topPct, wPct, hPct, readBlurPx(e, '9px'), null,
-              '<div class="msl-blur-tint" style="' + tint + '"></div>'
-            ) +
-            '</div>';
-        } else {
-          html += '<div class="msl-shape' + floatCls + '" style="' +
-            box + tint + floatInline + '"></div>';
-        }
+      var sh = shapeStyles(e);
+      if (typ === 'shape' || sh.indexOf('backdrop-filter') !== -1 || sh.indexOf('background') !== -1) {
+        html += '<div class="msl-shape' + (cls ? ' ' + cls : '') + '" style="' +
+          box + sh + (animate ? floatStyle() : '') + '"></div>';
         continue;
       }
 
+      /* текст или прочий контент */
       var atom = e.querySelector('.tn-atom');
       if (atom && atom.innerHTML && atom.innerHTML.replace(/\s/g, '')) {
-        html += '<div class="msl-shape' + floatCls + '" style="' +
-          box + tint + 'overflow:hidden;' + floatInline + '">' + atom.innerHTML + '</div>';
+        html += '<div class="msl-shape' + (cls ? ' ' + cls : '') + '" style="' +
+          box + shapeStyles(e) + 'overflow:hidden;' +
+          (animate ? floatStyle() : '') + '">' + atom.innerHTML + '</div>';
       }
     }
     return html || null;
