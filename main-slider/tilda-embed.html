@@ -223,13 +223,25 @@
      и стрелки «прыгают» наружу. Сами transition дублируются
      инлайном из скрипта — надёжнее против пересчётов Тильды. */
   .slider-text {
-    transition: width 0.5s cubic-bezier(.25, .1, .25, 1);
+    transition:
+      width 0.5s cubic-bezier(.25, .1, .25, 1),
+      max-width 0.5s cubic-bezier(.25, .1, .25, 1),
+      flex-basis 0.5s cubic-bezier(.25, .1, .25, 1);
     white-space: nowrap;
     text-align: center;
-    overflow: hidden;
+    overflow: hidden !important;
+    /* критично для плавного РАЗЪЕЗДА: иначе min-width:auto =
+       ширина длинного текста и бокс прыгает сразу */
     min-width: 0 !important;
+    max-width: none;
+    flex: 0 0 auto;
+    box-sizing: border-box;
   }
   .slider-text .tn-atom {
+    display: block;
+    width: 100%;
+    overflow: hidden;
+    max-width: 100%;
     transition: opacity 0.5s ease;
   }
   @media (max-width: 767px) {
@@ -294,14 +306,14 @@
   var FLOAT_MAX_SHIFT  = 20;            /* максимальное движение, px       */
   var FLOAT_MAX_ROTATE = 15;            /* максимальный поворот, градусы   */
 
-  /* тексты под каждый слайд (временные, по 4-5 слов) */
+  /* тексты под каждый слайд (\u00A0 — неразрывный пробел) */
   var SLIDE_TEXTS = [
-    'Интерактивная доска для занятий',
-    'Совместная работа в реальном времени',
-    'Видеосвязь прямо на доске',
-    'Готовые шаблоны для быстрого старта',
-    'Стикеры, заметки и задачи',
-    'Работает на любом устройстве'
+    'Проводите интерактивные занятия онлайн',
+    'Отправляйте справки об\u00A0отсутствии ребёнка',
+    'Разбирайте задачи, которые были на ВПР, ОГЭ и ЕГЭ',
+    'Готовьтесь к экзаменам и\u00A0выбирайте, куда поступать',
+    'Собирайте все файлы класса в\u00A0одну папку',
+    'Смотрите оценки и\u00A0домашние задания'
   ];
 
   /* =================================================== */
@@ -553,6 +565,19 @@
        стрелки в это время скользят;
      1.0с
      фейд-ин нового текста 0.5с. */
+  function lockTextBox(widthPx) {
+    /* width + max-width + flex-basis — flex не прыгает к min-content
+       при длинном тексте; !important против пересчётов Тильды */
+    var w = Math.max(0, Math.round(widthPx)) + 'px';
+    textEl.style.setProperty('min-width', '0px', 'important');
+    textEl.style.setProperty('overflow', 'hidden', 'important');
+    textEl.style.setProperty('flex-grow', '0', 'important');
+    textEl.style.setProperty('flex-shrink', '0', 'important');
+    textEl.style.setProperty('width', w, 'important');
+    textEl.style.setProperty('max-width', w, 'important');
+    textEl.style.setProperty('flex-basis', w, 'important');
+  }
+
   function setText() {
     if (!textAtom) return;
     var str = SLIDE_TEXTS[active % SLIDE_TEXTS.length] || '';
@@ -561,17 +586,36 @@
 
     /* transition инлайном: стили Тильды их не перебьют */
     textAtom.style.transition = 'opacity 0.5s ease';
-    textEl.style.transition = 'width 0.5s cubic-bezier(.25,.1,.25,1)';
+    textEl.style.transition =
+      'width 0.5s cubic-bezier(.25,.1,.25,1),' +
+      'max-width 0.5s cubic-bezier(.25,.1,.25,1),' +
+      'flex-basis 0.5s cubic-bezier(.25,.1,.25,1)';
 
     /* фиксируем текущую ширину в px: Тильда при пересчётах может
        вернуть width:auto, а переход auto->px не анимируется (скачок) */
-    textEl.style.width = textEl.getBoundingClientRect().width + 'px';
+    var fromW = textEl.getBoundingClientRect().width;
+    lockTextBox(fromW);
 
     textAtom.style.opacity = '0';
 
     textTimers.push(setTimeout(function () {
-      textAtom.textContent = str;
-      textEl.style.width = textWidth(str) + 'px';
+      var toW = textWidth(str);
+      if (toW > fromW + 0.5) {
+        /* разъезд: сначала расширяем бокс (текст ещё старый и скрыт),
+           потом подменяем строку — иначе длинный текст дёргает flex */
+        lockTextBox(toW);
+        textTimers.push(setTimeout(function () {
+          textAtom.textContent = str;
+        }, 480));
+      } else {
+        /* съезд: сначала короткий текст, потом сужаем */
+        textAtom.textContent = str;
+        requestAnimationFrame(function () {
+          requestAnimationFrame(function () {
+            lockTextBox(toW);
+          });
+        });
+      }
     }, 500));
 
     textTimers.push(setTimeout(function () {
@@ -699,8 +743,7 @@
     /* первый текст без задержки; позиции уже расставлены в build() */
     if (textAtom) {
       textAtom.textContent = SLIDE_TEXTS[0];
-      /* стартовая ширина, от которой будет анимироваться «скольжение» */
-      textEl.style.width = textWidth(SLIDE_TEXTS[0]) + 'px';
+      lockTextBox(textWidth(SLIDE_TEXTS[0]));
     }
 
     /* пересобираем композицию только при реальной смене брейкпоинта —
@@ -721,31 +764,9 @@
       }, 250);
     });
 
-    /* ждём загрузки картинок (или таймаут) — потом показываем сцену */
-    var imgs = stageEl.querySelectorAll('img');
-    var pending = imgs.length;
-    var settled = false;
-    function settle() {
-      if (settled) return;
-      settled = true;
-      markReady();
-    }
-    if (!pending) settle();
-    else {
-      for (var i = 0; i < imgs.length; i++) {
-        if (imgs[i].complete) {
-          if (--pending === 0) settle();
-        } else {
-          imgs[i].addEventListener('load', function () {
-            if (--pending === 0) settle();
-          });
-          imgs[i].addEventListener('error', function () {
-            if (--pending === 0) settle();
-          });
-        }
-      }
-      setTimeout(settle, 1500);
-    }
+    /* показываем сразу после первого кадра — не ждём загрузки всех
+       картинок (на мобиле из-за этого был пустой экран ~1.5с) */
+    markReady();
 
     autoplayStart = performance.now();
     requestAnimationFrame(loop);
@@ -756,13 +777,16 @@
     var started = Date.now();
     (function poll() {
       var frame = q('.main-slider');
-      var source = q(SOURCE_BLOCK + ' .' + SLIDE_SOURCES[0].desktop);
-      var ready = source && source.offsetWidth > 0; /* t396 закончил layout */
-      if (frame && (ready || Date.now() - started > 6000)) {
+      var desk = q(SOURCE_BLOCK + ' .' + SLIDE_SOURCES[0].desktop);
+      var mob = q(SOURCE_BLOCK + ' .' + SLIDE_SOURCES[0].mobile);
+      /* на мобиле desktop-элемент тоже валиден как сигнал layout;
+         берём любой источник с ненулевой шириной */
+      var ready = (desk && desk.offsetWidth > 0) || (mob && mob.offsetWidth > 0);
+      if (frame && (ready || Date.now() - started > 2500)) {
         init();
         return;
       }
-      if (Date.now() - started < 20000) setTimeout(poll, 250);
+      if (Date.now() - started < 20000) setTimeout(poll, 100);
     })();
   }
 
