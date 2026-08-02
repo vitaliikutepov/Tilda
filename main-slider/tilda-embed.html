@@ -21,9 +21,10 @@
         элемент "HTML" и вставьте весь код из этого файла.
      4. Тексты для слайдов поменяйте в массиве SLIDE_TEXTS,
         классы источников — в массиве SLIDE_SOURCES (ниже в скрипте).
-     5. Если слайд — группа из нескольких картинок, нижний слой
-        статичен, а все слои над ним слегка «парят» (случайное
-        движение до 20px и поворот до 15 градусов).
+     5. Если слайд — группа из нескольких картинок, элементы
+        с классом  slider-animation-object  слегка «парят»
+        (случайное движение до 20px и поворот до 15 градусов),
+        остальные слои статичны.
 
      Поведение:
      - 6 слайдов формата 16:9, крутятся по кругу;
@@ -167,9 +168,8 @@
     .msl-face--mobile  { display: block; }
   }
 
-  /* парение декоративных элементов внутри слайда-группы
-     (нижний слой статичен, слои над ним плавают со случайными
-     параметрами — см. compositeHTML) */
+  /* парение элементов с классом slider-animation-object
+     (случайные параметры — см. compositeHTML) */
   @keyframes msl-float {
     0%   { transform: translate(0, 0) rotate(0deg); }
     50%  { transform: translate(var(--msl-fx, 0px), var(--msl-fy, -10px)) rotate(var(--msl-fr, 5deg)); }
@@ -213,6 +213,12 @@
   }
   .slider-text .tn-atom {
     transition: opacity 0.5s ease;
+  }
+  @media (max-width: 767px) {
+    .slider-text {
+      max-width: 198px !important;
+      white-space: normal;
+    }
   }
 
   /* кольцо прогресса — SVG stroke (ровный antialias-край),
@@ -266,7 +272,7 @@
   var RING_COLOR  = '#8742EE';          /* цвет кольца прогресса           */
   var RING_WIDTH  = 2;                  /* толщина кольца, px              */
 
-  /* парение элементов слайда-группы (все слои над нижним) */
+  /* парение элементов с классом slider-animation-object */
   var FLOAT_MAX_SHIFT  = 20;            /* максимальное движение, px       */
   var FLOAT_MAX_ROTATE = 15;            /* максимальный поворот, градусы   */
 
@@ -337,7 +343,7 @@
 
   /* .slideN — группа из нескольких элементов: собираем все картинки,
      сохраняя их позиции и порядок слоёв внутри рамки группы.
-     Нижний слой статичен, все слои над ним слегка «парят». */
+     Парят только элементы с классом slider-animation-object. */
   function compositeHTML(groupEl) {
     var elems = groupEl.querySelectorAll('.tn-elem');
     if (elems.length < 2) return null;
@@ -346,23 +352,22 @@
     var g = pageOffset(groupEl);
     var pct = function (v, base) { return (v / base * 100).toFixed(3); };
     var html = '';
-    var isBase = true;
     for (var i = 0; i < elems.length; i++) {
       var e = elems[i];
       var img = e.querySelector('img');
       var src = img && (img.getAttribute('data-original') || img.getAttribute('src'));
       if (!src || !e.offsetWidth) continue;
       var o = pageOffset(e);
+      var animate = e.classList.contains('slider-animation-object');
       html += '<img src="' + src + '" alt=""' +
-        (isBase ? '' : ' class="msl-float"') +
+        (animate ? ' class="msl-float"' : '') +
         ' style="position:absolute;' +
         'left:' + pct(o.x - g.x, gw) + '%;' +
         'top:' + pct(o.y - g.y, gh) + '%;' +
         'width:' + pct(e.offsetWidth, gw) + '%;' +
         'height:' + pct(e.offsetHeight, gh) + '%;' +
         'object-fit:fill;' +
-        (isBase ? '' : floatStyle()) + '">';
-      isBase = false;
+        (animate ? floatStyle() : '') + '">';
     }
     return html || null;
   }
@@ -450,13 +455,17 @@
     if (!measurer) {
       measurer = document.createElement('span');
       measurer.style.cssText =
-        'position:absolute;left:-9999px;top:0;visibility:hidden;white-space:nowrap;';
+        'position:absolute;left:-9999px;top:0;visibility:hidden;';
       var cs = getComputedStyle(textAtom);
       measurer.style.font = cs.font;
       measurer.style.letterSpacing = cs.letterSpacing;
       measurer.style.textTransform = cs.textTransform;
       document.body.appendChild(measurer);
     }
+    /* на мобиле текст переносится, ширина не больше 198px */
+    var mobile = window.innerWidth < 768;
+    measurer.style.whiteSpace = mobile ? 'normal' : 'nowrap';
+    measurer.style.maxWidth = mobile ? '198px' : 'none';
     measurer.textContent = str;
     return Math.ceil(measurer.getBoundingClientRect().width);
   }
