@@ -93,38 +93,39 @@
     pointer-events: auto;
     will-change: transform;
 
-    /* маска: верх непрозрачный, низ уходит в 0.
-       Градиент в 2 раза выше карточки, анимируется его позиция:
-       0 0    — виден полностью «чёрный» участок (маски нет),
-       0 100% — виден участок с фейдом 100% -> 0% (маска включена). */
+    /* изинг с быстрым стартом */
+    transition:
+      transform 1.5s cubic-bezier(.25, .1, .25, 1),
+      opacity 1.5s cubic-bezier(.25, .1, .25, 1);
+  }
+
+  /* Фейд боковых слайдов — маска на карточке.
+     На центре маски нет (иначе ломается backdrop-filter у плашек).
+     Исчезновение фейда при приезде в центр: см. .msl-veil ниже. */
+  .msl-pos--left,
+  .msl-pos--right,
+  .msl-pos--hidl,
+  .msl-pos--hidr {
     -webkit-mask-image: linear-gradient(to bottom, #000 50%, rgba(0,0,0,0) 100%);
     -webkit-mask-size: 100% 200%;
     -webkit-mask-repeat: no-repeat;
-    -webkit-mask-position: 0 0;
+    -webkit-mask-position: 0 100%;
     mask-image: linear-gradient(to bottom, #000 50%, rgba(0,0,0,0) 100%);
     mask-size: 100% 200%;
     mask-repeat: no-repeat;
-    mask-position: 0 0;
-
-    /* изинг с быстрым стартом: слайд трогается сразу после заполнения
-       кольца / клика, без ощущения задержки */
-    transition:
-      transform 1.5s cubic-bezier(.25, .1, .25, 1),
-      opacity 1.5s cubic-bezier(.25, .1, .25, 1),
-      -webkit-mask-position 1.5s cubic-bezier(.25, .1, .25, 1),
-      mask-position 1.5s cubic-bezier(.25, .1, .25, 1);
+    mask-position: 0 100%;
   }
 
   /* позиции карусели */
   .msl-pos--center {
     transform: translateX(0) scale(1);
     z-index: 3;
+    -webkit-mask-image: none;
+    mask-image: none;
   }
   .msl-pos--left,
   .msl-pos--right {
     z-index: 2;
-    -webkit-mask-position: 0 100%;
-    mask-position: 0 100%;
   }
   .msl-pos--left {
     transform: translateX(calc(var(--msl-w) * -0.75 - var(--msl-gap))) scale(0.5);
@@ -137,8 +138,6 @@
     z-index: 1;
     opacity: 0;
     pointer-events: none;
-    -webkit-mask-position: 0 100%;
-    mask-position: 0 100%;
   }
   .msl-pos--hidl {
     transform: translateX(calc(var(--msl-w) * -1.5 - var(--msl-gap) * 2)) scale(0.5);
@@ -147,20 +146,53 @@
     transform: translateX(calc(var(--msl-w) * 1.5 + var(--msl-gap) * 2)) scale(0.5);
   }
 
+  /* Вуаль: имитация фейда на слайде, который только что приехал в центр.
+     Маска снята сразу (нужна для backdrop-filter), а вуаль держит
+     визуальный фейд и уходит за 2с после 1.5с анимации приезда. */
+  .msl-card::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 30;
+    pointer-events: none;
+    border-radius: inherit;
+    background: linear-gradient(
+      to bottom,
+      rgba(255,255,255,0) 0%,
+      rgba(255,255,255,0) 45%,
+      var(--msl-fade-bg, #e8e0f5) 100%
+    );
+    opacity: 0;
+    transition: none;
+  }
+  .msl-card.msl-veil::after {
+    opacity: 1;
+  }
+  .msl-card.msl-veil-hide::after {
+    opacity: 0;
+    transition: opacity 2s ease 1.5s;
+  }
+
   /* контент карточки: десктоп / мобайл */
   .msl-face {
     position: absolute;
     inset: 0;
     display: none;
   }
-  .msl-face img {
+  .msl-face img,
+  .msl-face .msl-shape {
     display: block;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
     pointer-events: none;
     user-select: none;
     -webkit-user-drag: none;
+  }
+  .msl-face > img:only-child {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .msl-face .msl-shape {
+    box-sizing: border-box;
   }
   .msl-face--desktop { display: block; }
   @media (max-width: 767px) {
@@ -341,12 +373,45 @@
       'animation-delay:-' + rnd(0, 4).toFixed(2) + 's;';
   }
 
-  /* .slideN — группа из нескольких элементов: собираем все картинки,
-     сохраняя их позиции и порядок слоёв внутри рамки группы.
+  /* стили shape/плашек: background + backdrop-filter + radius */
+  function shapeStyles(el) {
+    var atom = el.querySelector('.tn-atom') || el;
+    var cs = getComputedStyle(atom);
+    var ce = getComputedStyle(el);
+    var s = '';
+    var bgImg = cs.backgroundImage;
+    var bgCol = cs.backgroundColor;
+    if (bgImg && bgImg !== 'none') s += 'background-image:' + bgImg + ';';
+    if (bgCol && bgCol !== 'rgba(0, 0, 0, 0)' && bgCol !== 'transparent') {
+      s += 'background-color:' + bgCol + ';';
+    }
+    /* "none" — truthy-строка, поэтому проверяем явно; filter может
+       быть на .tn-elem (Тильда), а background — на .tn-atom */
+    var bfAtom = cs.backdropFilter || cs.webkitBackdropFilter;
+    var bfElem = ce.backdropFilter || ce.webkitBackdropFilter;
+    var bf = (bfAtom && bfAtom !== 'none') ? bfAtom :
+             (bfElem && bfElem !== 'none') ? bfElem : '';
+    if (bf) {
+      s += 'backdrop-filter:' + bf + ';-webkit-backdrop-filter:' + bf + ';';
+    }
+    var radius = (cs.borderRadius && cs.borderRadius !== '0px') ? cs.borderRadius :
+                 (ce.borderRadius && ce.borderRadius !== '0px') ? ce.borderRadius : '';
+    if (radius) s += 'border-radius:' + radius + ';';
+    if (cs.boxShadow && cs.boxShadow !== 'none') {
+      s += 'box-shadow:' + cs.boxShadow + ';';
+    }
+    if (cs.opacity && cs.opacity !== '1') {
+      s += 'opacity:' + cs.opacity + ';';
+    }
+    return s;
+  }
+
+  /* .slideN — группа: картинки + shape/плашки (в т.ч. с backdrop-filter).
      Парят только элементы с классом slider-animation-object. */
   function compositeHTML(groupEl) {
     var elems = groupEl.querySelectorAll('.tn-elem');
-    if (elems.length < 2) return null;
+    var isGroup = groupEl.classList.contains('tn-group') || elems.length >= 2;
+    if (!isGroup || !elems.length) return null;
     var gw = groupEl.offsetWidth, gh = groupEl.offsetHeight;
     if (!gw || !gh) return null;
     var g = pageOffset(groupEl);
@@ -354,20 +419,43 @@
     var html = '';
     for (var i = 0; i < elems.length; i++) {
       var e = elems[i];
-      var img = e.querySelector('img');
-      var src = img && (img.getAttribute('data-original') || img.getAttribute('src'));
-      if (!src || !e.offsetWidth) continue;
+      if (!e.offsetWidth || !e.offsetHeight) continue;
       var o = pageOffset(e);
-      var animate = e.classList.contains('slider-animation-object');
-      html += '<img src="' + src + '" alt=""' +
-        (animate ? ' class="msl-float"' : '') +
-        ' style="position:absolute;' +
+      var box =
+        'position:absolute;' +
         'left:' + pct(o.x - g.x, gw) + '%;' +
         'top:' + pct(o.y - g.y, gh) + '%;' +
         'width:' + pct(e.offsetWidth, gw) + '%;' +
-        'height:' + pct(e.offsetHeight, gh) + '%;' +
-        'object-fit:fill;' +
-        (animate ? floatStyle() : '') + '">';
+        'height:' + pct(e.offsetHeight, gh) + '%;';
+      var animate = e.classList.contains('slider-animation-object');
+      var cls = (animate ? 'msl-float' : '');
+
+      var img = e.querySelector('img');
+      var src = img && (img.getAttribute('data-original') || img.getAttribute('src'));
+      if (src) {
+        html += '<img src="' + src + '" alt=""' +
+          (cls ? ' class="' + cls + '"' : '') +
+          ' style="' + box + 'object-fit:fill;' +
+          (animate ? floatStyle() : '') + '">';
+        continue;
+      }
+
+      /* shape / плашка с фоном или backdrop-filter */
+      var typ = e.getAttribute('data-elem-type');
+      var sh = shapeStyles(e);
+      if (typ === 'shape' || sh.indexOf('backdrop-filter') !== -1 || sh.indexOf('background') !== -1) {
+        html += '<div class="msl-shape' + (cls ? ' ' + cls : '') + '" style="' +
+          box + sh + (animate ? floatStyle() : '') + '"></div>';
+        continue;
+      }
+
+      /* текст или прочий контент */
+      var atom = e.querySelector('.tn-atom');
+      if (atom && atom.innerHTML && atom.innerHTML.replace(/\s/g, '')) {
+        html += '<div class="msl-shape' + (cls ? ' ' + cls : '') + '" style="' +
+          box + shapeStyles(e) + 'overflow:hidden;' +
+          (animate ? floatStyle() : '') + '">' + atom.innerHTML + '</div>';
+      }
     }
     return html || null;
   }
@@ -442,12 +530,54 @@
     stageEl = stage;
   }
 
+  function clearVeil(card) {
+    if (card._veilTimer) {
+      clearTimeout(card._veilTimer);
+      card._veilTimer = null;
+    }
+    card.classList.remove('msl-veil', 'msl-veil-hide');
+  }
+
+  /* вуаль: после приезда в центр фейд уходит за 2с с задержкой 1.5с */
+  function playCenterVeil(card) {
+    clearVeil(card);
+    card.classList.add('msl-veil');
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () {
+        card.classList.add('msl-veil-hide');
+      });
+    });
+    card._veilTimer = setTimeout(function () {
+      card.classList.remove('msl-veil', 'msl-veil-hide');
+      card._veilTimer = null;
+    }, 1500 + 2000 + 50);
+  }
+
   function render() {
     for (var i = 0; i < SLIDES; i++) {
       var rel = (i - active + SLIDES) % SLIDES;
-      cards[i].className = 'msl-card msl-pos--' + POS[rel];
+      var wasCenter = cards[i].classList.contains('msl-pos--center');
+      var nextPos = POS[rel];
+      clearVeil(cards[i]);
+      cards[i].className = 'msl-card msl-pos--' + nextPos;
+      /* слайд приехал в центр с боковой позиции — проигрываем уход фейда */
+      if (nextPos === 'center' && !wasCenter) {
+        playCenterVeil(cards[i]);
+      }
     }
     setText();
+  }
+
+  function detectFadeBg() {
+    var el = q('.main-slider');
+    while (el) {
+      var bg = getComputedStyle(el).backgroundColor;
+      if (bg && bg !== 'transparent' && bg !== 'rgba(0, 0, 0, 0)') return bg;
+      el = el.parentElement;
+    }
+    var bodyBg = getComputedStyle(document.body).backgroundColor;
+    if (bodyBg && bodyBg !== 'transparent' && bodyBg !== 'rgba(0, 0, 0, 0)') return bodyBg;
+    return '#e8e0f5';
   }
 
   /* ширина текста измеряется невидимым дублёром с тем же шрифтом */
@@ -610,6 +740,9 @@
   function init() {
     var frame = q('.main-slider');
     build(frame);
+
+    /* цвет фона страницы — для вуали фейда на центральном слайде */
+    if (stageEl) stageEl.style.setProperty('--msl-fade-bg', detectFadeBg());
 
     textEl = q('.slider-text');
     if (textEl) textAtom = textEl.querySelector('.tn-atom') || textEl;
