@@ -93,39 +93,50 @@
     pointer-events: auto;
     will-change: transform;
 
-    /* изинг с быстрым стартом */
-    transition:
-      transform 1.5s cubic-bezier(.25, .1, .25, 1),
-      opacity 1.5s cubic-bezier(.25, .1, .25, 1);
-  }
-
-  /* Фейд боковых слайдов — маска на карточке.
-     На центре маски нет (иначе ломается backdrop-filter у плашек).
-     Исчезновение фейда при приезде в центр: см. .msl-veil ниже. */
-  .msl-pos--left,
-  .msl-pos--right,
-  .msl-pos--hidl,
-  .msl-pos--hidr {
+    /* маска: верх непрозрачный, низ уходит в 0.
+       Градиент в 2 раза выше карточки, анимируется его позиция:
+       0 0    — маски нет (весь слайд виден),
+       0 100% — фейд 100% → 0% (боковой слайд). */
     -webkit-mask-image: linear-gradient(to bottom, #000 50%, rgba(0,0,0,0) 100%);
     -webkit-mask-size: 100% 200%;
     -webkit-mask-repeat: no-repeat;
-    -webkit-mask-position: 0 100%;
+    -webkit-mask-position: 0 0;
     mask-image: linear-gradient(to bottom, #000 50%, rgba(0,0,0,0) 100%);
     mask-size: 100% 200%;
     mask-repeat: no-repeat;
-    mask-position: 0 100%;
+    mask-position: 0 0;
+
+    transition:
+      transform 1.5s cubic-bezier(.25, .1, .25, 1),
+      opacity 1.5s cubic-bezier(.25, .1, .25, 1),
+      -webkit-mask-position 2s ease,
+      mask-position 2s ease;
   }
 
   /* позиции карусели */
   .msl-pos--center {
     transform: translateX(0) scale(1);
     z-index: 3;
-    -webkit-mask-image: none;
-    mask-image: none;
+    -webkit-mask-position: 0 0;
+    mask-position: 0 0;
+    /* маска сходит ПОСЛЕ приезда: delay 1.5с (движение), затем 2с */
+    transition:
+      transform 1.5s cubic-bezier(.25, .1, .25, 1),
+      opacity 1.5s cubic-bezier(.25, .1, .25, 1),
+      -webkit-mask-position 2s ease 1.5s,
+      mask-position 2s ease 1.5s;
   }
   .msl-pos--left,
   .msl-pos--right {
     z-index: 2;
+    -webkit-mask-position: 0 100%;
+    mask-position: 0 100%;
+    /* уход из центра: маска появляется вместе с уменьшением */
+    transition:
+      transform 1.5s cubic-bezier(.25, .1, .25, 1),
+      opacity 1.5s cubic-bezier(.25, .1, .25, 1),
+      -webkit-mask-position 1.5s ease,
+      mask-position 1.5s ease;
   }
   .msl-pos--left {
     transform: translateX(calc(var(--msl-w) * -0.75 - var(--msl-gap))) scale(0.5);
@@ -138,39 +149,14 @@
     z-index: 1;
     opacity: 0;
     pointer-events: none;
+    -webkit-mask-position: 0 100%;
+    mask-position: 0 100%;
   }
   .msl-pos--hidl {
     transform: translateX(calc(var(--msl-w) * -1.5 - var(--msl-gap) * 2)) scale(0.5);
   }
   .msl-pos--hidr {
     transform: translateX(calc(var(--msl-w) * 1.5 + var(--msl-gap) * 2)) scale(0.5);
-  }
-
-  /* Вуаль: имитация фейда на слайде, который только что приехал в центр.
-     Маска снята сразу (нужна для backdrop-filter), а вуаль держит
-     визуальный фейд и уходит за 2с после 1.5с анимации приезда. */
-  .msl-card::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    z-index: 30;
-    pointer-events: none;
-    border-radius: inherit;
-    background: linear-gradient(
-      to bottom,
-      rgba(255,255,255,0) 0%,
-      rgba(255,255,255,0) 45%,
-      var(--msl-fade-bg, #e8e0f5) 100%
-    );
-    opacity: 0;
-    transition: none;
-  }
-  .msl-card.msl-veil::after {
-    opacity: 1;
-  }
-  .msl-card.msl-veil-hide::after {
-    opacity: 0;
-    transition: opacity 2s ease 1.5s;
   }
 
   /* контент карточки: десктоп / мобайл */
@@ -530,54 +516,12 @@
     stageEl = stage;
   }
 
-  function clearVeil(card) {
-    if (card._veilTimer) {
-      clearTimeout(card._veilTimer);
-      card._veilTimer = null;
-    }
-    card.classList.remove('msl-veil', 'msl-veil-hide');
-  }
-
-  /* вуаль: после приезда в центр фейд уходит за 2с с задержкой 1.5с */
-  function playCenterVeil(card) {
-    clearVeil(card);
-    card.classList.add('msl-veil');
-    requestAnimationFrame(function () {
-      requestAnimationFrame(function () {
-        card.classList.add('msl-veil-hide');
-      });
-    });
-    card._veilTimer = setTimeout(function () {
-      card.classList.remove('msl-veil', 'msl-veil-hide');
-      card._veilTimer = null;
-    }, 1500 + 2000 + 50);
-  }
-
   function render() {
     for (var i = 0; i < SLIDES; i++) {
       var rel = (i - active + SLIDES) % SLIDES;
-      var wasCenter = cards[i].classList.contains('msl-pos--center');
-      var nextPos = POS[rel];
-      clearVeil(cards[i]);
-      cards[i].className = 'msl-card msl-pos--' + nextPos;
-      /* слайд приехал в центр с боковой позиции — проигрываем уход фейда */
-      if (nextPos === 'center' && !wasCenter) {
-        playCenterVeil(cards[i]);
-      }
+      cards[i].className = 'msl-card msl-pos--' + POS[rel];
     }
     setText();
-  }
-
-  function detectFadeBg() {
-    var el = q('.main-slider');
-    while (el) {
-      var bg = getComputedStyle(el).backgroundColor;
-      if (bg && bg !== 'transparent' && bg !== 'rgba(0, 0, 0, 0)') return bg;
-      el = el.parentElement;
-    }
-    var bodyBg = getComputedStyle(document.body).backgroundColor;
-    if (bodyBg && bodyBg !== 'transparent' && bodyBg !== 'rgba(0, 0, 0, 0)') return bodyBg;
-    return '#e8e0f5';
   }
 
   /* ширина текста измеряется невидимым дублёром с тем же шрифтом */
@@ -740,9 +684,6 @@
   function init() {
     var frame = q('.main-slider');
     build(frame);
-
-    /* цвет фона страницы — для вуали фейда на центральном слайде */
-    if (stageEl) stageEl.style.setProperty('--msl-fade-bg', detectFadeBg());
 
     textEl = q('.slider-text');
     if (textEl) textAtom = textEl.querySelector('.tn-atom') || textEl;
