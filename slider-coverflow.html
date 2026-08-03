@@ -1,0 +1,165 @@
+<style>
+#rec2700751601 {
+  --slider-scale: 0.625;
+  overflow-x: hidden;
+}
+
+#rec2700751601 .t396__artboard,
+#rec2700751601 .t396__carrier {
+  overflow: hidden;
+}
+
+#rec2700751601 .owl-carousel .owl-stage-outer,
+#rec2700751601 .owl-carousel .owl-stage {
+  overflow: visible !important;
+}
+
+#rec2700751601 .owl-item {
+  transition: transform 0.45s ease, opacity 0.45s ease;
+  transform: scale(var(--slider-scale));
+  opacity: 0.6;
+}
+
+#rec2700751601.slider-no-transition .owl-item {
+  transition: none !important;
+}
+
+#rec2700751601 .owl-item.center {
+  transform: scale(1);
+  opacity: 1;
+  z-index: 5;
+}
+
+#rec2700751601 .owl-item.owl-item-side-left {
+  transform: translateX(
+    calc((1 - var(--slider-scale)) * (var(--side-depth, 1) - 0.5) * 100%)
+  ) scale(var(--slider-scale));
+  opacity: 0.6;
+}
+
+#rec2700751601 .owl-item.owl-item-side-right {
+  transform: translateX(
+    calc((1 - var(--slider-scale)) * (var(--side-depth, 1) - 0.5) * -100%)
+  ) scale(var(--slider-scale));
+  opacity: 0.6;
+}
+</style>
+
+<script>
+(function () {
+  try {
+    var ROOT_SEL = '#rec2700751601';
+    var MAX_DEPTH = 2;
+    var lastCenterIndex = -1;
+
+    function markSides() {
+      var root = document.querySelector(ROOT_SEL);
+      if (!root) return;
+
+      var stage = root.querySelector('.owl-stage');
+      if (!stage) return;
+
+      var items = stage.querySelectorAll('.owl-item');
+      var centerIndex = -1;
+
+      for (var i = 0; i < items.length; i++) {
+        if (items[i].classList.contains('center')) {
+          centerIndex = i;
+          break;
+        }
+      }
+
+      if (centerIndex < 0) return;
+
+      // Прыжок loop (клон → оригинал): без анимации, иначе «выдёргивает» не те слайды
+      var jumped =
+        lastCenterIndex > -1 &&
+        Math.abs(centerIndex - lastCenterIndex) > 1;
+
+      if (jumped) {
+        root.classList.add('slider-no-transition');
+      }
+
+      for (var j = 0; j < items.length; j++) {
+        var item = items[j];
+        var depth = 0;
+
+        if (j !== centerIndex) {
+          depth = Math.abs(j - centerIndex);
+          if (depth > MAX_DEPTH) depth = 0;
+        }
+
+        var wantLeft = depth > 0 && j < centerIndex;
+        var wantRight = depth > 0 && j > centerIndex;
+        var hasLeft = item.classList.contains('owl-item-side-left');
+        var hasRight = item.classList.contains('owl-item-side-right');
+        var prevDepth = item.style.getPropertyValue('--side-depth');
+
+        if (wantLeft) {
+          if (hasRight) item.classList.remove('owl-item-side-right');
+          if (!hasLeft) item.classList.add('owl-item-side-left');
+          if (prevDepth !== String(depth)) {
+            item.style.setProperty('--side-depth', String(depth));
+          }
+        } else if (wantRight) {
+          if (hasLeft) item.classList.remove('owl-item-side-left');
+          if (!hasRight) item.classList.add('owl-item-side-right');
+          if (prevDepth !== String(depth)) {
+            item.style.setProperty('--side-depth', String(depth));
+          }
+        } else {
+          if (hasLeft) item.classList.remove('owl-item-side-left');
+          if (hasRight) item.classList.remove('owl-item-side-right');
+          if (prevDepth) item.style.removeProperty('--side-depth');
+        }
+      }
+
+      lastCenterIndex = centerIndex;
+
+      if (jumped) {
+        void stage.offsetWidth;
+        requestAnimationFrame(function () {
+          root.classList.remove('slider-no-transition');
+        });
+      }
+    }
+
+    function bindOwl() {
+      var root = document.querySelector(ROOT_SEL);
+      if (!root || typeof window.jQuery === 'undefined') {
+        setTimeout(bindOwl, 300);
+        return;
+      }
+
+      var owl = root.querySelector('.owl-carousel');
+      if (!owl) {
+        setTimeout(bindOwl, 300);
+        return;
+      }
+
+      var $owl = window.jQuery(owl);
+      if (!$owl.data('owl.carousel')) {
+        setTimeout(bindOwl, 300);
+        return;
+      }
+
+      $owl.off('.coverflowSides');
+
+      // После смены слайда
+      $owl.on('changed.owl.carousel.coverflowSides', markSides);
+      // После завершения анимации / loop-reset
+      $owl.on('translated.owl.carousel.coverflowSides', markSides);
+
+      markSides();
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', bindOwl);
+    } else {
+      bindOwl();
+    }
+  } catch (e) {
+    console.log('Slider coverflow script error:', e);
+  }
+})();
+</script>
