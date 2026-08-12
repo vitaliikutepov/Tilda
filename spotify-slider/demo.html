@@ -26,7 +26,6 @@
       border-radius: 4px;
     }
 
-    /* --- имитация зеро-блока Тильды --- */
     .r.t-rec { position: relative; }
 
     #rec-slider .t396__artboard {
@@ -49,7 +48,6 @@
       inset: 0;
     }
 
-    /* карточки-источники (как на странице) */
     .card-source-board {
       height: 460px;
       position: relative;
@@ -58,7 +56,9 @@
 
     .tn-group.card1,
     .tn-group.card2,
-    .tn-group.card3 {
+    .tn-group.card3,
+    .tn-group.card4,
+    .tn-group.card5 {
       position: absolute;
       top: 0;
       left: calc(50% - 260px);
@@ -76,7 +76,6 @@
       justify-content: center;
       padding: 32px;
       border-radius: 16px;
-      background: #f2f2f2;
       box-sizing: border-box;
     }
 
@@ -100,18 +99,12 @@
       font-size: 16px;
       font-weight: 400;
     }
-
-    .card1 .tn-molecule { background: #e8f0fe; }
-    .card2 .tn-molecule { background: #eaf7ee; }
-    .card3 .tn-molecule { background: #f7efe8; }
   </style>
 </head>
 <body>
   <p class="note">
-    Демо слайдера для Тильды (референс:
-    <a href="https://www.lifeatspotify.com/" target="_blank" rel="noreferrer">lifeatspotify.com</a>).
-    Контейнер <code>.slider</code>, карточки <code>.card1–.card3</code> 520×460,
-    подзаголовок только у активного, цикл, без flip. Свайп / клик по боковой карточке.
+    Демо: 5 карточек (по две слева/справа), стили Тильды сохраняются
+    через перенос scoped CSS. Код — <code>tilda-embed.html</code>.
   </p>
 
   <div id="rec-slider" class="r t-rec">
@@ -122,53 +115,92 @@
     </div>
   </div>
 
-  <div id="rec-card1" class="r t-rec">
+  <!-- имитация scoped-стилей Тильды (#rec…) -->
+  <div id="rec1001" class="r t-rec">
+    <style>
+      #rec1001 .tn-group[data-group-id="g1"]{z-index:3;position:absolute;top:0;left:calc(50% - 260px);width:520px;height:460px;}
+      #rec1001 .tn-group[data-group-id="g1"] #molecule-g1{width:100%;height:100%;display:flex;flex-direction:column;row-gap:16px;align-items:center;justify-content:center;padding:32px;border-radius:16px;background-color:#e8f0fe;box-sizing:border-box;}
+      #rec1001 .tn-elem[data-elem-id="t1"] .tn-atom{font-size:24px;font-weight:500;color:#0b1f4a;}
+      #rec1001 .tn-elem[data-elem-id="s1"] .tn-atom{font-size:16px;font-weight:400;color:#334155;}
+    </style>
     <div class="card-source-board">
-      <div class="tn-group card1 t396__group">
-        <div class="tn-molecule">
-          <div class="tn-elem title" data-elem-type="text">
-            <div class="tn-atom">MaxPatrol SIEM</div>
-          </div>
-          <div class="tn-elem subtitle" data-elem-type="text">
-            <div class="tn-atom">Лидер на российском рынке SIEM-систем и основа крупнейших SOC в России с 2015 года</div>
-          </div>
+      <div class="tn-group card1 t396__group" data-group-id="g1">
+        <div class="tn-molecule" id="molecule-g1">
+          <div class="tn-elem title" data-elem-type="text" data-elem-id="t1"><div class="tn-atom">MaxPatrol SIEM</div></div>
+          <div class="tn-elem subtitle" data-elem-type="text" data-elem-id="s1"><div class="tn-atom">Лидер на российском рынке SIEM-систем и основа крупнейших SOC в России с 2015 года</div></div>
         </div>
       </div>
     </div>
   </div>
 
-  <div id="rec-card2" class="r t-rec">
+  <div id="rec1002" class="r t-rec">
+    <style>
+      #rec1002 .tn-group[data-group-id="g2"]{z-index:3;position:absolute;top:0;left:calc(50% - 260px);width:520px;height:460px;}
+      #rec1002 .tn-group[data-group-id="g2"] #molecule-g2{width:100%;height:100%;display:flex;flex-direction:column;row-gap:16px;align-items:center;justify-content:center;padding:32px;border-radius:16px;background-color:#eaf7ee;box-sizing:border-box;}
+      #rec1002 .tn-elem[data-elem-id="t2"] .tn-atom{font-size:24px;font-weight:500;color:#14532d;}
+      #rec1002 .tn-elem[data-elem-id="s2"] .tn-atom{font-size:16px;font-weight:400;color:#334155;}
+    </style>
     <div class="card-source-board">
-      <div class="tn-group card2 t396__group">
-        <div class="tn-molecule">
-          <div class="tn-elem title" data-elem-type="text">
-            <div class="tn-atom">Card 2</div>
-          </div>
-          <div class="tn-elem subtitle" data-elem-type="text">
-            <div class="tn-atom">Лидер на российском рынке SIEM-систем и основа крупнейших SOC в России с 2015 года</div>
-          </div>
+      <div class="tn-group card2 t396__group" data-group-id="g2">
+        <div class="tn-molecule" id="molecule-g2">
+          <div class="tn-elem title" data-elem-type="text" data-elem-id="t2"><div class="tn-atom">Card 2</div></div>
+          <div class="tn-elem subtitle" data-elem-type="text" data-elem-id="s2"><div class="tn-atom">Лидер на российском рынке SIEM-систем и основа крупнейших SOC в России с 2015 года</div></div>
         </div>
       </div>
     </div>
   </div>
 
-  <div id="rec-card3" class="r t-rec">
+  <div id="rec1003" class="r t-rec">
+    <style>
+      #rec1003 .tn-group[data-group-id="g3"]{z-index:3;position:absolute;top:0;left:calc(50% - 260px);width:520px;height:460px;}
+      #rec1003 .tn-group[data-group-id="g3"] #molecule-g3{width:100%;height:100%;display:flex;flex-direction:column;row-gap:16px;align-items:center;justify-content:center;padding:32px;border-radius:16px;background-color:#f7efe8;box-sizing:border-box;}
+      #rec1003 .tn-elem[data-elem-id="t3"] .tn-atom{font-size:24px;font-weight:500;color:#7c2d12;}
+      #rec1003 .tn-elem[data-elem-id="s3"] .tn-atom{font-size:16px;font-weight:400;color:#334155;}
+    </style>
     <div class="card-source-board">
-      <!-- на заготовке у 3-й карточки сейчас класс card2 — здесь корректный card3 -->
-      <div class="tn-group card3 t396__group">
-        <div class="tn-molecule">
-          <div class="tn-elem title" data-elem-type="text">
-            <div class="tn-atom">Card 3</div>
-          </div>
-          <div class="tn-elem subtitle" data-elem-type="text">
-            <div class="tn-atom">Лидер на российском рынке SIEM-систем и основа крупнейших SOC в России с 2015 года</div>
-          </div>
+      <div class="tn-group card3 t396__group" data-group-id="g3">
+        <div class="tn-molecule" id="molecule-g3">
+          <div class="tn-elem title" data-elem-type="text" data-elem-id="t3"><div class="tn-atom">Card 3</div></div>
+          <div class="tn-elem subtitle" data-elem-type="text" data-elem-id="s3"><div class="tn-atom">Лидер на российском рынке SIEM-систем и основа крупнейших SOC в России с 2015 года</div></div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- вставка того же кода, что уйдёт в Тильду -->
+  <div id="rec1004" class="r t-rec">
+    <style>
+      #rec1004 .tn-group[data-group-id="g4"]{z-index:3;position:absolute;top:0;left:calc(50% - 260px);width:520px;height:460px;}
+      #rec1004 .tn-group[data-group-id="g4"] #molecule-g4{width:100%;height:100%;display:flex;flex-direction:column;row-gap:16px;align-items:center;justify-content:center;padding:32px;border-radius:16px;background-color:#f3e8ff;box-sizing:border-box;}
+      #rec1004 .tn-elem[data-elem-id="t4"] .tn-atom{font-size:24px;font-weight:500;color:#581c87;}
+      #rec1004 .tn-elem[data-elem-id="s4"] .tn-atom{font-size:16px;font-weight:400;color:#334155;}
+    </style>
+    <div class="card-source-board">
+      <div class="tn-group card4 t396__group" data-group-id="g4">
+        <div class="tn-molecule" id="molecule-g4">
+          <div class="tn-elem title" data-elem-type="text" data-elem-id="t4"><div class="tn-atom">Card 4</div></div>
+          <div class="tn-elem subtitle" data-elem-type="text" data-elem-id="s4"><div class="tn-atom">Лидер на российском рынке SIEM-систем и основа крупнейших SOC в России с 2015 года</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="rec1005" class="r t-rec">
+    <style>
+      #rec1005 .tn-group[data-group-id="g5"]{z-index:3;position:absolute;top:0;left:calc(50% - 260px);width:520px;height:460px;}
+      #rec1005 .tn-group[data-group-id="g5"] #molecule-g5{width:100%;height:100%;display:flex;flex-direction:column;row-gap:16px;align-items:center;justify-content:center;padding:32px;border-radius:16px;background-color:#fce7f3;box-sizing:border-box;}
+      #rec1005 .tn-elem[data-elem-id="t5"] .tn-atom{font-size:24px;font-weight:500;color:#9d174d;}
+      #rec1005 .tn-elem[data-elem-id="s5"] .tn-atom{font-size:16px;font-weight:400;color:#334155;}
+    </style>
+    <div class="card-source-board">
+      <div class="tn-group card5 t396__group" data-group-id="g5">
+        <div class="tn-molecule" id="molecule-g5">
+          <div class="tn-elem title" data-elem-type="text" data-elem-id="t5"><div class="tn-atom">Card 5</div></div>
+          <div class="tn-elem subtitle" data-elem-type="text" data-elem-id="s5"><div class="tn-atom">Лидер на российском рынке SIEM-систем и основа крупнейших SOC в России с 2015 года</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script>
     fetch('tilda-embed.html')
       .then(function (r) { return r.text(); })

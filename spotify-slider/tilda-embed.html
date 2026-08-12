@@ -2,26 +2,20 @@
      Слайдер в духе lifeatspotify.com (первый экран) для Tilda
 
      Как подключить:
-     1. В зеро-блоке добавьте Shape и дайте ему класс  slider
-        — слайдер построится внутри него.
-     2. Карточки-источники — группы/элементы с классами
-          .card1  .card2  .card3
-        (каждая 520×460, внутри: заголовок + подзаголовок).
-        Блоки с карточками после инициализации скрываются.
-     3. Вставьте этот файл целиком в HTML-элемент Тильды
-        (или в «HTML-код страницы» перед </body>).
+     1. Shape с классом  slider  — контейнер слайдера.
+     2. Карточки-источники: .card1 … .card5 (520×460),
+        внутри заголовок + подзаголовок. Блоки-источники
+        после инициализации скрываются.
+     3. Вставьте этот файл в HTML-элемент Тильды.
 
      Поведение:
-     - активная карточка по центру, слева и справа — соседние;
-     - зациклено (3 слайда);
-     - у неактивных виден только заголовок, подзаголовок —
-       у активного (плавно);
-     - без переворота (flip) как на референсе;
-     - свайп/drag, клик по боковой карточке, автоплей.
+     - активная по центру, слева и справа по две карточки;
+     - зациклено; стили Тильды (фон, шрифты, скругления) сохраняются;
+     - подзаголовок только у активного;
+     - без flip; свайп / клик по боковой / автоплей.
 ============================================================ -->
 
 <style>
-  /* прячем блоки-источники карточек после переноса */
   .r.t-rec.pt-card-source {
     position: absolute !important;
     top: -100000px !important;
@@ -45,16 +39,22 @@
     inset: 0;
     --pt-w: 520px;
     --pt-h: 460px;
-    --pt-gap: 28px;
+    --pt-gap: 24px;
     --pt-side-scale: 0.88;
+    --pt-far-scale: 0.76;
     --pt-dur: 700ms;
     --pt-ease: cubic-bezier(0.25, 0.1, 0.25, 1);
+    --pt-offset-1: calc(
+      var(--pt-w) * 0.5 + var(--pt-gap) + var(--pt-w) * var(--pt-side-scale) * 0.5
+    );
+    --pt-offset-2: calc(
+      var(--pt-offset-1) + var(--pt-w) * var(--pt-side-scale) * 0.5 +
+      var(--pt-gap) + var(--pt-w) * var(--pt-far-scale) * 0.5
+    );
     pointer-events: none;
   }
 
-  .pt-stage:not(.pt-ready) {
-    opacity: 0;
-  }
+  .pt-stage:not(.pt-ready) { opacity: 0; }
   .pt-stage.pt-ready {
     opacity: 1;
     transition: opacity 0.35s ease;
@@ -67,7 +67,6 @@
     width: var(--pt-w) !important;
     height: var(--pt-h) !important;
     margin: 0 !important;
-    /* центрируем через translate в позиционных классах */
     transform: translate(-50%, -50%);
     transform-origin: center center;
     z-index: 1;
@@ -82,13 +81,28 @@
     -webkit-user-select: none;
   }
 
-  .pt-stage:not(.pt-ready) .pt-slide {
-    transition: none !important;
+  .pt-stage:not(.pt-ready) .pt-slide { transition: none !important; }
+  .pt-slide.pt-dragging,
+  .pt-slide.pt-no-trans { transition: none !important; }
+
+  /* группа Тильды внутри обёртки — заполняет слайд, без absolute-координат артборда */
+  .pt-slide > .tn-group,
+  .pt-slide > .t396__group {
+    position: relative !important;
+    left: auto !important;
+    top: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+    width: 100% !important;
+    height: 100% !important;
+    margin: 0 !important;
+    transform: none !important;
   }
 
-  .pt-slide.pt-dragging,
-  .pt-slide.pt-no-trans {
-    transition: none !important;
+  .pt-slide .tn-molecule {
+    width: 100% !important;
+    height: 100% !important;
+    box-sizing: border-box;
   }
 
   .pt-slide.is-active {
@@ -103,64 +117,50 @@
     z-index: 3;
     opacity: 0.72;
     filter: brightness(0.92);
-    transform:
-      translate(
-        calc(-50% - var(--pt-w) * 0.5 - var(--pt-gap) - var(--pt-w) * var(--pt-side-scale) * 0.5),
-        -50%
-      )
-      scale(var(--pt-side-scale));
+    transform: translate(calc(-50% - var(--pt-offset-1)), -50%) scale(var(--pt-side-scale));
   }
 
   .pt-slide.is-next {
     z-index: 3;
     opacity: 0.72;
     filter: brightness(0.92);
-    transform:
-      translate(
-        calc(-50% + var(--pt-w) * 0.5 + var(--pt-gap) + var(--pt-w) * var(--pt-side-scale) * 0.5),
-        -50%
-      )
-      scale(var(--pt-side-scale));
+    transform: translate(calc(-50% + var(--pt-offset-1)), -50%) scale(var(--pt-side-scale));
   }
 
-  /* «за кадром» — для мгновенного прыжка left↔right без проезда через центр */
+  .pt-slide.is-prev-2 {
+    z-index: 2;
+    opacity: 0.48;
+    filter: brightness(0.88);
+    transform: translate(calc(-50% - var(--pt-offset-2)), -50%) scale(var(--pt-far-scale));
+  }
+
+  .pt-slide.is-next-2 {
+    z-index: 2;
+    opacity: 0.48;
+    filter: brightness(0.88);
+    transform: translate(calc(-50% + var(--pt-offset-2)), -50%) scale(var(--pt-far-scale));
+  }
+
   .pt-slide.is-hid-l {
     z-index: 1;
     opacity: 0;
     pointer-events: none;
-    transform:
-      translate(
-        calc(-50% - var(--pt-w) * 1.35 - var(--pt-gap) * 2),
-        -50%
-      )
-      scale(var(--pt-side-scale));
+    transform: translate(
+      calc(-50% - var(--pt-offset-2) - var(--pt-w) * 0.55),
+      -50%
+    ) scale(var(--pt-far-scale));
   }
 
   .pt-slide.is-hid-r {
     z-index: 1;
     opacity: 0;
     pointer-events: none;
-    transform:
-      translate(
-        calc(-50% + var(--pt-w) * 1.35 + var(--pt-gap) * 2),
-        -50%
-      )
-      scale(var(--pt-side-scale));
+    transform: translate(
+      calc(-50% + var(--pt-offset-2) + var(--pt-w) * 0.55),
+      -50%
+    ) scale(var(--pt-far-scale));
   }
 
-  /* внутри карточки — сброс абсолютных координат Тильды */
-  .pt-slide.tn-group,
-  .pt-slide.t396__group {
-    position: absolute !important;
-  }
-
-  .pt-slide .tn-molecule {
-    width: 100% !important;
-    height: 100% !important;
-    box-sizing: border-box;
-  }
-
-  /* подзаголовок: только у активного */
   .pt-slide .pt-slide-sub {
     opacity: 0 !important;
     max-height: 0 !important;
@@ -186,21 +186,33 @@
     cursor: grabbing !important;
   }
 
+  @media (max-width: 1199px) {
+    .pt-stage {
+      --pt-w: 440px;
+      --pt-h: 389px;
+      --pt-gap: 18px;
+      --pt-side-scale: 0.84;
+      --pt-far-scale: 0.72;
+    }
+  }
+
   @media (max-width: 959px) {
     .pt-stage {
-      --pt-w: 400px;
-      --pt-h: 354px;
-      --pt-gap: 16px;
-      --pt-side-scale: 0.82;
+      --pt-w: 360px;
+      --pt-h: 318px;
+      --pt-gap: 14px;
+      --pt-side-scale: 0.8;
+      --pt-far-scale: 0.68;
     }
   }
 
   @media (max-width: 639px) {
     .pt-stage {
-      --pt-w: 280px;
-      --pt-h: 248px;
+      --pt-w: 260px;
+      --pt-h: 230px;
       --pt-gap: 10px;
-      --pt-side-scale: 0.78;
+      --pt-side-scale: 0.76;
+      --pt-far-scale: 0.64;
     }
   }
 </style>
@@ -209,9 +221,15 @@
 (function () {
   'use strict';
 
+  if (window.__ptSpotifySliderInit) return;
+  window.__ptSpotifySliderInit = true;
+
   var AUTOPLAY_MS = 5000;
   var SWIPE_THRESHOLD = 60;
-  var CARD_SELECTOR = '.card1, .card2, .card3';
+  var CARD_SELECTOR = '.card1, .card2, .card3, .card4, .card5';
+  var POS_CLASSES = [
+    'is-active', 'is-prev', 'is-next', 'is-prev-2', 'is-next-2', 'is-hid-l', 'is-hid-r'
+  ];
 
   var active = 0;
   var slides = [];
@@ -228,35 +246,73 @@
     return Array.prototype.slice.call((root || document).querySelectorAll(sel));
   }
 
+  function findRec(el) {
+    if (el.closest) return el.closest('.r.t-rec');
+    var p = el.parentElement;
+    while (p && !(p.classList && p.classList.contains('t-rec'))) p = p.parentElement;
+    return p;
+  }
+
   function hideSourceRec(el) {
-    var rec = el.closest ? el.closest('.r.t-rec') : null;
-    if (!rec) {
-      var p = el.parentElement;
-      while (p && !(p.classList && p.classList.contains('t-rec'))) p = p.parentElement;
-      rec = p;
-    }
+    var rec = findRec(el);
     if (rec) rec.classList.add('pt-card-source');
+  }
+
+  /* Стили Тильды scoped на #recXXXX — после переноса не матчятся.
+     Копируем <style> блока, заменяя #recXXXX → .pt-scope-recXXXX,
+     и кладём карточку в обёртку с этим классом. */
+  function wrapCardPreservingStyles(card) {
+    var rec = findRec(card);
+    var wrap = document.createElement('div');
+    wrap.className = 'pt-slide';
+
+    if (rec && rec.id) {
+      var scope = 'pt-scope-' + rec.id;
+      wrap.classList.add(scope);
+      wrap.setAttribute('data-pt-rec', rec.id);
+
+      if (!document.querySelector('style[data-pt-from="' + rec.id + '"]')) {
+        var chunks = [];
+        qa('style', rec).forEach(function (st) {
+          if (st.textContent) chunks.push(st.textContent);
+        });
+        if (chunks.length) {
+          var css = chunks.join('\n').split('#' + rec.id).join('.' + scope);
+          var s = document.createElement('style');
+          s.setAttribute('data-pt-from', rec.id);
+          s.textContent = css;
+          document.head.appendChild(s);
+        }
+      }
+    }
+
+    wrap.appendChild(card);
+    return wrap;
   }
 
   function markSubtitle(card) {
     var texts = qa('.tn-elem[data-elem-type="text"], .t396__elem[data-elem-type="text"]', card);
     if (texts.length < 2) {
       texts = qa('.tn-elem, .t396__elem', card).filter(function (el) {
+        var atom = el.querySelector && el.querySelector('.tn-atom');
         return el.getAttribute('data-elem-type') === 'text' ||
-          (el.querySelector && el.querySelector('.tn-atom') &&
-            el.querySelector('.tn-atom').textContent.trim());
+          (atom && atom.textContent.trim());
       });
     }
     if (texts.length >= 2) {
       texts[1].classList.add('pt-slide-sub');
-    } else if (texts.length === 1) {
-      /* fallback: второй ребёнок молекулы */
+    } else {
       var mol = q('.tn-molecule', card) || card;
-      var kids = Array.prototype.filter.call(mol.children, function (n) {
+      var kids = Array.prototype.filter.call(mol.children || [], function (n) {
         return n.nodeType === 1;
       });
       if (kids[1]) kids[1].classList.add('pt-slide-sub');
     }
+  }
+
+  function cardIndex(el) {
+    var m = (el.className || '').match(/\bcard(\d+)\b/);
+    return m ? parseInt(m[1], 10) : 999;
   }
 
   function relPos(i) {
@@ -264,42 +320,58 @@
     return (i - active + n) % n;
   }
 
-  /* для 3 слайдов: 0 center, 1 next, 2 prev */
   function classForRel(rel) {
+    var n = slides.length;
     if (rel === 0) return 'is-active';
-    if (rel === 1) return 'is-next';
-    return 'is-prev';
+    var half = Math.floor(n / 2);
+    if (rel <= half) {
+      return rel === 1 ? 'is-next' : 'is-next-' + rel;
+    }
+    var fromEnd = n - rel;
+    return fromEnd === 1 ? 'is-prev' : 'is-prev-' + fromEnd;
+  }
+
+  function isRightRel(rel, n) {
+    return rel >= 1 && rel <= Math.floor(n / 2);
+  }
+
+  function isLeftRel(rel, n) {
+    return rel > Math.floor(n / 2);
+  }
+
+  function clearPos(slide) {
+    for (var i = 0; i < POS_CLASSES.length; i++) {
+      slide.classList.remove(POS_CLASSES[i]);
+    }
   }
 
   function applyPositions(opts) {
     opts = opts || {};
     var n = slides.length;
     var prevActive = typeof opts.from === 'number' ? opts.from : null;
-    var dir = opts.dir || 0; /* +1 next, -1 prev */
+    var dir = opts.dir || 0;
 
     for (var i = 0; i < n; i++) {
       var slide = slides[i];
       var rel = relPos(i);
       var cls = classForRel(rel);
 
-      /* прыжок через центр: left→right при next, right→left при prev */
-      var jumping = false;
-      if (prevActive !== null && n === 3) {
+      if (prevActive !== null && dir !== 0) {
         var oldRel = (i - prevActive + n) % n;
-        if (dir > 0 && oldRel === 2 && rel === 1) jumping = true;
-        if (dir < 0 && oldRel === 1 && rel === 2) jumping = true;
+        var jumping =
+          (isLeftRel(oldRel, n) && isRightRel(rel, n)) ||
+          (isRightRel(oldRel, n) && isLeftRel(rel, n));
+
+        if (jumping) {
+          slide.classList.add('pt-no-trans');
+          clearPos(slide);
+          slide.classList.add(dir > 0 ? 'is-hid-r' : 'is-hid-l');
+          void slide.offsetWidth;
+          slide.classList.remove('pt-no-trans', 'is-hid-l', 'is-hid-r');
+        }
       }
 
-      if (jumping) {
-        slide.classList.add('pt-no-trans');
-        /* сначала уводим за кадр в сторону движения */
-        slide.classList.remove('is-active', 'is-prev', 'is-next', 'is-hid-l', 'is-hid-r');
-        slide.classList.add(dir > 0 ? 'is-hid-r' : 'is-hid-l');
-        void slide.offsetWidth;
-        slide.classList.remove('pt-no-trans', 'is-hid-l', 'is-hid-r');
-      }
-
-      slide.classList.remove('is-active', 'is-prev', 'is-next', 'is-hid-l', 'is-hid-r');
+      clearPos(slide);
       slide.classList.add(cls);
     }
   }
@@ -330,15 +402,6 @@
     }, 720);
   }
 
-  function goTo(index) {
-    if (index === active || animating) return;
-    var n = slides.length;
-    var forward = (index - active + n) % n;
-    var backward = (active - index + n) % n;
-    go(forward <= backward ? 1 : -1);
-  }
-
-  /* --- drag / swipe --- */
   function onPointerDown(e) {
     if (animating) return;
     var point = e.touches ? e.touches[0] : e;
@@ -352,6 +415,25 @@
     stopAutoplay();
     if (stage) stage.classList.add('is-grabbing');
     slides.forEach(function (s) { s.classList.add('pt-dragging'); });
+  }
+
+  function dragTransform(slide, shift) {
+    if (slide.classList.contains('is-active')) {
+      return 'translate(calc(-50% + ' + shift + 'px), -50%) scale(1)';
+    }
+    if (slide.classList.contains('is-prev')) {
+      return 'translate(calc(-50% - var(--pt-offset-1) + ' + (shift * 0.55) + 'px), -50%) scale(var(--pt-side-scale))';
+    }
+    if (slide.classList.contains('is-next')) {
+      return 'translate(calc(-50% + var(--pt-offset-1) + ' + (shift * 0.55) + 'px), -50%) scale(var(--pt-side-scale))';
+    }
+    if (slide.classList.contains('is-prev-2')) {
+      return 'translate(calc(-50% - var(--pt-offset-2) + ' + (shift * 0.35) + 'px), -50%) scale(var(--pt-far-scale))';
+    }
+    if (slide.classList.contains('is-next-2')) {
+      return 'translate(calc(-50% + var(--pt-offset-2) + ' + (shift * 0.35) + 'px), -50%) scale(var(--pt-far-scale))';
+    }
+    return '';
   }
 
   function onPointerMove(e) {
@@ -373,19 +455,8 @@
     var shift = Math.max(-w * 0.55, Math.min(w * 0.55, dx));
 
     slides.forEach(function (slide) {
-      var base = '';
-      if (slide.classList.contains('is-active')) {
-        base = 'translate(calc(-50% + ' + shift + 'px), -50%) scale(1)';
-      } else if (slide.classList.contains('is-prev')) {
-        base =
-          'translate(calc(-50% - var(--pt-w) * 0.5 - var(--pt-gap) - var(--pt-w) * var(--pt-side-scale) * 0.5 + ' +
-          shift * 0.55 + 'px), -50%) scale(var(--pt-side-scale))';
-      } else if (slide.classList.contains('is-next')) {
-        base =
-          'translate(calc(-50% + var(--pt-w) * 0.5 + var(--pt-gap) + var(--pt-w) * var(--pt-side-scale) * 0.5 + ' +
-          shift * 0.55 + 'px), -50%) scale(var(--pt-side-scale))';
-      }
-      if (base) slide.style.transform = base;
+      var t = dragTransform(slide, shift);
+      if (t) slide.style.transform = t;
     });
   }
 
@@ -400,7 +471,6 @@
   function onPointerUp() {
     if (!drag) return;
     var dx = drag.dx;
-    var moved = drag.moved;
     var locked = drag.locked;
     drag = null;
     clearDragStyles();
@@ -409,16 +479,13 @@
       go(dx < 0 ? 1 : -1);
     }
     startAutoplay();
-    return moved;
   }
 
   function bindDrag() {
     if (!stage) return;
-
     stage.addEventListener('mousedown', onPointerDown);
     window.addEventListener('mousemove', onPointerMove);
     window.addEventListener('mouseup', onPointerUp);
-
     stage.addEventListener('touchstart', onPointerDown, { passive: true });
     stage.addEventListener('touchmove', onPointerMove, { passive: false });
     stage.addEventListener('touchend', onPointerUp);
@@ -430,14 +497,17 @@
     if (!frame) return;
 
     var cards = qa(CARD_SELECTOR).filter(function (el, idx, arr) {
-      /* уникальные узлы в порядке документа */
       return arr.indexOf(el) === idx && !el.closest('.pt-stage');
+    });
+
+    cards.sort(function (a, b) {
+      return cardIndex(a) - cardIndex(b);
     });
 
     if (cards.length < 2) return;
 
     var host = frame.querySelector('.tn-atom') || frame;
-    host.style.position = host.style.position || 'relative';
+    if (!host.style.position) host.style.position = 'relative';
     host.style.width = '100%';
     host.style.height = '100%';
 
@@ -448,24 +518,23 @@
     cards.forEach(function (card, i) {
       hideSourceRec(card);
       markSubtitle(card);
-      card.classList.add('pt-slide');
-      card.addEventListener('click', function (e) {
-        if (card.__ptIgnoreClick) {
-          card.__ptIgnoreClick = false;
+      var slide = wrapCardPreservingStyles(card);
+
+      slide.addEventListener('click', function () {
+        if (slide.__ptIgnoreClick) {
+          slide.__ptIgnoreClick = false;
           return;
         }
         var rel = relPos(i);
-        if (rel === 1) go(1);
-        else if (rel === cards.length - 1 || (cards.length === 3 && rel === 2)) go(-1);
+        if (rel === 0) return;
+        var n = slides.length;
+        var half = Math.floor(n / 2);
+        go(rel <= half ? 1 : -1);
       });
-      stage.appendChild(card);
-      slides.push(card);
-    });
 
-    /* клик после драга не должен переключать */
-    stage.addEventListener('click', function (e) {
-      /* handled per-card; noop */
-    }, true);
+      stage.appendChild(slide);
+      slides.push(slide);
+    });
 
     var downX = 0;
     stage.addEventListener('pointerdown', function (e) {
@@ -499,14 +568,12 @@
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', function () {
-      /* Тильда дорисовывает zero-block чуть позже */
       setTimeout(boot, 300);
     });
   } else {
     setTimeout(boot, 300);
   }
 
-  /* повторная попытка, если карточки появились позже */
   setTimeout(function () {
     if (!document.querySelector('.pt-stage')) boot();
   }, 1200);
