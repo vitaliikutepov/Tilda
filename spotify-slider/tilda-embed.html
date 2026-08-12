@@ -9,10 +9,12 @@
      3. Вставьте этот файл в HTML-элемент Тильды.
 
      Поведение:
-     - активная по центру, слева и справа по две карточки;
-     - зациклено; стили Тильды (фон, шрифты, скругления) сохраняются;
+     - coverflow 3D (rotateY + depth), как у Spotify;
+     - слева/справа по две карточки, цикл;
+     - стили Тильды сохраняются;
      - подзаголовок только у активного;
-     - без flip; свайп / клик по боковой / автоплей.
+     - левая/правая половина: курсор-стрелка и клик prev/next;
+     - свайп / автоплей.
 ============================================================ -->
 
 <style>
@@ -39,19 +41,28 @@
     inset: 0;
     --pt-w: 520px;
     --pt-h: 460px;
-    --pt-gap: 24px;
-    --pt-side-scale: 0.88;
-    --pt-far-scale: 0.76;
+    --pt-gap: 20px;
+    --pt-side-scale: 0.9;
+    --pt-far-scale: 0.8;
+    --pt-rotate-1: 42deg;
+    --pt-rotate-2: 58deg;
+    --pt-depth-1: -110px;
+    --pt-depth-2: -200px;
     --pt-dur: 700ms;
     --pt-ease: cubic-bezier(0.25, 0.1, 0.25, 1);
     --pt-offset-1: calc(
-      var(--pt-w) * 0.5 + var(--pt-gap) + var(--pt-w) * var(--pt-side-scale) * 0.5
+      var(--pt-w) * 0.42 + var(--pt-gap) + var(--pt-w) * var(--pt-side-scale) * 0.28
     );
     --pt-offset-2: calc(
-      var(--pt-offset-1) + var(--pt-w) * var(--pt-side-scale) * 0.5 +
-      var(--pt-gap) + var(--pt-w) * var(--pt-far-scale) * 0.5
+      var(--pt-offset-1) + var(--pt-w) * var(--pt-side-scale) * 0.38 +
+      var(--pt-gap) + var(--pt-w) * var(--pt-far-scale) * 0.22
     );
-    pointer-events: none;
+    --pt-cur-prev: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cpath d='M19.5 7.5L10 16l9.5 8.5' fill='none' stroke='%23111' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") 16 16, w-resize;
+    --pt-cur-next: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cpath d='M12.5 7.5L22 16l-9.5 8.5' fill='none' stroke='%23111' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") 16 16, e-resize;
+    perspective: 1200px;
+    perspective-origin: 50% 50%;
+    transform-style: preserve-3d;
+    pointer-events: auto;
   }
 
   .pt-stage:not(.pt-ready) { opacity: 0; }
@@ -67,11 +78,13 @@
     width: var(--pt-w) !important;
     height: var(--pt-h) !important;
     margin: 0 !important;
-    transform: translate(-50%, -50%);
+    transform: translate3d(-50%, -50%, 0);
     transform-origin: center center;
+    transform-style: preserve-3d;
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
     z-index: 1;
     pointer-events: auto;
-    cursor: grab;
     will-change: transform, opacity, filter;
     transition:
       transform var(--pt-dur) var(--pt-ease),
@@ -85,7 +98,6 @@
   .pt-slide.pt-dragging,
   .pt-slide.pt-no-trans { transition: none !important; }
 
-  /* группа Тильды внутри обёртки — заполняет слайд, без absolute-координат артборда */
   .pt-slide > .tn-group,
   .pt-slide > .t396__group {
     position: relative !important;
@@ -105,60 +117,72 @@
     box-sizing: border-box;
   }
 
+  /* coverflow: как Swiper rotate:45 / depth:100 у Spotify */
   .pt-slide.is-active {
     z-index: 5;
-    cursor: default;
     opacity: 1;
     filter: none;
-    transform: translate(-50%, -50%) scale(1);
+    transform: translate3d(-50%, -50%, 0) rotateY(0deg) scale(1);
   }
 
   .pt-slide.is-prev {
     z-index: 3;
-    opacity: 0.72;
-    filter: brightness(0.92);
-    transform: translate(calc(-50% - var(--pt-offset-1)), -50%) scale(var(--pt-side-scale));
+    opacity: 0.78;
+    filter: brightness(0.94);
+    transform:
+      translate3d(calc(-50% - var(--pt-offset-1)), -50%, var(--pt-depth-1))
+      rotateY(var(--pt-rotate-1))
+      scale(var(--pt-side-scale));
   }
 
   .pt-slide.is-next {
     z-index: 3;
-    opacity: 0.72;
-    filter: brightness(0.92);
-    transform: translate(calc(-50% + var(--pt-offset-1)), -50%) scale(var(--pt-side-scale));
+    opacity: 0.78;
+    filter: brightness(0.94);
+    transform:
+      translate3d(calc(-50% + var(--pt-offset-1)), -50%, var(--pt-depth-1))
+      rotateY(calc(var(--pt-rotate-1) * -1))
+      scale(var(--pt-side-scale));
   }
 
   .pt-slide.is-prev-2 {
     z-index: 2;
-    opacity: 0.48;
+    opacity: 0.52;
     filter: brightness(0.88);
-    transform: translate(calc(-50% - var(--pt-offset-2)), -50%) scale(var(--pt-far-scale));
+    transform:
+      translate3d(calc(-50% - var(--pt-offset-2)), -50%, var(--pt-depth-2))
+      rotateY(var(--pt-rotate-2))
+      scale(var(--pt-far-scale));
   }
 
   .pt-slide.is-next-2 {
     z-index: 2;
-    opacity: 0.48;
+    opacity: 0.52;
     filter: brightness(0.88);
-    transform: translate(calc(-50% + var(--pt-offset-2)), -50%) scale(var(--pt-far-scale));
+    transform:
+      translate3d(calc(-50% + var(--pt-offset-2)), -50%, var(--pt-depth-2))
+      rotateY(calc(var(--pt-rotate-2) * -1))
+      scale(var(--pt-far-scale));
   }
 
   .pt-slide.is-hid-l {
     z-index: 1;
     opacity: 0;
     pointer-events: none;
-    transform: translate(
-      calc(-50% - var(--pt-offset-2) - var(--pt-w) * 0.55),
-      -50%
-    ) scale(var(--pt-far-scale));
+    transform:
+      translate3d(calc(-50% - var(--pt-offset-2) - var(--pt-w) * 0.5), -50%, -260px)
+      rotateY(70deg)
+      scale(var(--pt-far-scale));
   }
 
   .pt-slide.is-hid-r {
     z-index: 1;
     opacity: 0;
     pointer-events: none;
-    transform: translate(
-      calc(-50% + var(--pt-offset-2) + var(--pt-w) * 0.55),
-      -50%
-    ) scale(var(--pt-far-scale));
+    transform:
+      translate3d(calc(-50% + var(--pt-offset-2) + var(--pt-w) * 0.5), -50%, -260px)
+      rotateY(-70deg)
+      scale(var(--pt-far-scale));
   }
 
   .pt-slide .pt-slide-sub {
@@ -181,6 +205,15 @@
     pointer-events: auto;
   }
 
+  /* курсоры: левая/правая половина слайдера */
+  .pt-stage.pt-cursor-prev,
+  .pt-stage.pt-cursor-prev .pt-slide {
+    cursor: var(--pt-cur-prev) !important;
+  }
+  .pt-stage.pt-cursor-next,
+  .pt-stage.pt-cursor-next .pt-slide {
+    cursor: var(--pt-cur-next) !important;
+  }
   .pt-stage.is-grabbing,
   .pt-stage.is-grabbing .pt-slide {
     cursor: grabbing !important;
@@ -190,9 +223,12 @@
     .pt-stage {
       --pt-w: 440px;
       --pt-h: 389px;
-      --pt-gap: 18px;
-      --pt-side-scale: 0.84;
-      --pt-far-scale: 0.72;
+      --pt-gap: 16px;
+      --pt-side-scale: 0.88;
+      --pt-far-scale: 0.76;
+      --pt-rotate-1: 38deg;
+      --pt-rotate-2: 52deg;
+      perspective: 1000px;
     }
   }
 
@@ -200,9 +236,14 @@
     .pt-stage {
       --pt-w: 360px;
       --pt-h: 318px;
-      --pt-gap: 14px;
-      --pt-side-scale: 0.8;
-      --pt-far-scale: 0.68;
+      --pt-gap: 12px;
+      --pt-side-scale: 0.84;
+      --pt-far-scale: 0.72;
+      --pt-rotate-1: 32deg;
+      --pt-rotate-2: 46deg;
+      --pt-depth-1: -80px;
+      --pt-depth-2: -150px;
+      perspective: 900px;
     }
   }
 
@@ -210,9 +251,12 @@
     .pt-stage {
       --pt-w: 260px;
       --pt-h: 230px;
-      --pt-gap: 10px;
-      --pt-side-scale: 0.76;
-      --pt-far-scale: 0.64;
+      --pt-gap: 8px;
+      --pt-side-scale: 0.8;
+      --pt-far-scale: 0.68;
+      --pt-rotate-1: 26deg;
+      --pt-rotate-2: 40deg;
+      perspective: 700px;
     }
   }
 </style>
@@ -237,6 +281,7 @@
   var animating = false;
   var autoplayTimer = null;
   var drag = null;
+  var suppressClick = false;
 
   function q(sel, root) {
     return (root || document).querySelector(sel);
@@ -258,9 +303,6 @@
     if (rec) rec.classList.add('pt-card-source');
   }
 
-  /* Стили Тильды scoped на #recXXXX — после переноса не матчятся.
-     Копируем <style> блока, заменяя #recXXXX → .pt-scope-recXXXX,
-     и кладём карточку в обёртку с этим классом. */
   function wrapCardPreservingStyles(card) {
     var rec = findRec(card);
     var wrap = document.createElement('div');
@@ -402,6 +444,20 @@
     }, 720);
   }
 
+  function sideFromEvent(e) {
+    if (!stage) return 1;
+    var rect = stage.getBoundingClientRect();
+    var x = e.clientX != null ? e.clientX : (e.touches && e.touches[0] ? e.touches[0].clientX : 0);
+    return x < rect.left + rect.width / 2 ? -1 : 1;
+  }
+
+  function setCursorSide(e) {
+    if (!stage || drag) return;
+    var dir = sideFromEvent(e);
+    stage.classList.toggle('pt-cursor-prev', dir < 0);
+    stage.classList.toggle('pt-cursor-next', dir > 0);
+  }
+
   function onPointerDown(e) {
     if (animating) return;
     var point = e.touches ? e.touches[0] : e;
@@ -412,32 +468,37 @@
       locked: null,
       moved: false
     };
+    suppressClick = false;
     stopAutoplay();
     if (stage) stage.classList.add('is-grabbing');
     slides.forEach(function (s) { s.classList.add('pt-dragging'); });
   }
 
   function dragTransform(slide, shift) {
+    var t = shift;
     if (slide.classList.contains('is-active')) {
-      return 'translate(calc(-50% + ' + shift + 'px), -50%) scale(1)';
+      return 'translate3d(calc(-50% + ' + t + 'px), -50%, 0) rotateY(0deg) scale(1)';
     }
     if (slide.classList.contains('is-prev')) {
-      return 'translate(calc(-50% - var(--pt-offset-1) + ' + (shift * 0.55) + 'px), -50%) scale(var(--pt-side-scale))';
+      return 'translate3d(calc(-50% - var(--pt-offset-1) + ' + (t * 0.55) + 'px), -50%, var(--pt-depth-1)) rotateY(var(--pt-rotate-1)) scale(var(--pt-side-scale))';
     }
     if (slide.classList.contains('is-next')) {
-      return 'translate(calc(-50% + var(--pt-offset-1) + ' + (shift * 0.55) + 'px), -50%) scale(var(--pt-side-scale))';
+      return 'translate3d(calc(-50% + var(--pt-offset-1) + ' + (t * 0.55) + 'px), -50%, var(--pt-depth-1)) rotateY(calc(var(--pt-rotate-1) * -1)) scale(var(--pt-side-scale))';
     }
     if (slide.classList.contains('is-prev-2')) {
-      return 'translate(calc(-50% - var(--pt-offset-2) + ' + (shift * 0.35) + 'px), -50%) scale(var(--pt-far-scale))';
+      return 'translate3d(calc(-50% - var(--pt-offset-2) + ' + (t * 0.35) + 'px), -50%, var(--pt-depth-2)) rotateY(var(--pt-rotate-2)) scale(var(--pt-far-scale))';
     }
     if (slide.classList.contains('is-next-2')) {
-      return 'translate(calc(-50% + var(--pt-offset-2) + ' + (shift * 0.35) + 'px), -50%) scale(var(--pt-far-scale))';
+      return 'translate3d(calc(-50% + var(--pt-offset-2) + ' + (t * 0.35) + 'px), -50%, var(--pt-depth-2)) rotateY(calc(var(--pt-rotate-2) * -1)) scale(var(--pt-far-scale))';
     }
     return '';
   }
 
   function onPointerMove(e) {
-    if (!drag) return;
+    if (!drag) {
+      setCursorSide(e);
+      return;
+    }
     var point = e.touches ? e.touches[0] : e;
     var dx = point.clientX - drag.x0;
     var dy = point.clientY - drag.y0;
@@ -450,6 +511,7 @@
 
     drag.dx = dx;
     drag.moved = Math.abs(dx) > 8;
+    if (drag.moved) suppressClick = true;
 
     var w = stage ? parseFloat(getComputedStyle(stage).getPropertyValue('--pt-w')) || 520 : 520;
     var shift = Math.max(-w * 0.55, Math.min(w * 0.55, dx));
@@ -468,21 +530,35 @@
     if (stage) stage.classList.remove('is-grabbing');
   }
 
-  function onPointerUp() {
+  function onPointerUp(e) {
     if (!drag) return;
     var dx = drag.dx;
     var locked = drag.locked;
+    var moved = drag.moved;
     drag = null;
     clearDragStyles();
 
     if (locked === 'x' && Math.abs(dx) >= SWIPE_THRESHOLD) {
+      suppressClick = true;
       go(dx < 0 ? 1 : -1);
     }
+
+    if (e && e.type && e.type.indexOf('touch') === -1) setCursorSide(e);
     startAutoplay();
   }
 
-  function bindDrag() {
+  function onStageClick(e) {
+    if (suppressClick) {
+      suppressClick = false;
+      return;
+    }
+    if (animating) return;
+    go(sideFromEvent(e));
+  }
+
+  function bindInteractions() {
     if (!stage) return;
+
     stage.addEventListener('mousedown', onPointerDown);
     window.addEventListener('mousemove', onPointerMove);
     window.addEventListener('mouseup', onPointerUp);
@@ -490,6 +566,14 @@
     stage.addEventListener('touchmove', onPointerMove, { passive: false });
     stage.addEventListener('touchend', onPointerUp);
     stage.addEventListener('touchcancel', onPointerUp);
+
+    stage.addEventListener('mousemove', setCursorSide);
+    stage.addEventListener('click', onStageClick);
+    stage.addEventListener('mouseleave', function () {
+      stage.classList.remove('pt-cursor-prev', 'pt-cursor-next');
+      if (!drag) startAutoplay();
+    });
+    stage.addEventListener('mouseenter', stopAutoplay);
   }
 
   function build() {
@@ -515,49 +599,20 @@
     stage.className = 'pt-stage';
     host.appendChild(stage);
 
-    cards.forEach(function (card, i) {
+    cards.forEach(function (card) {
       hideSourceRec(card);
       markSubtitle(card);
       var slide = wrapCardPreservingStyles(card);
-
-      slide.addEventListener('click', function () {
-        if (slide.__ptIgnoreClick) {
-          slide.__ptIgnoreClick = false;
-          return;
-        }
-        var rel = relPos(i);
-        if (rel === 0) return;
-        var n = slides.length;
-        var half = Math.floor(n / 2);
-        go(rel <= half ? 1 : -1);
-      });
-
       stage.appendChild(slide);
       slides.push(slide);
     });
 
-    var downX = 0;
-    stage.addEventListener('pointerdown', function (e) {
-      downX = e.clientX;
-    });
-    stage.addEventListener('pointerup', function (e) {
-      if (Math.abs(e.clientX - downX) > 10) {
-        var t = e.target.closest('.pt-slide');
-        if (t) t.__ptIgnoreClick = true;
-      }
-    });
-
     applyPositions();
-    bindDrag();
+    bindInteractions();
 
     requestAnimationFrame(function () {
       stage.classList.add('pt-ready');
       startAutoplay();
-    });
-
-    stage.addEventListener('mouseenter', stopAutoplay);
-    stage.addEventListener('mouseleave', function () {
-      if (!drag) startAutoplay();
     });
   }
 
