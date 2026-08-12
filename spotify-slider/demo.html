@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Spotify-style slider — demo</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: #f7f7f5;
+      font-family: "Segoe UI", system-ui, sans-serif;
+    }
+    .note {
+      max-width: 720px;
+      margin: 24px auto;
+      padding: 0 16px;
+      color: #444;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    .note code {
+      background: #eee;
+      padding: 1px 6px;
+      border-radius: 4px;
+    }
+
+    /* --- имитация зеро-блока Тильды --- */
+    .r.t-rec { position: relative; }
+
+    #rec-slider .t396__artboard {
+      height: 900px;
+      position: relative;
+      background: #fff;
+      overflow: hidden;
+    }
+
+    .slider {
+      position: absolute;
+      left: 50%;
+      top: 0;
+      transform: translateX(-50%);
+      width: min(1600px, 100%);
+      height: 900px;
+    }
+    .slider .tn-atom {
+      position: absolute;
+      inset: 0;
+    }
+
+    /* карточки-источники (как на странице) */
+    .card-source-board {
+      height: 460px;
+      position: relative;
+      background: #fff;
+    }
+
+    .tn-group.card1,
+    .tn-group.card2,
+    .tn-group.card3 {
+      position: absolute;
+      top: 0;
+      left: calc(50% - 260px);
+      width: 520px;
+      height: 460px;
+    }
+
+    .tn-molecule {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      row-gap: 16px;
+      align-items: center;
+      justify-content: center;
+      padding: 32px;
+      border-radius: 16px;
+      background: #f2f2f2;
+      box-sizing: border-box;
+    }
+
+    .tn-elem[data-elem-type="text"] {
+      width: 100%;
+      text-align: center;
+      flex-shrink: 0;
+    }
+
+    .tn-elem .tn-atom {
+      color: #000;
+      line-height: 1.55;
+    }
+
+    .title .tn-atom {
+      font-size: 24px;
+      font-weight: 500;
+    }
+
+    .subtitle .tn-atom {
+      font-size: 16px;
+      font-weight: 400;
+    }
+
+    .card1 .tn-molecule { background: #e8f0fe; }
+    .card2 .tn-molecule { background: #eaf7ee; }
+    .card3 .tn-molecule { background: #f7efe8; }
+  </style>
+</head>
+<body>
+  <p class="note">
+    Демо слайдера для Тильды (референс:
+    <a href="https://www.lifeatspotify.com/" target="_blank" rel="noreferrer">lifeatspotify.com</a>).
+    Контейнер <code>.slider</code>, карточки <code>.card1–.card3</code> 520×460,
+    подзаголовок только у активного, цикл, без flip. Свайп / клик по боковой карточке.
+  </p>
+
+  <div id="rec-slider" class="r t-rec">
+    <div class="t396__artboard">
+      <div class="slider tn-elem">
+        <div class="tn-atom"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="rec-card1" class="r t-rec">
+    <div class="card-source-board">
+      <div class="tn-group card1 t396__group">
+        <div class="tn-molecule">
+          <div class="tn-elem title" data-elem-type="text">
+            <div class="tn-atom">MaxPatrol SIEM</div>
+          </div>
+          <div class="tn-elem subtitle" data-elem-type="text">
+            <div class="tn-atom">Лидер на российском рынке SIEM-систем и основа крупнейших SOC в России с 2015 года</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="rec-card2" class="r t-rec">
+    <div class="card-source-board">
+      <div class="tn-group card2 t396__group">
+        <div class="tn-molecule">
+          <div class="tn-elem title" data-elem-type="text">
+            <div class="tn-atom">Card 2</div>
+          </div>
+          <div class="tn-elem subtitle" data-elem-type="text">
+            <div class="tn-atom">Лидер на российском рынке SIEM-систем и основа крупнейших SOC в России с 2015 года</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="rec-card3" class="r t-rec">
+    <div class="card-source-board">
+      <!-- на заготовке у 3-й карточки сейчас класс card2 — здесь корректный card3 -->
+      <div class="tn-group card3 t396__group">
+        <div class="tn-molecule">
+          <div class="tn-elem title" data-elem-type="text">
+            <div class="tn-atom">Card 3</div>
+          </div>
+          <div class="tn-elem subtitle" data-elem-type="text">
+            <div class="tn-atom">Лидер на российском рынке SIEM-систем и основа крупнейших SOC в России с 2015 года</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- вставка того же кода, что уйдёт в Тильду -->
+  <script>
+    fetch('tilda-embed.html')
+      .then(function (r) { return r.text(); })
+      .then(function (html) {
+        var tmp = document.createElement('div');
+        tmp.innerHTML = html;
+        Array.prototype.forEach.call(tmp.querySelectorAll('style'), function (s) {
+          document.head.appendChild(s);
+        });
+        Array.prototype.forEach.call(tmp.querySelectorAll('script'), function (s) {
+          var ns = document.createElement('script');
+          ns.textContent = s.textContent;
+          document.body.appendChild(ns);
+        });
+      });
+  </script>
+</body>
+</html>
