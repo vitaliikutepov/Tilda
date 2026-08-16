@@ -41,12 +41,13 @@
   .pt-stage {
     position: absolute;
     inset: 0;
+    /* размеры как у заготовок Тильды (экраны 1920 / 1366 / 1024 / 768 / 320) */
     --pt-w: 520px;
     --pt-h: 460px;
-    /* зазор между краем активной и соседней ≥ 16px */
     --pt-gap: 16px;
-    --pt-side-scale: 0.9;
-    --pt-far-scale: 0.8;
+    /* без scale — размер = заготовка, глубину даёт rotateY + translateZ */
+    --pt-side-scale: 1;
+    --pt-far-scale: 1;
     --pt-rotate-1: 42deg;
     --pt-rotate-2: 58deg;
     --pt-depth-1: -110px;
@@ -54,13 +55,8 @@
     --pt-dur: 700ms;
     --pt-flip-dur: 0.6s;
     --pt-ease: cubic-bezier(0.25, 0.1, 0.25, 1);
-    --pt-offset-1: calc(
-      var(--pt-w) * 0.5 + var(--pt-gap) + var(--pt-w) * var(--pt-side-scale) * 0.5
-    );
-    --pt-offset-2: calc(
-      var(--pt-offset-1) + var(--pt-w) * var(--pt-side-scale) * 0.5 +
-      var(--pt-gap) + var(--pt-w) * var(--pt-far-scale) * 0.5
-    );
+    --pt-offset-1: calc(var(--pt-w) * 0.5 + var(--pt-gap) + var(--pt-w) * 0.5);
+    --pt-offset-2: calc(var(--pt-offset-1) + var(--pt-w) * 0.5 + var(--pt-gap) + var(--pt-w) * 0.5);
     --pt-cur-prev: w-resize;
     --pt-cur-next: e-resize;
     perspective: 1200px;
@@ -119,6 +115,9 @@
     backface-visibility: hidden;
     transform-style: preserve-3d;
     overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .pt-face-front {
@@ -136,15 +135,12 @@
     top: auto !important;
     right: auto !important;
     bottom: auto !important;
-    width: 100% !important;
-    height: 100% !important;
+    /* ширину/высоту НЕ форсим — оставляем CSS Тильды по вьюпортам */
     margin: 0 !important;
     transform: none !important;
   }
 
   .pt-face .tn-molecule {
-    width: 100% !important;
-    height: 100% !important;
     box-sizing: border-box;
   }
 
@@ -274,20 +270,29 @@
     cursor: grabbing !important;
   }
 
-  @media (max-width: 1199px) {
+  /* брейкпоинты как у Zero Block на parent-new */
+  @media screen and (max-width: 1919px) {
     .pt-stage {
-      --pt-w: 440px;
-      --pt-h: 389px;
-      --pt-gap: 16px;
+      --pt-w: 429px;
+      --pt-h: 380px;
+      perspective: 1100px;
+    }
+  }
+
+  @media screen and (max-width: 1365px) {
+    .pt-stage {
+      --pt-w: 482px;
+      --pt-h: 380px;
+      --pt-rotate-1: 38deg;
+      --pt-rotate-2: 52deg;
       perspective: 1000px;
     }
   }
 
-  @media (max-width: 959px) {
+  @media screen and (max-width: 1023px) {
     .pt-stage {
-      --pt-w: 360px;
-      --pt-h: 318px;
-      --pt-gap: 16px;
+      --pt-w: 354px;
+      --pt-h: 354px;
       --pt-rotate-1: 32deg;
       --pt-rotate-2: 46deg;
       --pt-depth-1: -80px;
@@ -296,11 +301,10 @@
     }
   }
 
-  @media (max-width: 639px) {
+  @media screen and (max-width: 767px) {
     .pt-stage {
-      --pt-w: 260px;
-      --pt-h: 230px;
-      --pt-gap: 16px;
+      --pt-w: 280px;
+      --pt-h: 240px;
       --pt-rotate-1: 26deg;
       --pt-rotate-2: 40deg;
       perspective: 700px;
@@ -312,8 +316,8 @@
 (function () {
   'use strict';
 
-  if (window.__ptSpotifySliderV3) return;
-  window.__ptSpotifySliderV3 = true;
+  if (window.__ptSpotifySliderV4) return;
+  window.__ptSpotifySliderV4 = true;
 
   var AUTOPLAY_MS = 5000;
   var SWIPE_THRESHOLD = 60;
@@ -613,40 +617,116 @@
     go(sideFromEvent(e));
   }
 
-  /* курсор из иконки кнопок Тильды (--icon на .tn-atom__button-icon) */
-  function cursorFromButton(sel, fallback) {
-    var btn = q(sel);
-    if (!btn) return fallback;
-    var src = null;
+  /* курсор = фиолетовый круг кнопки + белая стрелка */
+  function buttonBgColor(btn) {
+    var atom = (btn && btn.querySelector('.tn-atom')) || btn;
+    if (!atom) return '#8742ee';
+    var cs = getComputedStyle(atom);
+    var v = (cs.getPropertyValue('--t396-bgcolor-color') || '').trim();
+    if (v && v !== 'transparent') return v;
+    var bg = cs.backgroundColor;
+    if (bg && bg !== 'transparent' && bg !== 'rgba(0, 0, 0, 0)') return bg;
+    return '#8742ee';
+  }
+
+  function buttonIconUrl(btn) {
+    if (!btn) return null;
     var icon = btn.querySelector('.tn-atom__button-icon');
     if (icon) {
       var cs = getComputedStyle(icon);
       var iconVar = (cs.getPropertyValue('--icon') || '').trim();
       var m = iconVar.match(/url\(\s*['"]?([^"')]+)['"]?\s*\)/);
-      if (m) src = m[1];
-      if (!src) {
-        m = (cs.backgroundImage || '').match(/url\(\s*['"]?([^"')]+)['"]?\s*\)/);
-        if (m) src = m[1];
+      if (m) return m[1];
+      m = (cs.backgroundImage || '').match(/url\(\s*['"]?([^"')]+)['"]?\s*\)/);
+      if (m) return m[1];
+    }
+    var img = btn.querySelector('img');
+    return img && (img.getAttribute('data-original') || img.getAttribute('src'));
+  }
+
+  function composeButtonCursor(sel, cssVar, fallback) {
+    var btn = q(sel);
+    if (!btn || !stage) {
+      if (stage) stage.style.setProperty(cssVar, fallback);
+      return;
+    }
+    var bg = buttonBgColor(btn);
+    var iconUrl = buttonIconUrl(btn);
+    var atom = btn.querySelector('.tn-atom') || btn;
+    var size = Math.round(Math.max(atom.offsetWidth || 56, atom.offsetHeight || 56, 48));
+    size = Math.min(Math.max(size, 40), 64);
+    var hot = Math.round(size / 2);
+    var pad = Math.round(size * 0.28);
+    var iconBox = size - pad * 2;
+
+    function applySvg(arrowInner) {
+      var svg =
+        '<svg xmlns="http://www.w3.org/2000/svg" width="' + size + '" height="' + size +
+        '" viewBox="0 0 ' + size + ' ' + size + '">' +
+        '<circle cx="' + hot + '" cy="' + hot + '" r="' + hot + '" fill="' + bg + '"/>' +
+        (arrowInner || '') +
+        '</svg>';
+      stage.style.setProperty(
+        cssVar,
+        'url("data:image/svg+xml,' + encodeURIComponent(svg) + '") ' + hot + ' ' + hot + ', ' + fallback
+      );
+    }
+
+    if (!iconUrl) {
+      applySvg('');
+      return;
+    }
+
+    fetch(iconUrl, { mode: 'cors' }).then(function (r) {
+      return r.text();
+    }).then(function (txt) {
+      var paths = [];
+      var re = /<path\b[^>]*>/gi;
+      var m;
+      while ((m = re.exec(txt))) {
+        var tag = m[0];
+        if (/fill\s*=/.test(tag)) {
+          tag = tag.replace(/fill\s*=\s*(['"])[^'"]*\1/i, 'fill="white"');
+        } else {
+          tag = tag.replace('<path', '<path fill="white"');
+        }
+        paths.push(tag);
       }
-    }
-    if (!src) {
-      var img = btn.querySelector('img');
-      src = img && (img.getAttribute('data-original') || img.getAttribute('src'));
-    }
-    if (!src) {
-      var atom = btn.querySelector('.tn-atom') || btn;
-      var bg = getComputedStyle(atom).backgroundImage;
-      var m2 = bg && bg.match(/url\(\s*['"]?([^"')]+)['"]?\s*\)/);
-      if (m2) src = m2[1];
-    }
-    if (!src) return fallback;
-    return 'url("' + src + '") 16 16, ' + fallback;
+      if (!paths.length) {
+        applySvg('');
+        return;
+      }
+      applySvg(
+        '<g transform="translate(' + pad + ',' + pad + ') scale(' + (iconBox / 24) + ')">' +
+        paths.join('') +
+        '</g>'
+      );
+    }).catch(function () {
+      applySvg('');
+    });
   }
 
   function applyCursorsFromButtons() {
-    if (!stage) return;
-    stage.style.setProperty('--pt-cur-prev', cursorFromButton('.slider-prev', 'w-resize'));
-    stage.style.setProperty('--pt-cur-next', cursorFromButton('.slider-next', 'e-resize'));
+    composeButtonCursor('.slider-prev', '--pt-cur-prev', 'w-resize');
+    composeButtonCursor('.slider-next', '--pt-cur-next', 'e-resize');
+  }
+
+  /* размеры слайда = реальный размер группы Тильды на текущем вьюпорте */
+  function syncSlideSizeFromCards() {
+    if (!stage || !slides.length) return;
+    var sample = null;
+    for (var i = 0; i < slides.length && !sample; i++) {
+      sample =
+        slides[i].querySelector('.pt-face-back > .tn-group, .pt-face-back > .t396__group') ||
+        slides[i].querySelector('.pt-face-front > .tn-group, .pt-face-front > .t396__group');
+    }
+    if (!sample) return;
+    var w = sample.offsetWidth;
+    var h = sample.offsetHeight;
+    if (w > 40 && h > 40) {
+      stage.style.setProperty('--pt-w', w + 'px');
+      stage.style.setProperty('--pt-h', h + 'px');
+    }
   }
 
   function bindPagination() {
@@ -751,7 +831,14 @@
     applyPositions();
     bindInteractions();
 
+    syncSlideSizeFromCards();
+    window.addEventListener('resize', function () {
+      syncSlideSizeFromCards();
+      applyCursorsFromButtons();
+    });
+
     requestAnimationFrame(function () {
+      syncSlideSizeFromCards();
       stage.classList.add('pt-ready');
       startAutoplay();
     });

@@ -57,17 +57,24 @@
     }
     .slider-next { right: 40px; }
     .slider-prev { left: 40px; }
+    .slider-next .tn-atom,
+    .slider-prev .tn-atom {
+      width: 56px; height: 56px; border-radius: 42px;
+      background-color: var(--t396-bgcolor-color, #8742ee);
+      --t396-bgcolor-color: #8742ee;
+      display: flex; align-items: center; justify-content: center;
+    }
     .slider-next .tn-atom__button-icon,
     .slider-prev .tn-atom__button-icon {
-      display: block; width: 24px; height: 24px; margin: 16px;
+      display: block; width: 24px; height: 24px;
       background: center / contain no-repeat;
     }
     .slider-next .tn-atom__button-icon {
-      --icon: url('https://static.tildacdn.com/tild6330-3834-4835-a164-343666333432/Component_1l1.svg');
+      --icon: url('https://static.tildacdn.com/tild3634-3730-4664-a132-393536366633/Component_11.svg');
       background-image: var(--icon);
     }
     .slider-prev .tn-atom__button-icon {
-      --icon: url('https://static.tildacdn.com/tild6639-3131-4736-a236-373138636639/Component_1l3.svg');
+      --icon: url('https://static.tildacdn.com/tild3264-6661-4735-b439-386137373338/Component_11.svg');
       background-image: var(--icon);
     }
 
@@ -89,6 +96,24 @@
       background-size: cover; background-position: center; color: #fff;
     }
     .img-face .title .tn-atom { color: #fff; }
+
+    @media screen and (max-width: 1919px) {
+      .tn-group[class*="card"] { width: 429px; height: 380px; left: calc(50% - 214.5px); }
+      .tn-molecule { padding: 20px; border-radius: 40px; }
+    }
+    @media screen and (max-width: 1365px) {
+      .tn-group[class*="card"] { width: 482px; height: 380px; left: calc(50% - 241px); }
+      .tn-molecule { border-radius: 32px; }
+    }
+    @media screen and (max-width: 1023px) {
+      .tn-group[class*="card"] { width: 354px; height: 354px; left: calc(50% - 177px); }
+    }
+    @media screen and (max-width: 767px) {
+      .tn-group[class*="card"] { width: 280px; height: 240px; left: calc(50% - 140px); }
+      .tn-molecule { padding: 16px; border-radius: 24px; }
+      .title .tn-atom { font-size: 20px; }
+      .subtitle .tn-atom { font-size: 14px; }
+    }
   </style>
 </head>
 <body>
