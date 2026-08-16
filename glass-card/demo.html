@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>glass-card — Tilda demo</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Arial, sans-serif;
+      color: #fff;
+      background:
+        radial-gradient(1200px 600px at 10% 20%, #8742EE 0%, transparent 55%),
+        radial-gradient(900px 500px at 90% 80%, #f0a 0%, transparent 50%),
+        linear-gradient(160deg, #1a1030 0%, #4B2E83 45%, #8742EE 100%);
+    }
+    .page {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 48px 24px 80px;
+    }
+    h1 { font-size: 22px; font-weight: 600; margin: 0 0 8px; }
+    .note {
+      opacity: 0.85;
+      font-size: 14px;
+      line-height: 1.45;
+      max-width: 640px;
+      margin: 0 0 32px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 24px;
+    }
+    .tn-elem, .tn-group { position: relative; }
+    .tn-atom, .tn-molecule {
+      min-height: 180px;
+      padding: 24px;
+    }
+    .card-a .tn-atom { border-radius: 40px; }
+    .card-b .tn-molecule { border-radius: 24px; }
+    .plain.glass-card { border-radius: 16px; min-height: 180px; padding: 24px; }
+    h2 { margin: 0 0 8px; font-size: 18px; font-weight: 600; }
+    p { margin: 0; opacity: 0.9; font-size: 14px; line-height: 1.4; }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <h1>Стеклянные карточки .glass-card</h1>
+    <p class="note">
+      Фон <code>#FFFFFF 20%</code>, обводка <code>1px #FFFFFF 20%</code>,
+      blur <code>120px</code>. Скругления разные — как если бы их задали в Тильде.
+    </p>
+    <div class="grid">
+      <div class="tn-elem glass-card card-a">
+        <div class="tn-atom">
+          <h2>Фигура · 40px</h2>
+          <p>.tn-elem.glass-card → .tn-atom</p>
+        </div>
+      </div>
+      <div class="tn-group glass-card card-b">
+        <div class="tn-molecule">
+          <h2>Группа · 24px</h2>
+          <p>.tn-group.glass-card → .tn-molecule</p>
+        </div>
+      </div>
+      <div class="glass-card plain">
+        <h2>HTML · 16px</h2>
+        <p>класс на самом элементе</p>
+      </div>
+    </div>
+  </div>
+  <div id="embed-slot"></div>
+  <script>
+    fetch('tilda-embed.html')
+      .then(function (r) { return r.text(); })
+      .then(function (html) {
+        var slot = document.getElementById('embed-slot');
+        var doc = new DOMParser().parseFromString(html, 'text/html');
+        Array.prototype.forEach.call(doc.querySelectorAll('style, script'), function (node) {
+          var clone = document.createElement(node.tagName.toLowerCase());
+          clone.textContent = node.textContent;
+          slot.appendChild(clone);
+        });
+      })
+      .catch(function (err) {
+        document.body.insertAdjacentHTML(
+          'beforeend',
+          '<p style="padding:20px;color:#c00">Не удалось загрузить tilda-embed.html</p>'
+        );
+        console.error(err);
+      });
+  </script>
+</body>
+</html>

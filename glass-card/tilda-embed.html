@@ -1,0 +1,30 @@
+<!-- ============================================================
+     Стеклянные карточки .glass-card для Tilda Zero Block
+
+     Как подключить:
+     1. В зеро-блоке задайте CSS-класс  glass-card
+        фигуре (shape) или группе — скругления оставьте в Тильде.
+     2. Вставьте этот файл в HTML-элемент страницы
+        (или в настройки страницы → HTML-код).
+
+     Стили:
+     - фон      #FFFFFF 20%
+     - обводка  1px #FFFFFF 20%
+     - blur     120px (backdrop-filter)
+     - radius   как в настройках Тильды (не переопределяется)
+============================================================ -->
+
+<style>
+  /* Фигура: заливка и обводка живут на .tn-atom.
+     Группа: на .tn-molecule.
+     Класс на самом окрашенном узле — запасной вариант. */
+  .tn-elem.glass-card > .tn-atom,
+  .tn-group.glass-card > .tn-molecule,
+  .glass-card:not(.tn-elem):not(.tn-group) {
+    background: rgba(255, 255, 255, 0.2) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    -webkit-backdrop-filter: blur(120px);
+    backdrop-filter: blur(120px);
+    box-sizing: border-box;
+  }
+</style>
