@@ -43,6 +43,10 @@
     position: relative !important;
   }
 
+  .pts-stage,
+  .pts-slide {
+    pointer-events: none !important;
+  }
   .pts-stage {
     position: absolute;
     inset: 0;
@@ -59,7 +63,6 @@
     box-sizing: border-box;
     opacity: 0;
     visibility: hidden;
-    pointer-events: none;
     overflow: hidden;
     border-radius: inherit;
     transition: opacity 0.45s ease, visibility 0.45s ease;
@@ -67,21 +70,12 @@
   .pts-slide.is-active {
     opacity: 1;
     visibility: visible;
-    pointer-events: auto;
     z-index: 1;
   }
   .pts-stage:not(.pts-ready) .pts-slide {
     transition: none !important;
   }
 
-  .tab1 .tn-atom,
-  .tab2 .tn-atom,
-  .tab3 .tn-atom,
-  .tab4 .tn-atom,
-  .tab5 .tn-atom,
-  .tab6 .tn-atom {
-    position: relative !important;
-  }
   .tab1,
   .tab2,
   .tab3,
@@ -89,6 +83,131 @@
   .tab5,
   .tab6 {
     cursor: pointer;
+    border-radius: 20px !important;
+    overflow: hidden;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  .tab1 .tn-atom,
+  .tab2 .tn-atom,
+  .tab3 .tn-atom,
+  .tab4 .tn-atom,
+  .tab5 .tn-atom,
+  .tab6 .tn-atom {
+    position: relative !important;
+    border-radius: 20px !important;
+    -webkit-tap-highlight-color: transparent !important;
+  }
+  .tab1 .tn-atom__button-text,
+  .tab1 .tn-atom__button-content,
+  .tab2 .tn-atom__button-text,
+  .tab2 .tn-atom__button-content,
+  .tab3 .tn-atom__button-text,
+  .tab3 .tn-atom__button-content,
+  .tab4 .tn-atom__button-text,
+  .tab4 .tn-atom__button-content,
+  .tab5 .tn-atom__button-text,
+  .tab5 .tn-atom__button-content,
+  .tab6 .tn-atom__button-text,
+  .tab6 .tn-atom__button-content {
+    background: none !important;
+    background-color: transparent !important;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-user-select: none;
+    user-select: none;
+    box-shadow: none !important;
+  }
+  .tab1 ::selection,
+  .tab2 ::selection,
+  .tab3 ::selection,
+  .tab4 ::selection,
+  .tab5 ::selection,
+  .tab6 ::selection {
+    background: transparent !important;
+    color: inherit !important;
+  }
+  .tab1 .tn-atom:focus,
+  .tab1 .tn-atom:focus-visible,
+  .tab2 .tn-atom:focus,
+  .tab2 .tn-atom:focus-visible,
+  .tab3 .tn-atom:focus,
+  .tab3 .tn-atom:focus-visible,
+  .tab4 .tn-atom:focus,
+  .tab4 .tn-atom:focus-visible,
+  .tab5 .tn-atom:focus,
+  .tab5 .tn-atom:focus-visible,
+  .tab6 .tn-atom:focus,
+  .tab6 .tn-atom:focus-visible {
+    outline: none !important;
+  }
+  .tab1:hover,
+  .tab1:active,
+  .tab1:focus,
+  .tab2:hover,
+  .tab2:active,
+  .tab2:focus,
+  .tab3:hover,
+  .tab3:active,
+  .tab3:focus,
+  .tab4:hover,
+  .tab4:active,
+  .tab4:focus,
+  .tab5:hover,
+  .tab5:active,
+  .tab5:focus,
+  .tab6:hover,
+  .tab6:active,
+  .tab6:focus {
+    background: none !important;
+    background-color: transparent !important;
+    box-shadow: none !important;
+    outline: none !important;
+  }
+  .tab1 .tn-atom:hover,
+  .tab1 .tn-atom:active,
+  .tab1 .tn-atom:focus,
+  .tab2 .tn-atom:hover,
+  .tab2 .tn-atom:active,
+  .tab2 .tn-atom:focus,
+  .tab3 .tn-atom:hover,
+  .tab3 .tn-atom:active,
+  .tab3 .tn-atom:focus,
+  .tab4 .tn-atom:hover,
+  .tab4 .tn-atom:active,
+  .tab4 .tn-atom:focus,
+  .tab5 .tn-atom:hover,
+  .tab5 .tn-atom:active,
+  .tab5 .tn-atom:focus,
+  .tab6 .tn-atom:hover,
+  .tab6 .tn-atom:active,
+  .tab6 .tn-atom:focus {
+    background-color: var(--t396-bgcolor-color, rgba(135, 66, 238, 0.05)) !important;
+    background-image: none !important;
+    color: #312740 !important;
+    box-shadow: none !important;
+  }
+  .tab1 .tn-atom:hover .tn-atom__button-text,
+  .tab1 .tn-atom:active .tn-atom__button-text,
+  .tab1 .tn-atom:focus .tn-atom__button-text,
+  .tab2 .tn-atom:hover .tn-atom__button-text,
+  .tab2 .tn-atom:active .tn-atom__button-text,
+  .tab2 .tn-atom:focus .tn-atom__button-text,
+  .tab3 .tn-atom:hover .tn-atom__button-text,
+  .tab3 .tn-atom:active .tn-atom__button-text,
+  .tab3 .tn-atom:focus .tn-atom__button-text,
+  .tab4 .tn-atom:hover .tn-atom__button-text,
+  .tab4 .tn-atom:active .tn-atom__button-text,
+  .tab4 .tn-atom:focus .tn-atom__button-text,
+  .tab5 .tn-atom:hover .tn-atom__button-text,
+  .tab5 .tn-atom:active .tn-atom__button-text,
+  .tab5 .tn-atom:focus .tn-atom__button-text,
+  .tab6 .tn-atom:hover .tn-atom__button-text,
+  .tab6 .tn-atom:active .tn-atom__button-text,
+  .tab6 .tn-atom:focus .tn-atom__button-text {
+    color: #312740 !important;
+    background: none !important;
+    background-color: transparent !important;
   }
 
   .pts-progress {
@@ -103,22 +222,50 @@
     z-index: 0;
   }
 
-  .pts-tab-active .tn-atom {
+  .pts-tab-active .tn-atom,
+  .pts-tab-active .tn-atom:hover,
+  .pts-tab-active .tn-atom:active,
+  .pts-tab-active .tn-atom:focus {
     background-color: #8742EE !important;
+    background-image: none !important;
     color: #ffffff !important;
     overflow: hidden !important;
     isolation: isolate;
   }
   .pts-tab-active .tn-atom .tn-atom__button-text,
-  .pts-tab-active .tn-atom .tn-atom__button-content {
+  .pts-tab-active .tn-atom .tn-atom__button-content,
+  .pts-tab-active .tn-atom:hover .tn-atom__button-text,
+  .pts-tab-active .tn-atom:active .tn-atom__button-text,
+  .pts-tab-active .tn-atom:focus .tn-atom__button-text {
     color: #ffffff !important;
+    background: none !important;
+    background-color: transparent !important;
     position: relative;
     z-index: 1;
   }
-  .pts-tab-active .tn-atom:hover,
-  .pts-tab-active .tn-atom:hover .tn-atom__button-text {
-    background-color: #8742EE !important;
-    color: #ffffff !important;
+
+  /* ряд табов: те же скругления, что у кнопок */
+  .pts-tabs-wrap,
+  .pts-tabs-scroll {
+    border-radius: 20px !important;
+  }
+  @media screen and (max-width: 1919px) {
+    .tab1,
+    .tab2,
+    .tab3,
+    .tab4,
+    .tab5,
+    .tab6,
+    .tab1 .tn-atom,
+    .tab2 .tn-atom,
+    .tab3 .tn-atom,
+    .tab4 .tn-atom,
+    .tab5 .tn-atom,
+    .tab6 .tn-atom,
+    .pts-tabs-wrap,
+    .pts-tabs-scroll {
+      border-radius: 14px !important;
+    }
   }
 
   @keyframes pts-fill {
@@ -129,7 +276,8 @@
   .tab-prev,
   .tab-next {
     cursor: pointer;
-    z-index: 4;
+    z-index: 10 !important;
+    pointer-events: auto !important;
   }
 
   /* до 1366 ряд табов не помещается — свайп внутри дива */
@@ -399,10 +547,10 @@
     startAutoplay();
   }
 
-  function bindClick(el, fn) {
+  function bindClick(el, fn, ignoreDrag) {
     if (!el) return;
     el.addEventListener('click', function (e) {
-      if (dragMoved) {
+      if (!ignoreDrag && dragMoved) {
         e.preventDefault();
         e.stopPropagation();
         return;
@@ -410,6 +558,8 @@
       e.preventDefault();
       e.stopPropagation();
       fn(e);
+      var ae = document.activeElement;
+      if (ae && ae.blur) ae.blur();
     }, true);
   }
 
@@ -435,17 +585,21 @@
 
     if (tabs[0]) {
       tabsScroll = tabs[0].parentElement;
-      if (tabsScroll) tabsScroll.classList.add('pts-tabs-scroll');
+      if (tabsScroll) {
+        tabsScroll.classList.add('pts-tabs-scroll');
+        var wrap = tabsScroll.parentElement;
+        if (wrap) wrap.classList.add('pts-tabs-wrap');
+      }
     }
 
     buildSlides(hostMol);
     stageEl.classList.add('pts-ready');
 
-    bindClick(q('.tab-next'), function () { go(active + 1); });
-    bindClick(q('.tab-prev'), function () { go(active - 1); });
+    bindClick(q('.tab-next'), function () { go(active + 1); }, true);
+    bindClick(q('.tab-prev'), function () { go(active - 1); }, true);
 
     tabs.forEach(function (tab, idx) {
-      bindClick(tab, function () { go(idx); });
+      bindClick(tab, function () { go(idx); }, false);
     });
 
     if (tabsScroll) {
@@ -455,15 +609,15 @@
         dragMoved = false;
       });
       tabsScroll.addEventListener('pointermove', function (e) {
-        if (Math.abs(e.clientX - startX) > 10) dragMoved = true;
-      });
-      tabsScroll.addEventListener('pointerup', function () {
-        setTimeout(function () { dragMoved = false; }, 50);
-      });
-      tabsScroll.addEventListener('pointercancel', function () {
-        dragMoved = false;
+        if (Math.abs(e.clientX - startX) > 16) dragMoved = true;
       });
     }
+    document.addEventListener('pointerup', function () {
+      setTimeout(function () { dragMoved = false; }, 0);
+    }, true);
+    document.addEventListener('pointercancel', function () {
+      dragMoved = false;
+    }, true);
 
     document.addEventListener('visibilitychange', function () {
       if (document.hidden) stopAutoplay();
