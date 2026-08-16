@@ -117,7 +117,8 @@
     border-radius: var(--pt-radius);
     -webkit-backface-visibility: hidden;
     backface-visibility: hidden;
-    transform-style: preserve-3d;
+    /* flat — иначе при coverflow rotateY родителя просвечивает вторая сторона */
+    transform-style: flat;
     overflow: hidden;
     display: block;
   }
@@ -128,6 +129,34 @@
 
   .pt-face-back {
     transform: rotateY(180deg);
+  }
+
+  /*
+   * Неактивные слайды в coverflow: parent rotateY ломает backface-visibility,
+   * поэтому контентную сторону прячем явно — видна только фотка.
+   */
+  .pt-slide:not(.is-active) .pt-flip {
+    transform: none !important;
+    transition: none !important;
+  }
+
+  .pt-slide:not(.is-active) .pt-face-back {
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }
+
+  .pt-slide:not(.is-active) .pt-face-front {
+    visibility: visible !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  /* на боковых слайдах — только фото, без подписей с image-face */
+  .pt-slide:not(.is-active) .pt-face-front .tn-elem[data-elem-type="text"],
+  .pt-slide:not(.is-active) .pt-face-front .tn-elem[data-elem-type="text"] .tn-atom {
+    opacity: 0 !important;
+    visibility: hidden !important;
   }
 
   /* группа = ровно размер слайда (= заготовка на текущем вьюпорте) */
@@ -223,24 +252,27 @@
       scale(var(--pt-far-scale));
   }
 
-  /* пагинация */
+  /* пагинация: трек/неактивный и заливка = #EFE8FB, концы 4px */
   .cslide4-1,
   .cslide4-2,
   .cslide4-3,
   .cslide4-4,
   .cslide4-5 {
     cursor: pointer;
+    overflow: hidden !important;
+    border-radius: 4px !important;
+    background-color: #EFE8FB !important;
   }
 
-  /* черточки пагинации: неактивные приглушены, активная яркая + прогресс */
   .slide4-1,
   .slide4-2,
   .slide4-3,
   .slide4-4,
   .slide4-5 {
     transform-origin: left center !important;
-    opacity: 0.28 !important;
-    transition: opacity 0.3s ease !important;
+    opacity: 1 !important;
+    border-radius: 4px !important;
+    overflow: hidden !important;
   }
 
   .slide4-1 .tn-atom,
@@ -249,14 +281,28 @@
   .slide4-4 .tn-atom,
   .slide4-5 .tn-atom {
     transform-origin: left center !important;
+    background-color: #EFE8FB !important;
+    background-image: none !important;
+    border-radius: 4px !important;
   }
 
-  .cslide4-1.is-on .slide4-1,
-  .cslide4-2.is-on .slide4-2,
-  .cslide4-3.is-on .slide4-3,
-  .cslide4-4.is-on .slide4-4,
-  .cslide4-5.is-on .slide4-5 {
-    opacity: 1 !important;
+  /* неактивный: полная полоска #EFE8FB */
+  .cslide4-1:not(.is-on) .slide4-1 .tn-atom,
+  .cslide4-2:not(.is-on) .slide4-2 .tn-atom,
+  .cslide4-3:not(.is-on) .slide4-3 .tn-atom,
+  .cslide4-4:not(.is-on) .slide4-4 .tn-atom,
+  .cslide4-5:not(.is-on) .slide4-5 .tn-atom {
+    transform: scaleX(1) !important;
+    animation: none !important;
+  }
+
+  /* активный: трек чуть бледнее, заливка #EFE8FB с округлыми концами */
+  .cslide4-1.is-on,
+  .cslide4-2.is-on,
+  .cslide4-3.is-on,
+  .cslide4-4.is-on,
+  .cslide4-5.is-on {
+    background-color: rgba(239, 232, 251, 0.35) !important;
   }
 
   .cslide4-1.is-on .slide4-1.pt-pag-run .tn-atom,
@@ -335,8 +381,8 @@
 (function () {
   'use strict';
 
-  if (window.__ptSpotifySliderV5) return;
-  window.__ptSpotifySliderV5 = true;
+  if (window.__ptSpotifySliderV6) return;
+  window.__ptSpotifySliderV6 = true;
 
   var AUTOPLAY_MS = 5000;
   var SWIPE_THRESHOLD = 60;
