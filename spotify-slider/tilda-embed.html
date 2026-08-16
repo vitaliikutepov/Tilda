@@ -617,7 +617,7 @@
     go(sideFromEvent(e));
   }
 
-  /* курсор = фиолетовый круг кнопки + белая стрелка */
+  /* курсор = фиолетовый круг кнопки + белая стрелка (canvas/PNG, без fetch) */
   function buttonBgColor(btn) {
     var atom = (btn && btn.querySelector('.tn-atom')) || btn;
     if (!atom) return '#8742ee';
@@ -629,86 +629,73 @@
     return '#8742ee';
   }
 
-  function buttonIconUrl(btn) {
-    if (!btn) return null;
-    var icon = btn.querySelector('.tn-atom__button-icon');
-    if (icon) {
-      var cs = getComputedStyle(icon);
-      var iconVar = (cs.getPropertyValue('--icon') || '').trim();
-      var m = iconVar.match(/url\(\s*['"]?([^"')]+)['"]?\s*\)/);
-      if (m) return m[1];
-      m = (cs.backgroundImage || '').match(/url\(\s*['"]?([^"')]+)['"]?\s*\)/);
-      if (m) return m[1];
-    }
-    var img = btn.querySelector('img');
-    return img && (img.getAttribute('data-original') || img.getAttribute('src'));
-  }
+  var ARROW_NEXT =
+    'M8.19542 5.40717C8.52284 4.96267 9.14823 4.86715 9.59288 5.19428L9.59483 5.19623C9.59573 5.1969 9.5972 5.19803 9.59874 5.19916C9.60194 5.20153 9.60662 5.20464 9.61241 5.20893C9.62451 5.21789 9.64239 5.23104 9.66515 5.24799C9.71063 5.28189 9.77679 5.33128 9.86046 5.39448C10.0281 5.52109 10.2669 5.70355 10.5528 5.9267C11.1237 6.37221 11.8879 6.98595 12.6554 7.65229C13.4178 8.31427 14.2062 9.0481 14.8116 9.73334C15.1134 10.0748 15.3913 10.4282 15.5987 10.7724C15.7896 11.0891 16.0001 11.524 16.0001 11.9999C16.0001 12.4761 15.7897 12.9117 15.5987 13.2285C15.3913 13.5725 15.1133 13.9251 14.8116 14.2665C14.2061 14.9518 13.4178 15.6856 12.6554 16.3476C11.8879 17.0139 11.1237 17.6277 10.5528 18.0732C10.2669 18.2963 10.0281 18.4788 9.86046 18.6054C9.77676 18.6686 9.71064 18.718 9.66515 18.7519C9.64237 18.7689 9.62452 18.782 9.61241 18.791C9.60663 18.7952 9.60195 18.7984 9.59874 18.8007C9.59722 18.8018 9.59573 18.803 9.59483 18.8037L9.59386 18.8046L9.59288 18.8056C9.1482 19.1328 8.52186 19.0373 8.19444 18.5927C7.86726 18.148 7.96276 17.5217 8.40733 17.1943L8.41026 17.1923C8.41278 17.1905 8.41669 17.1875 8.42198 17.1835C8.43254 17.1757 8.44876 17.1641 8.46983 17.1484C8.51217 17.1168 8.57517 17.0693 8.65538 17.0087C8.81585 16.8875 9.04598 16.7117 9.32237 16.496C9.87648 16.0636 10.6124 15.4738 11.3448 14.8378C12.0823 14.1976 12.7941 13.5302 13.3136 12.9423C13.5742 12.6473 13.7652 12.3953 13.8858 12.1953C13.9431 12.1003 13.9717 12.0362 13.9864 11.9999C13.9717 11.9637 13.9431 11.8996 13.8858 11.8046C13.7652 11.6045 13.5743 11.3526 13.3136 11.0576C12.7941 10.4697 12.0823 9.80235 11.3448 9.16206C10.6124 8.5261 9.87647 7.93628 9.32237 7.50385C9.04597 7.28814 8.81585 7.11236 8.65538 6.99116C8.57517 6.93057 8.51217 6.88306 8.46983 6.85151C8.44877 6.83581 8.43254 6.82417 8.42198 6.81635C8.4167 6.81244 8.41277 6.80942 8.41026 6.80756L8.40733 6.80561C7.96264 6.47809 7.8679 5.85187 8.19542 5.40717Z';
+  var ARROW_PREV =
+    'M15.8046 5.40717C15.4772 4.96267 14.8518 4.86715 14.4071 5.19428L14.4052 5.19623C14.4043 5.1969 14.4028 5.19803 14.4013 5.19916C14.3981 5.20153 14.3934 5.20464 14.3876 5.20893C14.3755 5.21789 14.3576 5.23104 14.3349 5.24799C14.2894 5.28189 14.2232 5.33128 14.1395 5.39448C13.9719 5.52109 13.7331 5.70355 13.4472 5.9267C12.8763 6.37221 12.1121 6.98595 11.3446 7.65229C10.5822 8.31427 9.79385 9.0481 9.18837 9.73334C8.88663 10.0748 8.60874 10.4282 8.40126 10.7724C8.21039 11.0891 7.99991 11.524 7.99989 11.9999C7.99989 12.4761 8.21033 12.9117 8.40126 13.2285C8.60872 13.5725 8.88671 13.9251 9.18837 14.2665C9.79386 14.9518 10.5822 15.6856 11.3446 16.3476C12.1121 17.0139 12.8763 17.6277 13.4472 18.0732C13.7331 18.2963 13.9719 18.4788 14.1395 18.6054C14.2232 18.6686 14.2894 18.718 14.3349 18.7519C14.3576 18.7689 14.3755 18.782 14.3876 18.791C14.3934 18.7952 14.3981 18.7984 14.4013 18.8007C14.4028 18.8018 14.4043 18.803 14.4052 18.8037L14.4061 18.8046L14.4071 18.8056C14.8518 19.1328 15.4781 19.0373 15.8056 18.5927C16.1327 18.148 16.0372 17.5217 15.5927 17.1943L15.5897 17.1923C15.5872 17.1905 15.5833 17.1875 15.578 17.1835C15.5675 17.1757 15.5512 17.1641 15.5302 17.1484C15.4878 17.1168 15.4248 17.0693 15.3446 17.0087C15.1842 16.8875 14.954 16.7117 14.6776 16.496C14.1235 16.0636 13.3876 15.4738 12.6552 14.8378C11.9177 14.1976 11.2059 13.5302 10.6864 12.9423C10.4258 12.6473 10.2348 12.3953 10.1142 12.1953C10.0569 12.1003 10.0283 12.0362 10.0136 11.9999C10.0283 11.9637 10.0569 11.8996 10.1142 11.8046C10.2348 11.6045 10.4257 11.3526 10.6864 11.0576C11.2059 10.4697 11.9177 9.80235 12.6552 9.16206C13.3876 8.5261 14.1235 7.93628 14.6776 7.50385C14.954 7.28814 15.1842 7.11236 15.3446 6.99116C15.4248 6.93057 15.4878 6.88306 15.5302 6.85151C15.5512 6.83581 15.5675 6.82417 15.578 6.81635C15.5833 6.81244 15.5872 6.80942 15.5897 6.80756L15.5927 6.80561C16.0374 6.47809 16.1321 5.85187 15.8046 5.40717Z';
 
-  function composeButtonCursor(sel, cssVar, fallback) {
+  function composeButtonCursor(sel, cssVar, fallback, isNext) {
+    if (!stage) return;
     var btn = q(sel);
-    if (!btn || !stage) {
-      if (stage) stage.style.setProperty(cssVar, fallback);
-      return;
-    }
     var bg = buttonBgColor(btn);
-    var iconUrl = buttonIconUrl(btn);
-    var atom = btn.querySelector('.tn-atom') || btn;
-    var size = Math.round(Math.max(atom.offsetWidth || 56, atom.offsetHeight || 56, 48));
-    size = Math.min(Math.max(size, 40), 64);
+    var atom = btn && (btn.querySelector('.tn-atom') || btn);
+    var size = 56;
+    if (atom && atom.offsetWidth > 20) {
+      size = Math.min(64, Math.max(48, Math.round(Math.max(atom.offsetWidth, atom.offsetHeight))));
+    }
     var hot = Math.round(size / 2);
-    var pad = Math.round(size * 0.28);
-    var iconBox = size - pad * 2;
+    var pad = Math.round(size * 0.29);
+    var d = isNext ? ARROW_NEXT : ARROW_PREV;
 
-    function applySvg(arrowInner) {
-      var svg =
-        '<svg xmlns="http://www.w3.org/2000/svg" width="' + size + '" height="' + size +
-        '" viewBox="0 0 ' + size + ' ' + size + '">' +
-        '<circle cx="' + hot + '" cy="' + hot + '" r="' + hot + '" fill="' + bg + '"/>' +
-        (arrowInner || '') +
-        '</svg>';
-      stage.style.setProperty(
-        cssVar,
-        'url("data:image/svg+xml,' + encodeURIComponent(svg) + '") ' + hot + ' ' + hot + ', ' + fallback
-      );
-    }
+    var canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    var ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, size, size);
+    ctx.fillStyle = bg;
+    ctx.beginPath();
+    ctx.arc(hot, hot, hot, 0, Math.PI * 2);
+    ctx.fill();
 
-    if (!iconUrl) {
-      applySvg('');
-      return;
-    }
-
-    fetch(iconUrl, { mode: 'cors' }).then(function (r) {
-      return r.text();
-    }).then(function (txt) {
-      var paths = [];
-      var re = /<path\b[^>]*>/gi;
-      var m;
-      while ((m = re.exec(txt))) {
-        var tag = m[0];
-        if (/fill\s*=/.test(tag)) {
-          tag = tag.replace(/fill\s*=\s*(['"])[^'"]*\1/i, 'fill="white"');
-        } else {
-          tag = tag.replace('<path', '<path fill="white"');
-        }
-        paths.push(tag);
+    ctx.save();
+    ctx.translate(pad, pad);
+    ctx.scale((size - pad * 2) / 24, (size - pad * 2) / 24);
+    ctx.fillStyle = '#ffffff';
+    try {
+      ctx.fill(new Path2D(d));
+    } catch (err) {
+      ctx.beginPath();
+      if (isNext) {
+        ctx.moveTo(8, 5); ctx.lineTo(16, 12); ctx.lineTo(8, 19); ctx.closePath();
+      } else {
+        ctx.moveTo(16, 5); ctx.lineTo(8, 12); ctx.lineTo(16, 19); ctx.closePath();
       }
-      if (!paths.length) {
-        applySvg('');
-        return;
-      }
-      applySvg(
-        '<g transform="translate(' + pad + ',' + pad + ') scale(' + (iconBox / 24) + ')">' +
-        paths.join('') +
-        '</g>'
-      );
-    }).catch(function () {
-      applySvg('');
-    });
+      ctx.fill();
+    }
+    ctx.restore();
+
+    var url = canvas.toDataURL('image/png');
+    stage.style.setProperty(cssVar, 'url("' + url + '") ' + hot + ' ' + hot + ', ' + fallback);
   }
 
   function applyCursorsFromButtons() {
-    composeButtonCursor('.slider-prev', '--pt-cur-prev', 'w-resize');
-    composeButtonCursor('.slider-next', '--pt-cur-next', 'e-resize');
+    var prev = q('.slider-prev');
+    var next = q('.slider-next');
+    var restore = [];
+    [prev, next].forEach(function (el) {
+      if (!el) return;
+      restore.push({ el: el, opacity: el.style.opacity, visibility: el.style.visibility });
+      el.style.setProperty('opacity', '1', 'important');
+      el.style.setProperty('visibility', 'visible', 'important');
+    });
+
+    composeButtonCursor('.slider-prev', '--pt-cur-prev', 'w-resize', false);
+    composeButtonCursor('.slider-next', '--pt-cur-next', 'e-resize', true);
+
+    restore.forEach(function (r) {
+      r.el.style.opacity = r.opacity;
+      r.el.style.visibility = r.visibility;
+    });
   }
 
   /* размеры слайда = реальный размер группы Тильды на текущем вьюпорте */
