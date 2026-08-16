@@ -6,7 +6,8 @@
           .cardN      — активная (контентная) сторона
           .cardN-img  — оборотная (картинка)
      3. Пагинация: .cslide4-N  содержит полоску  .slide4-N  (N=1…5)
-     4. Курсоры берутся из .slider-prev / .slider-next (сами кнопки скрываются)
+     4. Курсоры = фиолетовая кнопка (.slider-prev/.slider-next) + белая стрелка; оригиналы скрыты
+     5. Размер/радиус слайда = заготовка Zero Block на каждом вьюпорте (1920→520×460 / 1366→429×380 / 1024→482×380 / 768→354×354 / 320→280×240)
 
      Поведение: coverflow 3D, flip активной карточки, цикл, swipe, автоплей.
 ============================================================ -->
@@ -41,9 +42,10 @@
   .pt-stage {
     position: absolute;
     inset: 0;
-    /* размеры как у заготовок Тильды (экраны 1920 / 1366 / 1024 / 768 / 320) */
+    /* размеры/радиус = заготовки Zero Block (1920 / 1366 / 1024 / 768 / 320) */
     --pt-w: 520px;
     --pt-h: 460px;
+    --pt-radius: 40px;
     --pt-gap: 16px;
     /* без scale — размер = заготовка, глубину даёт rotateY + translateZ */
     --pt-side-scale: 1;
@@ -98,6 +100,7 @@
     position: relative;
     width: 100%;
     height: 100%;
+    border-radius: var(--pt-radius);
     transform-style: preserve-3d;
     transition: transform var(--pt-flip-dur) var(--pt-ease);
   }
@@ -111,13 +114,12 @@
     inset: 0;
     width: 100%;
     height: 100%;
+    border-radius: var(--pt-radius);
     -webkit-backface-visibility: hidden;
     backface-visibility: hidden;
     transform-style: preserve-3d;
     overflow: hidden;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    display: block;
   }
 
   .pt-face-front {
@@ -128,6 +130,7 @@
     transform: rotateY(180deg);
   }
 
+  /* группа = ровно размер слайда (= заготовка на текущем вьюпорте) */
   .pt-face > .tn-group,
   .pt-face > .t396__group {
     position: relative !important;
@@ -135,20 +138,32 @@
     top: auto !important;
     right: auto !important;
     bottom: auto !important;
-    /* ширину/высоту НЕ форсим — оставляем CSS Тильды по вьюпортам */
+    width: 100% !important;
+    height: 100% !important;
+    max-width: none !important;
+    max-height: none !important;
     margin: 0 !important;
     transform: none !important;
+    border-radius: var(--pt-radius) !important;
   }
 
-  .pt-face .tn-molecule {
-    box-sizing: border-box;
-  }
-
-  /* корневая группа/молекула карточки не должна оставаться opacity:0 из Тильды */
-  .pt-face > .tn-group,
-  .pt-face > .t396__group,
   .pt-face > .tn-group > .tn-molecule,
-  .pt-face > .t396__group > .tn-molecule {
+  .pt-face > .t396__group > .tn-molecule,
+  .pt-face > .tn-group > [id^="molecule-"],
+  .pt-face > .t396__group > [id^="molecule-"] {
+    width: 100% !important;
+    height: 100% !important;
+    box-sizing: border-box !important;
+    border-radius: var(--pt-radius) !important;
+  }
+
+  /* убираем opacity:0 / анимации Тильды внутри карточки — текст сразу полный */
+  .pt-face .tn-group,
+  .pt-face .t396__group,
+  .pt-face .tn-molecule,
+  .pt-face [id^="molecule-"],
+  .pt-face .tn-elem,
+  .pt-face .tn-atom {
     opacity: 1 !important;
   }
 
@@ -270,11 +285,12 @@
     cursor: grabbing !important;
   }
 
-  /* брейкпоинты как у Zero Block на parent-new */
+  /* брейкпоинты = screens Zero Block: 1920 / 1366 / 1024 / 768 / 320 */
   @media screen and (max-width: 1919px) {
     .pt-stage {
       --pt-w: 429px;
       --pt-h: 380px;
+      --pt-radius: 40px;
       perspective: 1100px;
     }
   }
@@ -283,6 +299,7 @@
     .pt-stage {
       --pt-w: 482px;
       --pt-h: 380px;
+      --pt-radius: 32px;
       --pt-rotate-1: 38deg;
       --pt-rotate-2: 52deg;
       perspective: 1000px;
@@ -293,6 +310,7 @@
     .pt-stage {
       --pt-w: 354px;
       --pt-h: 354px;
+      --pt-radius: 32px;
       --pt-rotate-1: 32deg;
       --pt-rotate-2: 46deg;
       --pt-depth-1: -80px;
@@ -305,6 +323,7 @@
     .pt-stage {
       --pt-w: 280px;
       --pt-h: 240px;
+      --pt-radius: 24px;
       --pt-rotate-1: 26deg;
       --pt-rotate-2: 40deg;
       perspective: 700px;
@@ -316,8 +335,8 @@
 (function () {
   'use strict';
 
-  if (window.__ptSpotifySliderV4) return;
-  window.__ptSpotifySliderV4 = true;
+  if (window.__ptSpotifySliderV5) return;
+  window.__ptSpotifySliderV5 = true;
 
   var AUTOPLAY_MS = 5000;
   var SWIPE_THRESHOLD = 60;
@@ -617,16 +636,18 @@
     go(sideFromEvent(e));
   }
 
-  /* курсор = фиолетовый круг кнопки + белая стрелка (canvas/PNG, без fetch) */
+  /* курсор = фиолетовая кнопка Тильды (#8742ee, radius 42) + белая стрелка */
+  var CURSOR_BG = '#8742ee';
+
   function buttonBgColor(btn) {
     var atom = (btn && btn.querySelector('.tn-atom')) || btn;
-    if (!atom) return '#8742ee';
+    if (!atom) return CURSOR_BG;
     var cs = getComputedStyle(atom);
     var v = (cs.getPropertyValue('--t396-bgcolor-color') || '').trim();
-    if (v && v !== 'transparent') return v;
+    if (v && v !== 'transparent' && v !== 'none' && v.indexOf('rgba(0, 0, 0, 0)') === -1) return v;
     var bg = cs.backgroundColor;
     if (bg && bg !== 'transparent' && bg !== 'rgba(0, 0, 0, 0)') return bg;
-    return '#8742ee';
+    return CURSOR_BG;
   }
 
   var ARROW_NEXT =
@@ -634,17 +655,30 @@
   var ARROW_PREV =
     'M15.8046 5.40717C15.4772 4.96267 14.8518 4.86715 14.4071 5.19428L14.4052 5.19623C14.4043 5.1969 14.4028 5.19803 14.4013 5.19916C14.3981 5.20153 14.3934 5.20464 14.3876 5.20893C14.3755 5.21789 14.3576 5.23104 14.3349 5.24799C14.2894 5.28189 14.2232 5.33128 14.1395 5.39448C13.9719 5.52109 13.7331 5.70355 13.4472 5.9267C12.8763 6.37221 12.1121 6.98595 11.3446 7.65229C10.5822 8.31427 9.79385 9.0481 9.18837 9.73334C8.88663 10.0748 8.60874 10.4282 8.40126 10.7724C8.21039 11.0891 7.99991 11.524 7.99989 11.9999C7.99989 12.4761 8.21033 12.9117 8.40126 13.2285C8.60872 13.5725 8.88671 13.9251 9.18837 14.2665C9.79386 14.9518 10.5822 15.6856 11.3446 16.3476C12.1121 17.0139 12.8763 17.6277 13.4472 18.0732C13.7331 18.2963 13.9719 18.4788 14.1395 18.6054C14.2232 18.6686 14.2894 18.718 14.3349 18.7519C14.3576 18.7689 14.3755 18.782 14.3876 18.791C14.3934 18.7952 14.3981 18.7984 14.4013 18.8007C14.4028 18.8018 14.4043 18.803 14.4052 18.8037L14.4061 18.8046L14.4071 18.8056C14.8518 19.1328 15.4781 19.0373 15.8056 18.5927C16.1327 18.148 16.0372 17.5217 15.5927 17.1943L15.5897 17.1923C15.5872 17.1905 15.5833 17.1875 15.578 17.1835C15.5675 17.1757 15.5512 17.1641 15.5302 17.1484C15.4878 17.1168 15.4248 17.0693 15.3446 17.0087C15.1842 16.8875 14.954 16.7117 14.6776 16.496C14.1235 16.0636 13.3876 15.4738 12.6552 14.8378C11.9177 14.1976 11.2059 13.5302 10.6864 12.9423C10.4258 12.6473 10.2348 12.3953 10.1142 12.1953C10.0569 12.1003 10.0283 12.0362 10.0136 11.9999C10.0283 11.9637 10.0569 11.8996 10.1142 11.8046C10.2348 11.6045 10.4257 11.3526 10.6864 11.0576C11.2059 10.4697 11.9177 9.80235 12.6552 9.16206C13.3876 8.5261 14.1235 7.93628 14.6776 7.50385C14.954 7.28814 15.1842 7.11236 15.3446 6.99116C15.4248 6.93057 15.4878 6.88306 15.5302 6.85151C15.5512 6.83581 15.5675 6.82417 15.578 6.81635C15.5833 6.81244 15.5872 6.80942 15.5897 6.80756L15.5927 6.80561C16.0374 6.47809 16.1321 5.85187 15.8046 5.40717Z';
 
+  function roundRectPath(ctx, x, y, w, h, r) {
+    var rr = Math.min(r, w / 2, h / 2);
+    ctx.beginPath();
+    ctx.moveTo(x + rr, y);
+    ctx.arcTo(x + w, y, x + w, y + h, rr);
+    ctx.arcTo(x + w, y + h, x, y + h, rr);
+    ctx.arcTo(x, y + h, x, y, rr);
+    ctx.arcTo(x, y, x + w, y, rr);
+    ctx.closePath();
+  }
+
+  function cursorSizeForViewport() {
+    return window.matchMedia('(max-width: 767px)').matches ? 32 : 56;
+  }
+
   function composeButtonCursor(sel, cssVar, fallback, isNext) {
     if (!stage) return;
     var btn = q(sel);
-    var bg = buttonBgColor(btn);
-    var atom = btn && (btn.querySelector('.tn-atom') || btn);
-    var size = 56;
-    if (atom && atom.offsetWidth > 20) {
-      size = Math.min(64, Math.max(48, Math.round(Math.max(atom.offsetWidth, atom.offsetHeight))));
-    }
+    var bg = buttonBgColor(btn) || CURSOR_BG;
+    var size = cursorSizeForViewport();
     var hot = Math.round(size / 2);
-    var pad = Math.round(size * 0.29);
+    /* как у кнопки Тильды: padding 16 при 56 → иконка 24; radius 42 */
+    var pad = Math.round(size * (16 / 56));
+    var radius = Math.round(size * (42 / 56));
     var d = isNext ? ARROW_NEXT : ARROW_PREV;
 
     var canvas = document.createElement('canvas');
@@ -653,8 +687,7 @@
     var ctx = canvas.getContext('2d');
     ctx.clearRect(0, 0, size, size);
     ctx.fillStyle = bg;
-    ctx.beginPath();
-    ctx.arc(hot, hot, hot, 0, Math.PI * 2);
+    roundRectPath(ctx, 0, 0, size, size, radius);
     ctx.fill();
 
     ctx.save();
@@ -684,36 +717,46 @@
     var restore = [];
     [prev, next].forEach(function (el) {
       if (!el) return;
-      restore.push({ el: el, opacity: el.style.opacity, visibility: el.style.visibility });
+      restore.push({
+        el: el,
+        opacity: el.style.getPropertyValue('opacity'),
+        visibility: el.style.getPropertyValue('visibility'),
+        display: el.style.getPropertyValue('display')
+      });
       el.style.setProperty('opacity', '1', 'important');
       el.style.setProperty('visibility', 'visible', 'important');
+      el.style.setProperty('display', 'block', 'important');
     });
 
     composeButtonCursor('.slider-prev', '--pt-cur-prev', 'w-resize', false);
     composeButtonCursor('.slider-next', '--pt-cur-next', 'e-resize', true);
 
     restore.forEach(function (r) {
-      r.el.style.opacity = r.opacity;
-      r.el.style.visibility = r.visibility;
+      if (r.opacity) r.el.style.setProperty('opacity', r.opacity);
+      else r.el.style.removeProperty('opacity');
+      if (r.visibility) r.el.style.setProperty('visibility', r.visibility);
+      else r.el.style.removeProperty('visibility');
+      if (r.display) r.el.style.setProperty('display', r.display);
+      else r.el.style.removeProperty('display');
     });
   }
 
-  /* размеры слайда = реальный размер группы Тильды на текущем вьюпорте */
+  /* размеры слайда жёстко по брейкпоинтам Тильды (не из offset — он может схлопнуться) */
+  function tildaSlideMetrics() {
+    var w = window.innerWidth || document.documentElement.clientWidth || 1920;
+    if (w <= 767) return { w: 280, h: 240, r: 24 };
+    if (w <= 1023) return { w: 354, h: 354, r: 32 };
+    if (w <= 1365) return { w: 482, h: 380, r: 32 };
+    if (w <= 1919) return { w: 429, h: 380, r: 40 };
+    return { w: 520, h: 460, r: 40 };
+  }
+
   function syncSlideSizeFromCards() {
-    if (!stage || !slides.length) return;
-    var sample = null;
-    for (var i = 0; i < slides.length && !sample; i++) {
-      sample =
-        slides[i].querySelector('.pt-face-back > .tn-group, .pt-face-back > .t396__group') ||
-        slides[i].querySelector('.pt-face-front > .tn-group, .pt-face-front > .t396__group');
-    }
-    if (!sample) return;
-    var w = sample.offsetWidth;
-    var h = sample.offsetHeight;
-    if (w > 40 && h > 40) {
-      stage.style.setProperty('--pt-w', w + 'px');
-      stage.style.setProperty('--pt-h', h + 'px');
-    }
+    if (!stage) return;
+    var m = tildaSlideMetrics();
+    stage.style.setProperty('--pt-w', m.w + 'px');
+    stage.style.setProperty('--pt-h', m.h + 'px');
+    stage.style.setProperty('--pt-radius', m.r + 'px');
   }
 
   function bindPagination() {
