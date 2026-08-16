@@ -1,0 +1,981 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Main Slider — демо</title>
+<style>
+  html, body {
+    margin: 0;
+    min-height: 100%;
+    font-family: "Segoe UI", system-ui, sans-serif;
+    background: linear-gradient(180deg, #efeafd 0%, #e3ddfb 55%, #d8d2f7 100%);
+    overflow-x: hidden;
+  }
+  .page {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 48px 0 64px;
+    box-sizing: border-box;
+  }
+  h1 {
+    margin: 0 0 8px;
+    font-size: 40px;
+    color: #2b2b33;
+  }
+  .subtitle {
+    margin: 0 0 40px;
+    color: #6a6a75;
+  }
+
+  /* ===== имитация фрейма из зеро-блока ===== */
+  .main-slider {
+    position: relative;
+    width: 100%;
+    height: 224px;
+  }
+  @media (min-width: 768px)  { .main-slider { height: 408px; } }
+  @media (min-width: 1024px) { .main-slider { height: 484px; } }
+  @media (min-width: 1366px) { .main-slider { height: 619px; } }
+  @media (min-width: 1920px) { .main-slider { height: 709px; } }
+
+  /* ===== имитация флекс-контейнера с элементами управления ===== */
+  .controls {
+    margin-top: 40px;
+    display: flex;
+    align-items: center;
+    gap: 28px;
+  }
+  .slider-left, .slider-right {
+    position: relative;
+    width: 56px;
+    height: 56px;
+    flex: none;
+  }
+  .slider-left .tn-atom, .slider-right .tn-atom {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 6px 18px rgba(80, 50, 160, 0.14);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    color: #2b2b33;
+    user-select: none;
+  }
+  .slider-text {
+    text-align: center;
+  }
+  .slider-text .tn-atom {
+    font-size: 17px;
+    font-weight: 600;
+    color: #2b2b33;
+  }
+  @media (max-width: 767px) {
+    .controls { gap: 12px; }
+    .slider-text .tn-atom { font-size: 14px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- =========================================================
+     Имитация зеро-блока-источника #rec2651850801:
+     6 картинок .slide1…6 (768px+) и 6 картинок .mob-slide1…6.
+     В реальной Тильде это обычный Zero Block, скрипт его скроет.
+========================================================= -->
+<div id="rec2651850801">
+  <!-- slide1 — группа: фон + декор + blur-плашка (как на проде) -->
+  <div class="tn-group slide1" style="position:relative;width:1260px;height:709px;">
+    <div class="tn-elem" style="position:absolute;left:0;top:0;width:1260px;height:709px;"><div class="tn-atom"><img data-slide="1" data-mob="0" alt=""></div></div>
+    <div class="tn-elem slider-animation-object" style="position:absolute;left:40px;top:54px;width:179px;height:201px;"><div class="tn-atom"><img data-decor="A" alt=""></div></div>
+    <div class="tn-elem" data-elem-type="shape" style="position:absolute;left:80px;top:480px;width:420px;height:120px;-webkit-backdrop-filter:blur(9px);backdrop-filter:blur(9px);">
+      <div class="tn-atom" style="width:100%;height:100%;background-image:linear-gradient(0turn,rgba(255,255,255,0.25) 0%,rgba(255,255,255,0.25) 100%);border-radius:16px;"></div>
+    </div>
+    <div class="tn-elem slider-animation-object" style="position:absolute;left:954px;top:400px;width:296px;height:296px;"><div class="tn-atom"><img data-decor="B" alt=""></div></div>
+  </div>
+  <div class="tn-elem slide2"><div class="tn-atom"><img data-slide="2" data-mob="0" alt=""></div></div>
+  <div class="tn-elem slide3"><div class="tn-atom"><img data-slide="3" data-mob="0" alt=""></div></div>
+  <div class="tn-elem slide4"><div class="tn-atom"><img data-slide="4" data-mob="0" alt=""></div></div>
+  <div class="tn-elem slide5"><div class="tn-atom"><img data-slide="5" data-mob="0" alt=""></div></div>
+  <div class="tn-elem slide6"><div class="tn-atom"><img data-slide="6" data-mob="0" alt=""></div></div>
+  <div class="tn-elem mob-slide1"><div class="tn-atom"><img data-slide="1" data-mob="1" alt=""></div></div>
+  <div class="tn-elem mob-slide2"><div class="tn-atom"><img data-slide="2" data-mob="1" alt=""></div></div>
+  <div class="tn-elem mob-slide3"><div class="tn-atom"><img data-slide="3" data-mob="1" alt=""></div></div>
+  <div class="tn-elem mob-slide4"><div class="tn-atom"><img data-slide="4" data-mob="1" alt=""></div></div>
+  <div class="tn-elem mob-slide5"><div class="tn-atom"><img data-slide="5" data-mob="1" alt=""></div></div>
+  <div class="tn-elem mob-slide6"><div class="tn-atom"><img data-slide="6" data-mob="1" alt=""></div></div>
+</div>
+
+<div class="page">
+  <h1>Для тех, кто учит и учится</h1>
+  <p class="subtitle">Демо кругового слайдера</p>
+
+  <!-- фрейм, в который встраивается слайдер -->
+  <div class="main-slider"></div>
+
+  <!-- флекс-контейнер с элементами управления -->
+  <div class="controls">
+    <div class="slider-left"><div class="tn-atom">&#8592;</div></div>
+    <div class="slider-text"><div class="tn-atom"></div></div>
+    <div class="slider-right"><div class="tn-atom">&#8594;</div></div>
+  </div>
+</div>
+
+<script>
+/* генерируем плейсхолдеры-картинки 16:9 для демо */
+(function () {
+  var colors = ['#8742EE', '#5B8DEF', '#F2617A', '#2FB980', '#F5A623', '#7E57C2'];
+  document.querySelectorAll('#rec2651850801 img[data-slide]').forEach(function (img) {
+    var n = img.getAttribute('data-slide');
+    var mob = img.getAttribute('data-mob') === '1';
+    var label = (mob ? 'MOB ' : 'Слайд ') + n;
+    var svg =
+      '<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900">' +
+      '<rect width="100%" height="100%" fill="' + colors[n - 1] + '"/>' +
+      '<circle cx="1400" cy="150" r="220" fill="rgba(255,255,255,0.12)"/>' +
+      '<circle cx="200" cy="780" r="160" fill="rgba(255,255,255,0.10)"/>' +
+      '<text x="50%" y="52%" font-family="sans-serif" font-size="150" font-weight="700" ' +
+      'fill="#fff" text-anchor="middle" dominant-baseline="middle">' + label + '</text>' +
+      '</svg>';
+    img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+  });
+  /* декоративные картинки внутри группы slide1 */
+  document.querySelectorAll('#rec2651850801 img[data-decor]').forEach(function (img) {
+    var label = img.getAttribute('data-decor');
+    var svg =
+      '<svg xmlns="http://www.w3.org/2000/svg" width="300" height="300">' +
+      '<circle cx="150" cy="150" r="140" fill="#ffce3d"/>' +
+      '<text x="50%" y="55%" font-family="sans-serif" font-size="120" font-weight="700" ' +
+      'fill="#7a4c00" text-anchor="middle" dominant-baseline="middle">' + label + '</text>' +
+      '</svg>';
+    img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+  });
+})();
+</script>
+
+<!-- ниже — тот же код, что и в tilda-embed.html -->
+<!-- ============================================================
+     MAIN SLIDER (карусель по кругу) для Tilda Zero Block
+
+     Как подключить:
+     1. Зеро-блок #rec2651850801 — источник контента.
+        В нём должны лежать 6 элементов/групп (классы задаются
+        в Settings -> CSS Class Name). Соответствие задаётся
+        явно в массиве SLIDE_SOURCES в скрипте ниже:
+          Слайд 1 — .slide1 / .mob-slide1
+          Слайд 2 — .slide2 / .mob-slide2
+          … и так до слайда 6.
+        Сам блок будет скрыт — на странице он не отображается.
+     2. В другом зеро-блоке:
+        - добавьте Shape (фрейм) и дайте ему класс  main-slider
+          (слайдер построится внутри него, активный слайд
+          центрируется по фрейму);
+        - добавьте стрелки с классами  slider-left  и  slider-right;
+        - между ними — текстовый элемент с классом  slider-text
+          (текст подменяется скриптом под каждый слайд).
+     3. Добавьте в любой из этих блоков (или в настройки страницы)
+        элемент "HTML" и вставьте весь код из этого файла.
+     4. Тексты для слайдов поменяйте в массиве SLIDE_TEXTS,
+        классы источников — в массиве SLIDE_SOURCES (ниже в скрипте).
+     5. Если слайд — группа из нескольких картинок, элементы
+        с классом  slider-animation-object  слегка «парят»
+        (случайное движение до 20px и поворот до 15 градусов),
+        остальные слои статичны.
+
+     Поведение:
+     - 6 слайдов формата 16:9 (на мобилке 320×224), крутятся по кругу;
+     - активный слайд по центру, боковые — в 2 раза меньше
+       и с маской (сверху 100% -> снизу 0% прозрачность);
+       на мобилке боковые слайды скрыты;
+     - автопролистывание каждые 8 секунд, прогресс — белое
+       кольцо (2px) вплотную к кнопке slider-right;
+     - при наведении курсора на слайды автопролистывание на паузе;
+     - анимация смены — 1.5 секунды; текст slider-text меняется
+       фейдом, стрелки при этом плавно скользят под новую ширину.
+============================================================ -->
+
+<style>
+  /* Блок-источник контента скрыт, но продолжает рассчитывать layout:
+     это нужно, чтобы читать реальные позиции элементов внутри групп
+     (.slide1 может быть группой из нескольких картинок). */
+  #rec2651850801 {
+    position: absolute !important;
+    top: -100000px !important;
+    left: 0 !important;
+    width: 100% !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+  }
+
+  /* фрейм не должен резать боковые слайды (только десктоп) */
+  @media (min-width: 768px) {
+    .main-slider,
+    .main-slider .tn-atom {
+      overflow: visible !important;
+    }
+  }
+  /* на мобилке крайние слайды обрезаются и не видны */
+  @media (max-width: 767px) {
+    .main-slider,
+    .main-slider .tn-atom,
+    .msl-stage {
+      overflow: hidden !important;
+    }
+  }
+
+  .msl-stage {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    /* размер активного слайда по брейкпоинтам:
+       мобилка 320×224, от 768px — 16:9 */
+    --msl-w: 320px;
+    --msl-h: 224px;
+    --msl-gap: 4vw; /* зазор между центральным и боковыми слайдами */
+  }
+  @media (min-width: 768px) {
+    .msl-stage { --msl-w: 725px;  --msl-h: 408px; }
+  }
+  @media (min-width: 1024px) {
+    .msl-stage { --msl-w: 860px;  --msl-h: 484px; }
+  }
+  @media (min-width: 1366px) {
+    .msl-stage { --msl-w: 1100px; --msl-h: 619px; }
+  }
+  @media (min-width: 1920px) {
+    .msl-stage { --msl-w: 1260px; --msl-h: 709px; }
+  }
+
+  .msl-card {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: var(--msl-w);
+    height: var(--msl-h);
+    margin-left: calc(var(--msl-w) / -2);
+    margin-top: calc(var(--msl-h) / -2);
+    border-radius: 0;
+    overflow: hidden;
+    /* фон не задаём: у слайдов с прозрачным PNG не должно быть подложки */
+    background: transparent;
+    pointer-events: auto;
+    will-change: transform;
+
+    /* маска: верх непрозрачный, низ уходит в 0.
+       Градиент в 2 раза выше карточки, анимируется его позиция:
+       0 0    — маски нет (весь слайд виден),
+       0 100% — фейд 100% → 0% (боковой слайд). */
+    -webkit-mask-image: linear-gradient(to bottom, #000 50%, rgba(0,0,0,0) 100%);
+    -webkit-mask-size: 100% 200%;
+    -webkit-mask-repeat: no-repeat;
+    -webkit-mask-position: 0 0;
+    mask-image: linear-gradient(to bottom, #000 50%, rgba(0,0,0,0) 100%);
+    mask-size: 100% 200%;
+    mask-repeat: no-repeat;
+    mask-position: 0 0;
+
+    transition:
+      transform 1.5s cubic-bezier(.25, .1, .25, 1),
+      opacity 1.5s cubic-bezier(.25, .1, .25, 1),
+      -webkit-mask-position 2s ease,
+      mask-position 2s ease;
+  }
+
+  /* позиции карусели */
+  .msl-pos--center {
+    transform: translateX(0) scale(1);
+    z-index: 3;
+    -webkit-mask-position: 0 0;
+    mask-position: 0 0;
+    /* маска сходит ПОСЛЕ приезда: delay 1.5с (движение), затем 2с */
+    transition:
+      transform 1.5s cubic-bezier(.25, .1, .25, 1),
+      opacity 1.5s cubic-bezier(.25, .1, .25, 1),
+      -webkit-mask-position 2s ease 1.5s,
+      mask-position 2s ease 1.5s;
+  }
+  .msl-pos--left,
+  .msl-pos--right {
+    z-index: 2;
+    -webkit-mask-position: 0 100%;
+    mask-position: 0 100%;
+    /* уход из центра: маска появляется вместе с уменьшением */
+    transition:
+      transform 1.5s cubic-bezier(.25, .1, .25, 1),
+      opacity 1.5s cubic-bezier(.25, .1, .25, 1),
+      -webkit-mask-position 1.5s ease,
+      mask-position 1.5s ease;
+  }
+  .msl-pos--left {
+    transform: translateX(calc(var(--msl-w) * -0.75 - var(--msl-gap))) scale(0.5);
+  }
+  .msl-pos--right {
+    transform: translateX(calc(var(--msl-w) * 0.75 + var(--msl-gap))) scale(0.5);
+  }
+  .msl-pos--hidl,
+  .msl-pos--hidr {
+    z-index: 1;
+    opacity: 0;
+    pointer-events: none;
+    -webkit-mask-position: 0 100%;
+    mask-position: 0 100%;
+  }
+  .msl-pos--hidl {
+    transform: translateX(calc(var(--msl-w) * -1.5 - var(--msl-gap) * 2)) scale(0.5);
+  }
+  .msl-pos--hidr {
+    transform: translateX(calc(var(--msl-w) * 1.5 + var(--msl-gap) * 2)) scale(0.5);
+  }
+  /* на мобилке виден только центральный слайд */
+  @media (max-width: 767px) {
+    .msl-pos--left,
+    .msl-pos--right {
+      opacity: 0;
+      pointer-events: none;
+    }
+  }
+
+  /* контент карточки: десктоп / мобайл */
+  .msl-face {
+    position: absolute;
+    inset: 0;
+    display: none;
+  }
+  .msl-face img,
+  .msl-face .msl-shape {
+    display: block;
+    pointer-events: none;
+    user-select: none;
+    -webkit-user-drag: none;
+  }
+  .msl-face > img:only-child {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .msl-face .msl-shape {
+    box-sizing: border-box;
+  }
+  .msl-face--desktop { display: block; }
+  @media (max-width: 767px) {
+    .msl-face--desktop { display: none; }
+    .msl-face--mobile  { display: block; }
+  }
+
+  /* парение элементов с классом slider-animation-object
+     (случайные параметры — см. compositeHTML) */
+  @keyframes msl-float {
+    0%   { transform: translate(0, 0) rotate(0deg); }
+    50%  { transform: translate(var(--msl-fx, 0px), var(--msl-fy, -10px)) rotate(var(--msl-fr, 5deg)); }
+    100% { transform: translate(0, 0) rotate(0deg); }
+  }
+  .msl-float {
+    animation: msl-float var(--msl-fd, 5s) ease-in-out infinite;
+    will-change: transform;
+  }
+
+  /* заглушка, если элемент-источник не найден */
+  .msl-ph {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font: 600 48px/1 sans-serif;
+    color: #fff;
+    background: linear-gradient(135deg, #8742ee, #b09aff);
+  }
+
+  /* элементы управления */
+  .slider-left, .slider-right,
+  .slider-left .tn-atom, .slider-right .tn-atom {
+    cursor: pointer;
+  }
+  /* Текст меняется в три фазы: фейд-аут 0.5с (ширина не трогается,
+     старый текст не режется) -> ширина едет 0.5с, стрелки скользят,
+     пока текст скрыт -> фейд-ин 0.5с.
+     overflow + min-width:0 — иначе при удлинении текста flex
+     мгновенно раздувает блок (min-width:auto = ширина контента)
+     и стрелки «прыгают» наружу. Сами transition дублируются
+     инлайном из скрипта — надёжнее против пересчётов Тильды. */
+  .slider-text {
+    transition:
+      width 0.5s cubic-bezier(.25, .1, .25, 1),
+      max-width 0.5s cubic-bezier(.25, .1, .25, 1),
+      flex-basis 0.5s cubic-bezier(.25, .1, .25, 1);
+    white-space: nowrap;
+    text-align: center;
+    overflow: hidden !important;
+    /* критично для плавного РАЗЪЕЗДА: иначе min-width:auto =
+       ширина длинного текста и бокс прыгает сразу */
+    min-width: 0 !important;
+    max-width: none;
+    flex: 0 0 auto;
+    box-sizing: border-box;
+  }
+  .slider-text .tn-atom {
+    display: block;
+    width: 100%;
+    overflow: hidden;
+    max-width: 100%;
+    transition: opacity 0.5s ease;
+  }
+  @media (max-width: 767px) {
+    .slider-text {
+      max-width: 198px !important;
+      white-space: normal;
+    }
+  }
+
+  /* кольцо прогресса — SVG stroke (ровный antialias-край),
+     вплотную к кнопке. Подложки нет: незаполненная часть пустая,
+     поэтому «полное» кольцо = момент смены слайда. */
+  .msl-ring {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    overflow: visible;
+    z-index: 5;
+  }
+
+  /* до готовности: без transition и невидимы — иначе при первой
+     отрисовке / ресайзе Тильды слайды «прыгают» 1.5с */
+  .msl-stage:not(.msl-ready) {
+    opacity: 0;
+  }
+  .msl-stage:not(.msl-ready) .msl-card {
+    transition: none !important;
+  }
+  .msl-stage.msl-ready {
+    opacity: 1;
+  }
+</style>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ==================== НАСТРОЙКИ ==================== */
+
+  var SOURCE_BLOCK = '#rec2651850801';  /* зеро-блок с контентом слайдов   */
+
+  /* классы элементов-источников для каждого слайда:
+     desktop — экраны от 768px, mobile — до 768px.
+     Если mobile-элемента нет на странице, показывается desktop. */
+  var SLIDE_SOURCES = [
+    { desktop: 'slide1', mobile: 'mob-slide1' },  /* Слайд 1 */
+    { desktop: 'slide2', mobile: 'mob-slide2' },  /* Слайд 2 */
+    { desktop: 'slide3', mobile: 'mob-slide3' },  /* Слайд 3 */
+    { desktop: 'slide4', mobile: 'mob-slide4' },  /* Слайд 4 */
+    { desktop: 'slide5', mobile: 'mob-slide5' },  /* Слайд 5 */
+    { desktop: 'slide6', mobile: 'mob-slide6' }   /* Слайд 6 */
+  ];
+
+  var AUTOPLAY_MS = 8000;               /* автопролистывание, мс           */
+  var RING_COLOR  = '#FFFFFF';          /* цвет кольца прогресса           */
+  var RING_WIDTH  = 2;                  /* толщина кольца, px              */
+
+  /* парение элементов с классом slider-animation-object */
+  var FLOAT_MAX_SHIFT  = 20;            /* максимальное движение, px       */
+  var FLOAT_MAX_ROTATE = 15;            /* максимальный поворот, градусы   */
+
+  /* тексты под каждый слайд (\u00A0 — неразрывный пробел) */
+  var SLIDE_TEXTS = [
+    'Проводите интерактивные занятия онлайн',
+    'Отправляйте справки об\u00A0отсутствии ребёнка',
+    'Разбирайте задачи, которые были на ВПР, ОГЭ и ЕГЭ',
+    'Готовьтесь к экзаменам и\u00A0выбирайте, куда поступать',
+    'Собирайте все файлы класса в\u00A0одну папку',
+    'Смотрите оценки и\u00A0домашние задания'
+  ];
+
+  /* =================================================== */
+
+  var SLIDES = SLIDE_SOURCES.length;
+
+  /* rel = (i - active + N) % N  ->  позиция в карусели.
+     Следующий слайд (rel 1) стоит справа и приходит в центр,
+     активный (rel 0 -> 5) уменьшается и уходит влево. */
+  var POS = {
+    0: 'center',
+    1: 'right',
+    2: 'hidr',
+    3: 'hidr',
+    4: 'hidl',
+    5: 'left'
+  };
+
+  var active = 0;
+  var cards = [];
+  var stageEl = null;
+  var textEl = null;
+  var textAtom = null;
+  var textTimers = [];
+  var measurer = null;
+  var ring = null;
+  var autoplayStart = null;
+  var lastFrame = null;
+  var currentBp = null;
+
+  function q(sel) { return document.querySelector(sel); }
+
+  /* координаты без учёта transform (сбс-анимации Тильды не мешают) */
+  function pageOffset(el) {
+    var x = 0, y = 0;
+    while (el) {
+      x += el.offsetLeft;
+      y += el.offsetTop;
+      el = el.offsetParent;
+    }
+    return { x: x, y: y };
+  }
+
+  /* случайные параметры парения: движение до FLOAT_MAX_SHIFT px,
+     поворот до FLOAT_MAX_ROTATE градусов, у каждого элемента свои */
+  function floatStyle() {
+    var rnd = function (min, max) { return min + Math.random() * (max - min); };
+    var sign = function () { return Math.random() < 0.5 ? -1 : 1; };
+    var shift = rnd(FLOAT_MAX_SHIFT * 0.4, FLOAT_MAX_SHIFT);
+    var angle = rnd(shift / FLOAT_MAX_SHIFT, 1) * Math.PI * 2;
+    return '--msl-fx:' + (Math.cos(angle) * shift).toFixed(1) + 'px;' +
+      '--msl-fy:' + (Math.sin(angle) * shift).toFixed(1) + 'px;' +
+      '--msl-fr:' + (sign() * rnd(FLOAT_MAX_ROTATE * 0.3, FLOAT_MAX_ROTATE)).toFixed(1) + 'deg;' +
+      '--msl-fd:' + rnd(4, 7).toFixed(2) + 's;' +
+      'animation-delay:-' + rnd(0, 4).toFixed(2) + 's;';
+  }
+
+  /* стили shape/плашек: background + backdrop-filter + radius */
+  function shapeStyles(el) {
+    var atom = el.querySelector('.tn-atom') || el;
+    var cs = getComputedStyle(atom);
+    var ce = getComputedStyle(el);
+    var s = '';
+    var bgImg = cs.backgroundImage;
+    var bgCol = cs.backgroundColor;
+    if (bgImg && bgImg !== 'none') s += 'background-image:' + bgImg + ';';
+    if (bgCol && bgCol !== 'rgba(0, 0, 0, 0)' && bgCol !== 'transparent') {
+      s += 'background-color:' + bgCol + ';';
+    }
+    /* "none" — truthy-строка, поэтому проверяем явно; filter может
+       быть на .tn-elem (Тильда), а background — на .tn-atom */
+    var bfAtom = cs.backdropFilter || cs.webkitBackdropFilter;
+    var bfElem = ce.backdropFilter || ce.webkitBackdropFilter;
+    var bf = (bfAtom && bfAtom !== 'none') ? bfAtom :
+             (bfElem && bfElem !== 'none') ? bfElem : '';
+    if (bf) {
+      s += 'backdrop-filter:' + bf + ';-webkit-backdrop-filter:' + bf + ';';
+    }
+    var radius = (cs.borderRadius && cs.borderRadius !== '0px') ? cs.borderRadius :
+                 (ce.borderRadius && ce.borderRadius !== '0px') ? ce.borderRadius : '';
+    if (radius) s += 'border-radius:' + radius + ';';
+    if (cs.boxShadow && cs.boxShadow !== 'none') {
+      s += 'box-shadow:' + cs.boxShadow + ';';
+    }
+    if (cs.opacity && cs.opacity !== '1') {
+      s += 'opacity:' + cs.opacity + ';';
+    }
+    return s;
+  }
+
+  /* .slideN — группа: картинки + shape/плашки (в т.ч. с backdrop-filter).
+     Парят только элементы с классом slider-animation-object. */
+  function compositeHTML(groupEl) {
+    var elems = groupEl.querySelectorAll('.tn-elem');
+    var isGroup = groupEl.classList.contains('tn-group') || elems.length >= 2;
+    if (!isGroup || !elems.length) return null;
+    var gw = groupEl.offsetWidth, gh = groupEl.offsetHeight;
+    if (!gw || !gh) return null;
+    var g = pageOffset(groupEl);
+    var pct = function (v, base) { return (v / base * 100).toFixed(3); };
+    var html = '';
+    for (var i = 0; i < elems.length; i++) {
+      var e = elems[i];
+      if (!e.offsetWidth || !e.offsetHeight) continue;
+      var o = pageOffset(e);
+      var box =
+        'position:absolute;' +
+        'left:' + pct(o.x - g.x, gw) + '%;' +
+        'top:' + pct(o.y - g.y, gh) + '%;' +
+        'width:' + pct(e.offsetWidth, gw) + '%;' +
+        'height:' + pct(e.offsetHeight, gh) + '%;';
+      var animate = e.classList.contains('slider-animation-object');
+      var cls = (animate ? 'msl-float' : '');
+
+      var img = e.querySelector('img');
+      var src = img && (img.getAttribute('data-original') || img.getAttribute('src'));
+      if (src) {
+        html += '<img src="' + src + '" alt=""' +
+          (cls ? ' class="' + cls + '"' : '') +
+          ' style="' + box + 'object-fit:fill;' +
+          (animate ? floatStyle() : '') + '">';
+        continue;
+      }
+
+      /* shape / плашка с фоном или backdrop-filter */
+      var typ = e.getAttribute('data-elem-type');
+      var sh = shapeStyles(e);
+      if (typ === 'shape' || sh.indexOf('backdrop-filter') !== -1 || sh.indexOf('background') !== -1) {
+        html += '<div class="msl-shape' + (cls ? ' ' + cls : '') + '" style="' +
+          box + sh + (animate ? floatStyle() : '') + '"></div>';
+        continue;
+      }
+
+      /* текст или прочий контент */
+      var atom = e.querySelector('.tn-atom');
+      if (atom && atom.innerHTML && atom.innerHTML.replace(/\s/g, '')) {
+        html += '<div class="msl-shape' + (cls ? ' ' + cls : '') + '" style="' +
+          box + shapeStyles(e) + 'overflow:hidden;' +
+          (animate ? floatStyle() : '') + '">' + atom.innerHTML + '</div>';
+      }
+    }
+    return html || null;
+  }
+
+  function elementHTML(el) {
+    var comp = compositeHTML(el);
+    if (comp) return comp;
+
+    var img = el.querySelector('img');
+    var src = img && (img.getAttribute('data-original') || img.getAttribute('src'));
+    if (src) return '<img src="' + src + '" alt="">';
+
+    var atom = el.querySelector('.tn-atom') || el;
+    var bg = (atom.getAttribute('data-original') || '');
+    if (!bg && atom.style) {
+      var m = (atom.style.backgroundImage || '').match(/url\(["']?([^"')]+)/);
+      if (m) bg = m[1];
+    }
+    if (bg) return '<img src="' + bg + '" alt="">';
+
+    /* не картинка — переносим содержимое как есть */
+    if (atom.innerHTML && atom.innerHTML.replace(/\s/g, '')) {
+      return '<div style="width:100%;height:100%;">' + atom.innerHTML + '</div>';
+    }
+    return null;
+  }
+
+  /* --- достаём контент слайда из блока-источника --- */
+  function faceHTML(n, mobile) {
+    var root = q(SOURCE_BLOCK) || document;
+    var srcCfg = SLIDE_SOURCES[n - 1];
+    var el = root.querySelector('.' + (mobile ? srcCfg.mobile : srcCfg.desktop));
+    /* мобильной версии нет — показываем десктопную, а не заглушку */
+    if (!el && mobile) el = root.querySelector('.' + srcCfg.desktop);
+    if (el) {
+      var res = elementHTML(el);
+      if (res) return res;
+    }
+    return '<div class="msl-ph">' + n + '</div>';
+  }
+
+  function fillFaces(card, n) {
+    card.innerHTML =
+      '<div class="msl-face msl-face--desktop">' + faceHTML(n, false) + '</div>' +
+      '<div class="msl-face msl-face--mobile">'  + faceHTML(n, true)  + '</div>';
+  }
+
+  /* --- построение слайдера --- */
+  function build(frame) {
+    var host = frame.querySelector('.tn-atom') || frame;
+    var stage = document.createElement('div');
+    stage.className = 'msl-stage';
+
+    for (var i = 1; i <= SLIDES; i++) {
+      var card = document.createElement('div');
+      /* позиционный класс сразу при создании, чтобы при загрузке
+         не проигрывалась анимация «разлёта» из центра */
+      card.className = 'msl-card msl-pos--' + POS[(i - 1 - active + SLIDES) % SLIDES];
+      fillFaces(card, i);
+      (function (idx) {
+        card.addEventListener('click', function () {
+          /* клик по боковому слайду тоже переключает */
+          var rel = (idx - active + SLIDES) % SLIDES;
+          if (rel === 1) next();
+          else if (rel === SLIDES - 1) prev();
+        });
+      })(i - 1);
+      stage.appendChild(card);
+      cards.push(card);
+    }
+    host.appendChild(stage);
+    stageEl = stage;
+  }
+
+  function render() {
+    for (var i = 0; i < SLIDES; i++) {
+      var rel = (i - active + SLIDES) % SLIDES;
+      cards[i].className = 'msl-card msl-pos--' + POS[rel];
+    }
+    setText();
+  }
+
+  /* ширина текста измеряется невидимым дублёром с тем же шрифтом */
+  function textWidth(str) {
+    if (!measurer) {
+      measurer = document.createElement('span');
+      measurer.style.cssText =
+        'position:absolute;left:-9999px;top:0;visibility:hidden;';
+      var cs = getComputedStyle(textAtom);
+      measurer.style.font = cs.font;
+      measurer.style.letterSpacing = cs.letterSpacing;
+      measurer.style.textTransform = cs.textTransform;
+      document.body.appendChild(measurer);
+    }
+    /* на мобиле текст переносится, ширина не больше 198px */
+    var mobile = window.innerWidth < 768;
+    measurer.style.whiteSpace = mobile ? 'normal' : 'nowrap';
+    measurer.style.maxWidth = mobile ? '198px' : 'none';
+    measurer.textContent = str;
+    return Math.ceil(measurer.getBoundingClientRect().width);
+  }
+
+  /* смена текста в три фазы (итого 1.5с, как анимация слайдов):
+     0
+     фейд-аут старого текста 0.5с, ширина не трогается —
+       старый текст не режется схлопывающимся боксом;
+     0.5с
+     текст скрыт: подмена строки + ширина плавно едет 0.5с,
+       стрелки в это время скользят;
+     1.0с
+     фейд-ин нового текста 0.5с. */
+  function lockTextBox(widthPx) {
+    /* width + max-width + flex-basis — flex не прыгает к min-content
+       при длинном тексте; !important против пересчётов Тильды */
+    var w = Math.max(0, Math.round(widthPx)) + 'px';
+    textEl.style.setProperty('min-width', '0px', 'important');
+    textEl.style.setProperty('overflow', 'hidden', 'important');
+    textEl.style.setProperty('flex-grow', '0', 'important');
+    textEl.style.setProperty('flex-shrink', '0', 'important');
+    textEl.style.setProperty('width', w, 'important');
+    textEl.style.setProperty('max-width', w, 'important');
+    textEl.style.setProperty('flex-basis', w, 'important');
+  }
+
+  function setText() {
+    if (!textAtom) return;
+    var str = SLIDE_TEXTS[active % SLIDE_TEXTS.length] || '';
+    textTimers.forEach(clearTimeout);
+    textTimers = [];
+
+    /* transition инлайном: стили Тильды их не перебьют */
+    textAtom.style.transition = 'opacity 0.5s ease';
+    textEl.style.transition =
+      'width 0.5s cubic-bezier(.25,.1,.25,1),' +
+      'max-width 0.5s cubic-bezier(.25,.1,.25,1),' +
+      'flex-basis 0.5s cubic-bezier(.25,.1,.25,1)';
+
+    /* фиксируем текущую ширину в px: Тильда при пересчётах может
+       вернуть width:auto, а переход auto->px не анимируется (скачок) */
+    var fromW = textEl.getBoundingClientRect().width;
+    lockTextBox(fromW);
+
+    textAtom.style.opacity = '0';
+
+    textTimers.push(setTimeout(function () {
+      var toW = textWidth(str);
+      if (toW > fromW + 0.5) {
+        /* разъезд: сначала расширяем бокс (текст ещё старый и скрыт),
+           потом подменяем строку — иначе длинный текст дёргает flex */
+        lockTextBox(toW);
+        textTimers.push(setTimeout(function () {
+          textAtom.textContent = str;
+        }, 480));
+      } else {
+        /* съезд: сначала короткий текст, потом сужаем */
+        textAtom.textContent = str;
+        requestAnimationFrame(function () {
+          requestAnimationFrame(function () {
+            lockTextBox(toW);
+          });
+        });
+      }
+    }, 500));
+
+    textTimers.push(setTimeout(function () {
+      textAtom.style.opacity = '1';
+    }, 1000));
+  }
+
+  function next(t) {
+    active = (active + 1) % SLIDES;
+    autoplayStart = (typeof t === 'number') ? t : performance.now();
+    render();
+  }
+
+  function prev(t) {
+    active = (active - 1 + SLIDES) % SLIDES;
+    autoplayStart = (typeof t === 'number') ? t : performance.now();
+    render();
+  }
+
+  /* --- кольцо прогресса вокруг slider-right --- */
+  var ringLen = 0;
+
+  function buildRing(btn) {
+    var NS = 'http://www.w3.org/2000/svg';
+    var svg = document.createElementNS(NS, 'svg');
+    svg.setAttribute('class', 'msl-ring');
+    svg.setAttribute('viewBox', '0 0 100 100');
+    svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+
+    /* Без vector-effect:non-scaling-stroke — в Chrome он ломает
+       stroke-dasharray (дуга рисуется неверно). Толщину 2px считаем
+       в user units viewBox относительно реального размера кнопки.
+       Подложки нет — иначе кольцо «замыкалось» раньше срока. */
+    var btnSize = btn.getBoundingClientRect().width || 56;
+    var strokeUser = RING_WIDTH * (100 / btnSize);
+    /* радиус: край кнопки минус половина толщины штриха */
+    var r = 50 - strokeUser / 2;
+
+    ring = document.createElementNS(NS, 'circle');
+    ring.setAttribute('cx', '50');
+    ring.setAttribute('cy', '50');
+    ring.setAttribute('r', String(r));
+    ring.setAttribute('fill', 'none');
+    ring.setAttribute('stroke', RING_COLOR);
+    ring.setAttribute('stroke-width', String(strokeUser));
+    ring.setAttribute('stroke-linecap', 'butt');
+    ring.setAttribute('transform', 'rotate(-90 50 50)');
+    svg.appendChild(ring);
+
+    var cs = getComputedStyle(btn);
+    if (cs.position === 'static') btn.style.position = 'relative';
+    btn.appendChild(svg);
+
+    ringLen = ring.getTotalLength();
+    /* прогресс = длина видимого штриха (dash), gap ≥ длина окружности.
+       Так надёжнее, чем крутить stroke-dashoffset. */
+    setRingProgress(0);
+  }
+
+  function setRingProgress(p) {
+    if (!ring || !ringLen) return;
+    p = Math.max(0, Math.min(1, p));
+    var dash = p * ringLen;
+    /* при p=0 — нулевой штрих; gap всегда с запасом, чтобы не зацикливался */
+    ring.setAttribute('stroke-dasharray', dash + ' ' + (ringLen + 1));
+    ring.setAttribute('stroke-dashoffset', '0');
+  }
+
+  /* --- автопролистывание + анимация кольца --- */
+  function loop(now) {
+    if (autoplayStart === null) autoplayStart = now;
+    if (lastFrame === null) lastFrame = now;
+    /* Пауза только при наведении на ЦЕНТРАЛЬНЫЙ слайд.
+       :hover каждый кадр — не залипает, когда слайд уезжает
+       из-под неподвижного курсора. */
+    var hovered = stageEl && stageEl.querySelector('.msl-pos--center:hover');
+    if (hovered) autoplayStart += now - lastFrame;
+    lastFrame = now;
+
+    var p = (now - autoplayStart) / AUTOPLAY_MS;
+    if (p >= 1) {
+      setRingProgress(1);
+      next(now); /* сбрасывает autoplayStart в now */
+      p = 0;
+    }
+    setRingProgress(p);
+    requestAnimationFrame(loop);
+  }
+
+  function breakpointId() {
+    var w = window.innerWidth;
+    if (w >= 1920) return '1920';
+    if (w >= 1366) return '1366';
+    if (w >= 1024) return '1024';
+    if (w >= 768) return '768';
+    return '320';
+  }
+
+  /* включаем transition только после стабильной первой отрисовки */
+  function markReady() {
+    if (!stageEl || stageEl.classList.contains('msl-ready')) return;
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () {
+        if (stageEl) stageEl.classList.add('msl-ready');
+      });
+    });
+  }
+
+  /* --- инициализация --- */
+  function init() {
+    var frame = q('.main-slider');
+    build(frame);
+
+    textEl = q('.slider-text');
+    if (textEl) textAtom = textEl.querySelector('.tn-atom') || textEl;
+
+    var left = q('.slider-left');
+    var right = q('.slider-right');
+    if (left) left.addEventListener('click', prev);
+    if (right) {
+      right.addEventListener('click', next);
+      buildRing(right);
+    }
+
+    /* первый текст без задержки; позиции уже расставлены в build() */
+    if (textAtom) {
+      textAtom.textContent = SLIDE_TEXTS[0];
+      lockTextBox(textWidth(SLIDE_TEXTS[0]));
+    }
+
+    /* пересобираем композицию только при реальной смене брейкпоинта —
+       Тильда шлёт resize при инициализации, из-за чего слайды «прыгали» */
+    currentBp = breakpointId();
+    var resizeTimer = null;
+    var initAt = Date.now();
+    window.addEventListener('resize', function () {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(function () {
+        if (Date.now() - initAt < 1000) return; /* игнор стартовых resize */
+        var bp = breakpointId();
+        if (bp === currentBp) return;
+        currentBp = bp;
+        stageEl.classList.remove('msl-ready'); /* без transition на пересборке */
+        for (var i = 0; i < cards.length; i++) fillFaces(cards[i], i + 1);
+        markReady();
+      }, 250);
+    });
+
+    /* показываем сразу после первого кадра — не ждём загрузки всех
+       картинок (на мобиле из-за этого был пустой экран ~1.5с) */
+    markReady();
+
+    autoplayStart = performance.now();
+    requestAnimationFrame(loop);
+  }
+
+  /* ждём, пока Tilda отрисует зеро-блоки и разложит элементы */
+  function waitAndInit() {
+    var started = Date.now();
+    (function poll() {
+      var frame = q('.main-slider');
+      var desk = q(SOURCE_BLOCK + ' .' + SLIDE_SOURCES[0].desktop);
+      var mob = q(SOURCE_BLOCK + ' .' + SLIDE_SOURCES[0].mobile);
+      /* на мобиле desktop-элемент тоже валиден как сигнал layout;
+         берём любой источник с ненулевой шириной */
+      var ready = (desk && desk.offsetWidth > 0) || (mob && mob.offsetWidth > 0);
+      if (frame && (ready || Date.now() - started > 2500)) {
+        init();
+        return;
+      }
+      if (Date.now() - started < 20000) setTimeout(poll, 100);
+    })();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', waitAndInit);
+  } else {
+    waitAndInit();
+  }
+})();
+</script>
