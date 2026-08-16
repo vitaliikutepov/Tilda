@@ -31,6 +31,8 @@
      - активный слайд по центру, боковые — в 2 раза меньше
        и с маской (сверху 100% -> снизу 0% прозрачность);
        на мобилке боковые слайды скрыты;
+     - на мобилке смена вертикальная: активный уходит вниз,
+       затем новый поднимается снизу на его место;
      - автопролистывание каждые 8 секунд, прогресс — белое
        кольцо (2px) вплотную к кнопке slider-right;
      - при наведении курсора на слайды автопролистывание на паузе;
@@ -170,12 +172,36 @@
   .msl-pos--hidr {
     transform: translateX(calc(var(--msl-w) * 1.5 + var(--msl-gap) * 2)) scale(0.5);
   }
-  /* на мобилке виден только центральный слайд */
+  /* на мобилке: активный уходит вниз (0.75с), затем новый
+     поднимается снизу на его место (0.75с). Маску отключаем —
+     иначе низ слайда таял бы как раз в сторону движения. */
   @media (max-width: 767px) {
+    .msl-card {
+      -webkit-mask-image: none;
+      mask-image: none;
+    }
+    .msl-pos--center {
+      transform: translateY(0) scale(1);
+      opacity: 1;
+      z-index: 3;
+      pointer-events: auto;
+      /* вход ждёт, пока прежний слайд уедет вниз */
+      transition:
+        transform 0.75s cubic-bezier(.25, .1, .25, 1) 0.75s,
+        opacity 0s linear 0.75s;
+    }
     .msl-pos--left,
-    .msl-pos--right {
+    .msl-pos--right,
+    .msl-pos--hidl,
+    .msl-pos--hidr {
+      transform: translateY(100%) scale(1);
       opacity: 0;
+      z-index: 1;
       pointer-events: none;
+      /* выход сразу: едет вниз, после приезда становится невидимым */
+      transition:
+        transform 0.75s cubic-bezier(.25, .1, .25, 1),
+        opacity 0s linear 0.75s;
     }
   }
 
