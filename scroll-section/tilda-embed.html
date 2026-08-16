@@ -104,7 +104,8 @@
 
   function parseRadius(str) {
     if (!str) return [0, 0, 0, 0];
-    var parts = String(str).split(/\s+/).map(function (s) {
+    var cleaned = String(str).split('/')[0];
+    var parts = cleaned.split(/\s+/).map(function (s) {
       return parseFloat(s) || 0;
     });
     if (!parts.length) return [0, 0, 0, 0];
@@ -112,6 +113,30 @@
     if (parts.length === 2) return [parts[0], parts[1], parts[0], parts[1]];
     if (parts.length === 3) return [parts[0], parts[1], parts[2], parts[1]];
     return parts.slice(0, 4);
+  }
+
+  function computedRadius(node) {
+    if (!node || !node.nodeType) return [0, 0, 0, 0];
+    var cs = window.getComputedStyle(node);
+    return [
+      parseFloat(cs.borderTopLeftRadius) || 0,
+      parseFloat(cs.borderTopRightRadius) || 0,
+      parseFloat(cs.borderBottomRightRadius) || 0,
+      parseFloat(cs.borderBottomLeftRadius) || 0
+    ];
+  }
+
+  function radiusMax(a, b) {
+    return [
+      Math.max(a[0], b[0]),
+      Math.max(a[1], b[1]),
+      Math.max(a[2], b[2]),
+      Math.max(a[3], b[3])
+    ];
+  }
+
+  function radiusPeak(values) {
+    return Math.max.apply(null, values || [0]);
   }
 
   function radiusCss(values) {
@@ -125,6 +150,29 @@
       lerp(from[2], to[2], t),
       lerp(from[3], to[3], t)
     ];
+  }
+
+  function radiusTargets(el) {
+    var nodes = [el];
+    qa('.tn-atom, .tn-molecule', el).forEach(function (n) {
+      if (nodes.indexOf(n) < 0) nodes.push(n);
+    });
+    return nodes;
+  }
+
+  var RADIUS_ATTRS = [
+    'data-field-border-radius-value',
+    'data-field-borderradius-value',
+    'data-field-container-border-radius-value'
+  ];
+
+  function radiusFromAttrs(node) {
+    var best = [0, 0, 0, 0];
+    if (!node || !node.getAttribute) return best;
+    for (var i = 0; i < RADIUS_ATTRS.length; i++) {
+      best = radiusMax(best, parseRadius(node.getAttribute(RADIUS_ATTRS[i])));
+    }
+    return best;
   }
 
   function directChild(el, selector) {
@@ -164,35 +212,82 @@
     if (force || el._ssLeftStyle == null) {
       el._ssLeftStyle = el.style.left;
       el._ssWidthStyle = el.style.width;
-      el._ssRadiusStyle = el.style.borderRadius;
     }
-    var fill = el._ssFill;
-    if (fill && (force || el._ssFillRadiusStyle == null)) {
-      el._ssFillRadiusStyle = fill.style.borderRadius;
+  }
+
+  function originalRadiusInline(el, node) {
+    var list = el._ssRadiusInlines || [];
+    for (var i = 0; i < list.length; i++) {
+      if (list[i].node === node) return list[i].value;
     }
+    return '';
+  }
+
+  function rememberRadiusInlines(el) {
+    if (el._ssRadiusInlines) return;
+    el._ssRadiusInlines = radiusTargets(el).map(function (node) {
+      return { node: node, value: node.style.borderRadius };
+    });
+  }
+
+  function clearAnimatedRadius(el) {
+    var nodes = radiusTargets(el);
+    for (var i = 0; i < nodes.length; i++) {
+      if (nodes[i].getAttribute('data-ss-radius')) {
+        nodes[i].style.removeProperty('border-radius');
+        var orig = originalRadiusInline(el, nodes[i]);
+        if (orig) nodes[i].style.borderRadius = orig;
+        nodes[i].removeAttribute('data-ss-radius');
+      }
+    }
+    el._ssAppliedRadius = null;
   }
 
   function restoreTildaBox(el) {
     if (el._ssLeftStyle != null) el.style.left = el._ssLeftStyle;
     if (el._ssWidthStyle != null) el.style.width = el._ssWidthStyle;
-    el.style.borderRadius = el._ssRadiusStyle || '';
     el.style.willChange = '';
-    if (el._ssFill) {
-      el._ssFill.style.borderRadius = el._ssFillRadiusStyle || '';
-    }
+    clearAnimatedRadius(el);
     el._ssAppliedLeft = null;
     el._ssAppliedWidth = null;
   }
 
-  function measureOriginals(el) {
+  function readTildaRadius(el) {
+    var best = [0, 0, 0, 0];
+    var nodes = radiusTargets(el);
+    var saved = [];
+    for (var i = 0; i < nodes.length; i++) {
+      var node = nodes[i];
+      if (node.getAttribute('data-ss-radius')) {
+        saved.push({ node: node, value: node.style.borderRadius });
+        node.style.removeProperty('border-radius');
+        var orig = originalRadiusInline(el, node);
+        if (orig) node.style.borderRadius = orig;
+      }
+      best = radiusMax(best, computedRadius(node));
+      best = radiusMax(best, radiusFromAttrs(node));
+    }
+    best = radiusMax(best, radiusFromAttrs(el));
+    for (var j = 0; j < saved.length; j++) {
+      saved[j].node.style.setProperty('border-radius', saved[j].value, 'important');
+    }
+    return best;
+  }
+
+  /* Скругление Тильды читаем только из исходных стилей, никогда
+     из уже анимированного inline 0px — иначе после ресайза оно «залипает». */
+  function snapshotRadius(el, allowUpgrade) {
+    var next = readTildaRadius(el);
+    var nextPeak = radiusPeak(next);
+    var curPeak = radiusPeak(el._ssRadius);
+    if (!el._ssRadius || (allowUpgrade && nextPeak > curPeak)) {
+      el._ssRadius = next;
+    }
+  }
+
+  function measureBox(el) {
     el._ssLeftPx = el.offsetLeft;
     el._ssWidthPx = el.offsetWidth;
-    el._ssRadius = parseRadius(getComputedStyle(el).borderRadius);
-    if (el._ssFill) {
-      el._ssFillRadius = parseRadius(getComputedStyle(el._ssFill).borderRadius);
-    } else {
-      el._ssFillRadius = el._ssRadius;
-    }
   }
 
   function bindSection(el) {
@@ -200,7 +295,9 @@
     el._ssBound = true;
     el._ssFill = directChild(el, '.tn-atom, .tn-molecule');
     rememberTildaBox(el, true);
-    measureOriginals(el);
+    rememberRadiusInlines(el);
+    measureBox(el);
+    snapshotRadius(el, true);
     sections.push(el);
   }
 
@@ -217,13 +314,24 @@
   }
 
   function recaptureAfterResize(el) {
-    if (el._ssAppliedLeft != null &&
-        (el.style.left !== el._ssAppliedLeft ||
-         el.style.width !== el._ssAppliedWidth)) {
-      rememberTildaBox(el, true);
-    }
+    var leftChanged = el._ssAppliedLeft != null && el.style.left !== el._ssAppliedLeft;
+    var widthChanged = el._ssAppliedWidth != null && el.style.width !== el._ssAppliedWidth;
+    if (leftChanged) el._ssLeftStyle = el.style.left;
+    if (widthChanged) el._ssWidthStyle = el.style.width;
     restoreTildaBox(el);
-    measureOriginals(el);
+    measureBox(el);
+    snapshotRadius(el, true);
+  }
+
+  function applyRadius(el, t) {
+    var radius = lerpRadius([0, 0, 0, 0], el._ssRadius || [0, 0, 0, 0], t);
+    var css = radiusCss(radius);
+    var nodes = radiusTargets(el);
+    for (var i = 0; i < nodes.length; i++) {
+      nodes[i].style.setProperty('border-radius', css, 'important');
+      nodes[i].setAttribute('data-ss-radius', '1');
+    }
+    el._ssAppliedRadius = css;
   }
 
   function applyFrame(el) {
@@ -248,21 +356,14 @@
 
     var left = lerp(fullLeft, el._ssLeftPx, t);
     var width = lerp(fullWidth, origW, t);
-    var radius = lerpRadius([0, 0, 0, 0], el._ssRadius, t);
 
     el.style.left = left + 'px';
     el.style.width = width + 'px';
-    el.style.borderRadius = radiusCss(radius);
+    applyRadius(el, t);
     el.style.willChange = (t > 0 && t < 1) ? 'left, width, border-radius' : '';
     el._ssAppliedLeft = el.style.left;
     el._ssAppliedWidth = el.style.width;
     el.setAttribute('data-ss-progress', t.toFixed(3));
-
-    if (el._ssFill) {
-      el._ssFill.style.borderRadius = radiusCss(
-        lerpRadius([0, 0, 0, 0], el._ssFillRadius, t)
-      );
-    }
   }
 
   function tick() {
@@ -308,6 +409,16 @@
       window.visualViewport.addEventListener('resize', onResize);
     }
     requestTick();
+
+    /* Тильда часто дописывает radius после первого layout — подхватим */
+    [400, 1000, 2000].forEach(function (ms) {
+      setTimeout(function () {
+        for (var i = 0; i < sections.length; i++) {
+          snapshotRadius(sections[i], true);
+        }
+        requestTick();
+      }, ms);
+    });
   }
 
   function waitAndInit() {
