@@ -3,201 +3,200 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Spotify-style slider — demo</title>
+  <title>Spotify-style slider — demo (parent-new)</title>
   <style>
     * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      min-height: 100vh;
-      background: #f7f7f5;
-      font-family: "Segoe UI", system-ui, sans-serif;
-    }
-    .note {
-      max-width: 720px;
-      margin: 24px auto;
-      padding: 0 16px;
-      color: #444;
-      font-size: 14px;
-      line-height: 1.5;
-    }
-    .note code {
-      background: #eee;
-      padding: 1px 6px;
-      border-radius: 4px;
-    }
-
+    body { margin: 0; background: #fbfafc; font-family: "Segoe UI", system-ui, sans-serif; }
+    .note { max-width: 720px; margin: 20px auto; padding: 0 16px; color: #444; font-size: 14px; line-height: 1.5; }
+    .note code { background: #eee; padding: 1px 6px; border-radius: 4px; }
     .r.t-rec { position: relative; }
 
-    #rec-slider .t396__artboard {
-      height: 900px;
+    /* --- блок слайдера (как rec3062739901) --- */
+    #rec-stage .t396__artboard {
       position: relative;
-      background: #fff;
-      overflow: hidden;
+      height: 480px;
+      background: #fbfafc;
+      overflow: visible;
     }
-
     .slider {
       position: absolute;
       left: 50%;
       top: 0;
       transform: translateX(-50%);
       width: min(1600px, 100%);
-      height: 900px;
-    }
-    .slider .tn-atom {
-      position: absolute;
-      inset: 0;
-    }
-
-    .card-source-board {
-      height: 460px;
-      position: relative;
-      background: #fff;
-    }
-
-    .tn-group.card1,
-    .tn-group.card2,
-    .tn-group.card3,
-    .tn-group.card4,
-    .tn-group.card5 {
-      position: absolute;
-      top: 0;
-      left: calc(50% - 260px);
-      width: 520px;
       height: 460px;
     }
+    .slider .tn-atom { position: absolute; inset: 0; }
 
-    .tn-molecule {
-      width: 100%;
-      height: 100%;
+    .pag-row {
+      position: absolute;
+      left: 50%;
+      top: 476px;
+      transform: translateX(-50%);
       display: flex;
-      flex-direction: column;
-      row-gap: 16px;
-      align-items: center;
-      justify-content: center;
-      padding: 32px;
-      border-radius: 16px;
-      box-sizing: border-box;
+      gap: 4px;
+      width: 136px;
+      height: 4px;
+    }
+    .cslide4-1, .cslide4-2, .cslide4-3, .cslide4-4, .cslide4-5 {
+      width: 24px; height: 4px; flex-shrink: 0; overflow: hidden;
+      background: rgba(135, 66, 238, 0.2);
+    }
+    .slide4-1, .slide4-2, .slide4-3, .slide4-4, .slide4-5 {
+      width: 100%; height: 4px;
+    }
+    .slide4-1 .tn-atom, .slide4-2 .tn-atom, .slide4-3 .tn-atom,
+    .slide4-4 .tn-atom, .slide4-5 .tn-atom {
+      display: block; width: 100%; height: 100%; background: #8742ee;
+      transform-origin: left center;
     }
 
-    .tn-elem[data-elem-type="text"] {
-      width: 100%;
-      text-align: center;
-      flex-shrink: 0;
+    .slider-next, .slider-prev {
+      position: absolute; top: 200px; width: 56px; height: 56px;
+      border-radius: 42px; cursor: pointer;
+    }
+    .slider-next { right: 40px; }
+    .slider-prev { left: 40px; }
+    .slider-next .tn-atom__button-icon,
+    .slider-prev .tn-atom__button-icon {
+      display: block; width: 24px; height: 24px; margin: 16px;
+      background: center / contain no-repeat;
+    }
+    .slider-next .tn-atom__button-icon {
+      --icon: url('https://static.tildacdn.com/tild6330-3834-4835-a164-343666333432/Component_1l1.svg');
+      background-image: var(--icon);
+    }
+    .slider-prev .tn-atom__button-icon {
+      --icon: url('https://static.tildacdn.com/tild6639-3131-4736-a236-373138636639/Component_1l3.svg');
+      background-image: var(--icon);
     }
 
-    .tn-elem .tn-atom {
-      color: #000;
-      line-height: 1.55;
+    /* --- карточки-источники --- */
+    .card-board { height: 460px; position: relative; background: #fff; }
+    .tn-group[class*="card"] {
+      position: absolute; top: 0; left: calc(50% - 260px);
+      width: 520px; height: 460px;
     }
-
-    .title .tn-atom {
-      font-size: 24px;
-      font-weight: 500;
+    .tn-molecule {
+      width: 100%; height: 100%; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 16px;
+      padding: 32px; border-radius: 40px; box-sizing: border-box;
     }
-
-    .subtitle .tn-atom {
-      font-size: 16px;
-      font-weight: 400;
+    .tn-elem[data-elem-type="text"] { width: 100%; text-align: center; }
+    .title .tn-atom { font-size: 28px; font-weight: 600; color: #1a1a1a; }
+    .subtitle .tn-atom { font-size: 16px; color: #444; line-height: 1.5; }
+    .img-face .tn-molecule {
+      background-size: cover; background-position: center; color: #fff;
     }
+    .img-face .title .tn-atom { color: #fff; }
   </style>
 </head>
 <body>
   <p class="note">
-    Демо: 5 карточек (по две слева/справа), стили Тильды сохраняются
-    через перенос scoped CSS. Код — <code>tilda-embed.html</code>.
+    Демо под заготовку <code>parent-new</code>:
+    <code>.slider</code>, пары <code>.cardN</code> / <code>.cardN-img</code>,
+    пагинация <code>.cslide4-N</code>/<code>.slide4-N</code>,
+    курсоры из <code>.slider-prev</code>/<code>.slider-next</code>, flip активной.
   </p>
 
-  <div id="rec-slider" class="r t-rec">
+  <div id="rec-stage" class="r t-rec">
     <div class="t396__artboard">
-      <div class="slider tn-elem">
-        <div class="tn-atom"></div>
+      <div class="slider tn-elem"><div class="tn-atom"></div></div>
+      <div class="pag-row">
+        <div class="tn-group cslide4-1"><div class="tn-elem slide4-1"><div class="tn-atom"></div></div></div>
+        <div class="tn-group cslide4-2"><div class="tn-elem slide4-2"><div class="tn-atom"></div></div></div>
+        <div class="tn-group cslide4-3"><div class="tn-elem slide4-3"><div class="tn-atom"></div></div></div>
+        <div class="tn-group cslide4-4"><div class="tn-elem slide4-4"><div class="tn-atom"></div></div></div>
+        <div class="tn-group cslide4-5"><div class="tn-elem slide4-5"><div class="tn-atom"></div></div></div>
       </div>
+      <div class="tn-elem slider-next"><div class="tn-atom"><span class="tn-atom__button-icon"></span></div></div>
+      <div class="tn-elem slider-prev"><div class="tn-atom"><span class="tn-atom__button-icon"></span></div></div>
     </div>
   </div>
 
-  <!-- имитация scoped-стилей Тильды (#rec…) -->
+  <!-- Слайд 1 -->
   <div id="rec1001" class="r t-rec">
     <style>
-      #rec1001 .tn-group[data-group-id="g1"]{z-index:3;position:absolute;top:0;left:calc(50% - 260px);width:520px;height:460px;}
-      #rec1001 .tn-group[data-group-id="g1"] #molecule-g1{width:100%;height:100%;display:flex;flex-direction:column;row-gap:16px;align-items:center;justify-content:center;padding:32px;border-radius:16px;background-color:#e8f0fe;box-sizing:border-box;}
-      #rec1001 .tn-elem[data-elem-id="t1"] .tn-atom{font-size:24px;font-weight:500;color:#0b1f4a;}
-      #rec1001 .tn-elem[data-elem-id="s1"] .tn-atom{font-size:16px;font-weight:400;color:#334155;}
+      #rec1001 .tn-group.card1-img #mol-1i{background:url(https://static.tildacdn.com/tild6264-3338-4231-b638-393739646135/Rectangle_240663940.jpg) center/cover #5b3d8f;border-radius:40px;}
+      #rec1001 .tn-group.card1 #mol-1c{background:#efe8ff;border-radius:40px;}
+      #rec1001 .tn-group{position:absolute;top:0;left:calc(50% - 260px);width:520px;height:460px;}
     </style>
-    <div class="card-source-board">
-      <div class="tn-group card1 t396__group" data-group-id="g1">
-        <div class="tn-molecule" id="molecule-g1">
-          <div class="tn-elem title" data-elem-type="text" data-elem-id="t1"><div class="tn-atom">MaxPatrol SIEM</div></div>
-          <div class="tn-elem subtitle" data-elem-type="text" data-elem-id="s1"><div class="tn-atom">Лидер на российском рынке SIEM-систем и основа крупнейших SOC в России с 2015 года</div></div>
-        </div>
-      </div>
+    <div class="card-board">
+      <div class="tn-group card1-img img-face t396__group"><div class="tn-molecule" id="mol-1i">
+        <div class="tn-elem title" data-elem-type="text"><div class="tn-atom">Безопасность</div></div>
+      </div></div>
+      <div class="tn-group card1 t396__group"><div class="tn-molecule" id="mol-1c">
+        <div class="tn-elem title" data-elem-type="text"><div class="tn-atom">Безопасность</div></div>
+        <div class="tn-elem subtitle" data-elem-type="text"><div class="tn-atom">Написать ребёнку могут только контакты или ребята из его школы</div></div>
+      </div></div>
     </div>
   </div>
 
   <div id="rec1002" class="r t-rec">
     <style>
-      #rec1002 .tn-group[data-group-id="g2"]{z-index:3;position:absolute;top:0;left:calc(50% - 260px);width:520px;height:460px;}
-      #rec1002 .tn-group[data-group-id="g2"] #molecule-g2{width:100%;height:100%;display:flex;flex-direction:column;row-gap:16px;align-items:center;justify-content:center;padding:32px;border-radius:16px;background-color:#eaf7ee;box-sizing:border-box;}
-      #rec1002 .tn-elem[data-elem-id="t2"] .tn-atom{font-size:24px;font-weight:500;color:#14532d;}
-      #rec1002 .tn-elem[data-elem-id="s2"] .tn-atom{font-size:16px;font-weight:400;color:#334155;}
+      #rec1002 .tn-group.card2-img #mol-2i{background:linear-gradient(135deg,#3d8f5b,#1f5c38);border-radius:40px;}
+      #rec1002 .tn-group.card2 #mol-2c{background:#e8f7ee;border-radius:40px;}
+      #rec1002 .tn-group{position:absolute;top:0;left:calc(50% - 260px);width:520px;height:460px;}
     </style>
-    <div class="card-source-board">
-      <div class="tn-group card2 t396__group" data-group-id="g2">
-        <div class="tn-molecule" id="molecule-g2">
-          <div class="tn-elem title" data-elem-type="text" data-elem-id="t2"><div class="tn-atom">Card 2</div></div>
-          <div class="tn-elem subtitle" data-elem-type="text" data-elem-id="s2"><div class="tn-atom">Лидер на российском рынке SIEM-систем и основа крупнейших SOC в России с 2015 года</div></div>
-        </div>
-      </div>
+    <div class="card-board">
+      <div class="tn-group card2-img img-face t396__group"><div class="tn-molecule" id="mol-2i">
+        <div class="tn-elem title" data-elem-type="text"><div class="tn-atom">Card 2</div></div>
+      </div></div>
+      <div class="tn-group card2 t396__group"><div class="tn-molecule" id="mol-2c">
+        <div class="tn-elem title" data-elem-type="text"><div class="tn-atom">Card 2</div></div>
+        <div class="tn-elem subtitle" data-elem-type="text"><div class="tn-atom">Подзаголовок второго слайда — сразу целиком</div></div>
+      </div></div>
     </div>
   </div>
 
   <div id="rec1003" class="r t-rec">
     <style>
-      #rec1003 .tn-group[data-group-id="g3"]{z-index:3;position:absolute;top:0;left:calc(50% - 260px);width:520px;height:460px;}
-      #rec1003 .tn-group[data-group-id="g3"] #molecule-g3{width:100%;height:100%;display:flex;flex-direction:column;row-gap:16px;align-items:center;justify-content:center;padding:32px;border-radius:16px;background-color:#f7efe8;box-sizing:border-box;}
-      #rec1003 .tn-elem[data-elem-id="t3"] .tn-atom{font-size:24px;font-weight:500;color:#7c2d12;}
-      #rec1003 .tn-elem[data-elem-id="s3"] .tn-atom{font-size:16px;font-weight:400;color:#334155;}
+      #rec1003 .tn-group.card3-img #mol-3i{background:linear-gradient(135deg,#8f5b3d,#5c3a1f);border-radius:40px;}
+      #rec1003 .tn-group.card3 #mol-3c{background:#f7efe8;border-radius:40px;}
+      #rec1003 .tn-group{position:absolute;top:0;left:calc(50% - 260px);width:520px;height:460px;}
     </style>
-    <div class="card-source-board">
-      <div class="tn-group card3 t396__group" data-group-id="g3">
-        <div class="tn-molecule" id="molecule-g3">
-          <div class="tn-elem title" data-elem-type="text" data-elem-id="t3"><div class="tn-atom">Card 3</div></div>
-          <div class="tn-elem subtitle" data-elem-type="text" data-elem-id="s3"><div class="tn-atom">Лидер на российском рынке SIEM-систем и основа крупнейших SOC в России с 2015 года</div></div>
-        </div>
-      </div>
+    <div class="card-board">
+      <div class="tn-group card3-img img-face t396__group"><div class="tn-molecule" id="mol-3i">
+        <div class="tn-elem title" data-elem-type="text"><div class="tn-atom">Card 3</div></div>
+      </div></div>
+      <div class="tn-group card3 t396__group"><div class="tn-molecule" id="mol-3c">
+        <div class="tn-elem title" data-elem-type="text"><div class="tn-atom">Card 3</div></div>
+        <div class="tn-elem subtitle" data-elem-type="text"><div class="tn-atom">Подзаголовок третьего слайда — сразу целиком</div></div>
+      </div></div>
     </div>
   </div>
 
   <div id="rec1004" class="r t-rec">
     <style>
-      #rec1004 .tn-group[data-group-id="g4"]{z-index:3;position:absolute;top:0;left:calc(50% - 260px);width:520px;height:460px;}
-      #rec1004 .tn-group[data-group-id="g4"] #molecule-g4{width:100%;height:100%;display:flex;flex-direction:column;row-gap:16px;align-items:center;justify-content:center;padding:32px;border-radius:16px;background-color:#f3e8ff;box-sizing:border-box;}
-      #rec1004 .tn-elem[data-elem-id="t4"] .tn-atom{font-size:24px;font-weight:500;color:#581c87;}
-      #rec1004 .tn-elem[data-elem-id="s4"] .tn-atom{font-size:16px;font-weight:400;color:#334155;}
+      #rec1004 .tn-group.card4-img #mol-4i{background:linear-gradient(135deg,#3d5b8f,#1f3a5c);border-radius:40px;}
+      #rec1004 .tn-group.card4 #mol-4c{background:#e8eef7;border-radius:40px;}
+      #rec1004 .tn-group{position:absolute;top:0;left:calc(50% - 260px);width:520px;height:460px;}
     </style>
-    <div class="card-source-board">
-      <div class="tn-group card4 t396__group" data-group-id="g4">
-        <div class="tn-molecule" id="molecule-g4">
-          <div class="tn-elem title" data-elem-type="text" data-elem-id="t4"><div class="tn-atom">Card 4</div></div>
-          <div class="tn-elem subtitle" data-elem-type="text" data-elem-id="s4"><div class="tn-atom">Лидер на российском рынке SIEM-систем и основа крупнейших SOC в России с 2015 года</div></div>
-        </div>
-      </div>
+    <div class="card-board">
+      <div class="tn-group card4-img img-face t396__group"><div class="tn-molecule" id="mol-4i">
+        <div class="tn-elem title" data-elem-type="text"><div class="tn-atom">Card 4</div></div>
+      </div></div>
+      <div class="tn-group card4 t396__group"><div class="tn-molecule" id="mol-4c">
+        <div class="tn-elem title" data-elem-type="text"><div class="tn-atom">Card 4</div></div>
+        <div class="tn-elem subtitle" data-elem-type="text"><div class="tn-atom">Подзаголовок четвёртого слайда — сразу целиком</div></div>
+      </div></div>
     </div>
   </div>
 
   <div id="rec1005" class="r t-rec">
     <style>
-      #rec1005 .tn-group[data-group-id="g5"]{z-index:3;position:absolute;top:0;left:calc(50% - 260px);width:520px;height:460px;}
-      #rec1005 .tn-group[data-group-id="g5"] #molecule-g5{width:100%;height:100%;display:flex;flex-direction:column;row-gap:16px;align-items:center;justify-content:center;padding:32px;border-radius:16px;background-color:#fce7f3;box-sizing:border-box;}
-      #rec1005 .tn-elem[data-elem-id="t5"] .tn-atom{font-size:24px;font-weight:500;color:#9d174d;}
-      #rec1005 .tn-elem[data-elem-id="s5"] .tn-atom{font-size:16px;font-weight:400;color:#334155;}
+      #rec1005 .tn-group.card5-img #mol-5i{background:linear-gradient(135deg,#8f3d5b,#5c1f3a);border-radius:40px;}
+      #rec1005 .tn-group.card5 #mol-5c{background:#f7e8ee;border-radius:40px;}
+      #rec1005 .tn-group{position:absolute;top:0;left:calc(50% - 260px);width:520px;height:460px;}
     </style>
-    <div class="card-source-board">
-      <div class="tn-group card5 t396__group" data-group-id="g5">
-        <div class="tn-molecule" id="molecule-g5">
-          <div class="tn-elem title" data-elem-type="text" data-elem-id="t5"><div class="tn-atom">Card 5</div></div>
-          <div class="tn-elem subtitle" data-elem-type="text" data-elem-id="s5"><div class="tn-atom">Лидер на российском рынке SIEM-систем и основа крупнейших SOC в России с 2015 года</div></div>
-        </div>
-      </div>
+    <div class="card-board">
+      <div class="tn-group card5-img img-face t396__group"><div class="tn-molecule" id="mol-5i">
+        <div class="tn-elem title" data-elem-type="text"><div class="tn-atom">Card 5</div></div>
+      </div></div>
+      <div class="tn-group card5 t396__group"><div class="tn-molecule" id="mol-5c">
+        <div class="tn-elem title" data-elem-type="text"><div class="tn-atom">Card 5</div></div>
+        <div class="tn-elem subtitle" data-elem-type="text"><div class="tn-atom">Подзаголовок пятого слайда — сразу целиком</div></div>
+      </div></div>
     </div>
   </div>
 

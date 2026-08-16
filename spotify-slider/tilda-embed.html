@@ -1,20 +1,14 @@
 <!-- ============================================================
-     Слайдер в духе lifeatspotify.com (первый экран) для Tilda
+     Слайдер в духе lifeatspotify.com для Tilda Zero Block
 
-     Как подключить:
-     1. Shape с классом  slider  — контейнер слайдера.
-     2. Карточки-источники: .card1 … .card5 (520×460),
-        внутри заголовок + подзаголовок. Блоки-источники
-        после инициализации скрываются.
-     3. Вставьте этот файл в HTML-элемент Тильды.
+     1. Контейнер: Shape с классом  slider
+     2. Слайды 1…5:
+          .cardN      — активная (контентная) сторона
+          .cardN-img  — оборотная (картинка)
+     3. Пагинация: .cslide4-N  содержит полоску  .slide4-N  (N=1…5)
+     4. Курсоры берутся из .slider-prev / .slider-next (сами кнопки скрываются)
 
-     Поведение:
-     - coverflow 3D (rotateY + depth), как у Spotify;
-     - слева/справа по две карточки, цикл;
-     - стили Тильды сохраняются;
-     - подзаголовок только у активного;
-     - левая/правая половина: курсор-стрелка и клик prev/next;
-     - свайп / автоплей.
+     Поведение: coverflow 3D, flip активной карточки, цикл, swipe, автоплей.
 ============================================================ -->
 
 <style>
@@ -31,6 +25,14 @@
     padding: 0 !important;
   }
 
+  /* оригиналы стрелок — скрыты, но остаются в DOM для курсора */
+  .slider-prev,
+  .slider-next {
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+  }
+
   .slider,
   .slider .tn-atom {
     overflow: visible !important;
@@ -41,7 +43,8 @@
     inset: 0;
     --pt-w: 520px;
     --pt-h: 460px;
-    --pt-gap: 20px;
+    /* зазор между краем активной и соседней ≥ 16px */
+    --pt-gap: 16px;
     --pt-side-scale: 0.9;
     --pt-far-scale: 0.8;
     --pt-rotate-1: 42deg;
@@ -49,16 +52,17 @@
     --pt-depth-1: -110px;
     --pt-depth-2: -200px;
     --pt-dur: 700ms;
+    --pt-flip-dur: 0.6s;
     --pt-ease: cubic-bezier(0.25, 0.1, 0.25, 1);
     --pt-offset-1: calc(
-      var(--pt-w) * 0.42 + var(--pt-gap) + var(--pt-w) * var(--pt-side-scale) * 0.28
+      var(--pt-w) * 0.5 + var(--pt-gap) + var(--pt-w) * var(--pt-side-scale) * 0.5
     );
     --pt-offset-2: calc(
-      var(--pt-offset-1) + var(--pt-w) * var(--pt-side-scale) * 0.38 +
-      var(--pt-gap) + var(--pt-w) * var(--pt-far-scale) * 0.22
+      var(--pt-offset-1) + var(--pt-w) * var(--pt-side-scale) * 0.5 +
+      var(--pt-gap) + var(--pt-w) * var(--pt-far-scale) * 0.5
     );
-    --pt-cur-prev: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cpath d='M19.5 7.5L10 16l9.5 8.5' fill='none' stroke='%23111' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") 16 16, w-resize;
-    --pt-cur-next: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cpath d='M12.5 7.5L22 16l-9.5 8.5' fill='none' stroke='%23111' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") 16 16, e-resize;
+    --pt-cur-prev: w-resize;
+    --pt-cur-next: e-resize;
     perspective: 1200px;
     perspective-origin: 50% 50%;
     transform-style: preserve-3d;
@@ -81,15 +85,10 @@
     transform: translate3d(-50%, -50%, 0);
     transform-origin: center center;
     transform-style: preserve-3d;
-    -webkit-backface-visibility: hidden;
-    backface-visibility: hidden;
     z-index: 1;
     pointer-events: auto;
-    will-change: transform, opacity, filter;
-    transition:
-      transform var(--pt-dur) var(--pt-ease),
-      opacity var(--pt-dur) var(--pt-ease),
-      filter var(--pt-dur) var(--pt-ease);
+    will-change: transform;
+    transition: transform var(--pt-dur) var(--pt-ease);
     user-select: none;
     -webkit-user-select: none;
   }
@@ -98,8 +97,40 @@
   .pt-slide.pt-dragging,
   .pt-slide.pt-no-trans { transition: none !important; }
 
-  .pt-slide > .tn-group,
-  .pt-slide > .t396__group {
+  /* --- flip (как у Spotify) --- */
+  .pt-flip {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    transform-style: preserve-3d;
+    transition: transform var(--pt-flip-dur) var(--pt-ease);
+  }
+
+  .pt-slide.is-flipped .pt-flip {
+    transform: rotateY(180deg);
+  }
+
+  .pt-face {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+    transform-style: preserve-3d;
+    overflow: hidden;
+  }
+
+  .pt-face-front {
+    transform: rotateY(0deg);
+  }
+
+  .pt-face-back {
+    transform: rotateY(180deg);
+  }
+
+  .pt-face > .tn-group,
+  .pt-face > .t396__group {
     position: relative !important;
     left: auto !important;
     top: auto !important;
@@ -111,24 +142,28 @@
     transform: none !important;
   }
 
-  .pt-slide .tn-molecule {
+  .pt-face .tn-molecule {
     width: 100% !important;
     height: 100% !important;
     box-sizing: border-box;
   }
 
-  /* coverflow: как Swiper rotate:45 / depth:100 у Spotify */
+  /* корневая группа/молекула карточки не должна оставаться opacity:0 из Тильды */
+  .pt-face > .tn-group,
+  .pt-face > .t396__group,
+  .pt-face > .tn-group > .tn-molecule,
+  .pt-face > .t396__group > .tn-molecule {
+    opacity: 1 !important;
+  }
+
+  /* coverflow-позиции — без прозрачности */
   .pt-slide.is-active {
     z-index: 5;
-    opacity: 1;
-    filter: none;
     transform: translate3d(-50%, -50%, 0) rotateY(0deg) scale(1);
   }
 
   .pt-slide.is-prev {
     z-index: 3;
-    opacity: 0.78;
-    filter: brightness(0.94);
     transform:
       translate3d(calc(-50% - var(--pt-offset-1)), -50%, var(--pt-depth-1))
       rotateY(var(--pt-rotate-1))
@@ -137,8 +172,6 @@
 
   .pt-slide.is-next {
     z-index: 3;
-    opacity: 0.78;
-    filter: brightness(0.94);
     transform:
       translate3d(calc(-50% + var(--pt-offset-1)), -50%, var(--pt-depth-1))
       rotateY(calc(var(--pt-rotate-1) * -1))
@@ -147,8 +180,6 @@
 
   .pt-slide.is-prev-2 {
     z-index: 2;
-    opacity: 0.52;
-    filter: brightness(0.88);
     transform:
       translate3d(calc(-50% - var(--pt-offset-2)), -50%, var(--pt-depth-2))
       rotateY(var(--pt-rotate-2))
@@ -157,8 +188,6 @@
 
   .pt-slide.is-next-2 {
     z-index: 2;
-    opacity: 0.52;
-    filter: brightness(0.88);
     transform:
       translate3d(calc(-50% + var(--pt-offset-2)), -50%, var(--pt-depth-2))
       rotateY(calc(var(--pt-rotate-2) * -1))
@@ -167,7 +196,6 @@
 
   .pt-slide.is-hid-l {
     z-index: 1;
-    opacity: 0;
     pointer-events: none;
     transform:
       translate3d(calc(-50% - var(--pt-offset-2) - var(--pt-w) * 0.5), -50%, -260px)
@@ -177,7 +205,6 @@
 
   .pt-slide.is-hid-r {
     z-index: 1;
-    opacity: 0;
     pointer-events: none;
     transform:
       translate3d(calc(-50% + var(--pt-offset-2) + var(--pt-w) * 0.5), -50%, -260px)
@@ -185,27 +212,55 @@
       scale(var(--pt-far-scale));
   }
 
-  .pt-slide .pt-slide-sub {
-    opacity: 0 !important;
-    max-height: 0 !important;
-    overflow: hidden !important;
-    margin: 0 !important;
-    padding-top: 0 !important;
-    padding-bottom: 0 !important;
-    pointer-events: none;
-    transition:
-      opacity 0.45s ease,
-      max-height 0.45s ease,
-      margin 0.45s ease;
+  /* пагинация */
+  .cslide4-1,
+  .cslide4-2,
+  .cslide4-3,
+  .cslide4-4,
+  .cslide4-5 {
+    cursor: pointer;
   }
 
-  .pt-slide.is-active .pt-slide-sub {
+  /* черточки пагинации: неактивные приглушены, активная яркая + прогресс */
+  .slide4-1,
+  .slide4-2,
+  .slide4-3,
+  .slide4-4,
+  .slide4-5 {
+    transform-origin: left center !important;
+    opacity: 0.28 !important;
+    transition: opacity 0.3s ease !important;
+  }
+
+  .slide4-1 .tn-atom,
+  .slide4-2 .tn-atom,
+  .slide4-3 .tn-atom,
+  .slide4-4 .tn-atom,
+  .slide4-5 .tn-atom {
+    transform-origin: left center !important;
+  }
+
+  .cslide4-1.is-on .slide4-1,
+  .cslide4-2.is-on .slide4-2,
+  .cslide4-3.is-on .slide4-3,
+  .cslide4-4.is-on .slide4-4,
+  .cslide4-5.is-on .slide4-5 {
     opacity: 1 !important;
-    max-height: 160px !important;
-    pointer-events: auto;
   }
 
-  /* курсоры: левая/правая половина слайдера */
+  .cslide4-1.is-on .slide4-1.pt-pag-run .tn-atom,
+  .cslide4-2.is-on .slide4-2.pt-pag-run .tn-atom,
+  .cslide4-3.is-on .slide4-3.pt-pag-run .tn-atom,
+  .cslide4-4.is-on .slide4-4.pt-pag-run .tn-atom,
+  .cslide4-5.is-on .slide4-5.pt-pag-run .tn-atom {
+    animation: pt-pag-fill var(--pt-autoplay, 5s) linear forwards;
+  }
+
+  @keyframes pt-pag-fill {
+    from { transform: scaleX(0); }
+    to { transform: scaleX(1); }
+  }
+
   .pt-stage.pt-cursor-prev,
   .pt-stage.pt-cursor-prev .pt-slide {
     cursor: var(--pt-cur-prev) !important;
@@ -224,10 +279,6 @@
       --pt-w: 440px;
       --pt-h: 389px;
       --pt-gap: 16px;
-      --pt-side-scale: 0.88;
-      --pt-far-scale: 0.76;
-      --pt-rotate-1: 38deg;
-      --pt-rotate-2: 52deg;
       perspective: 1000px;
     }
   }
@@ -236,9 +287,7 @@
     .pt-stage {
       --pt-w: 360px;
       --pt-h: 318px;
-      --pt-gap: 12px;
-      --pt-side-scale: 0.84;
-      --pt-far-scale: 0.72;
+      --pt-gap: 16px;
       --pt-rotate-1: 32deg;
       --pt-rotate-2: 46deg;
       --pt-depth-1: -80px;
@@ -251,9 +300,7 @@
     .pt-stage {
       --pt-w: 260px;
       --pt-h: 230px;
-      --pt-gap: 8px;
-      --pt-side-scale: 0.8;
-      --pt-far-scale: 0.68;
+      --pt-gap: 16px;
       --pt-rotate-1: 26deg;
       --pt-rotate-2: 40deg;
       perspective: 700px;
@@ -265,12 +312,12 @@
 (function () {
   'use strict';
 
-  if (window.__ptSpotifySliderInit) return;
-  window.__ptSpotifySliderInit = true;
+  if (window.__ptSpotifySliderV3) return;
+  window.__ptSpotifySliderV3 = true;
 
   var AUTOPLAY_MS = 5000;
   var SWIPE_THRESHOLD = 60;
-  var CARD_SELECTOR = '.card1, .card2, .card3, .card4, .card5';
+  var SLIDE_COUNT = 5;
   var POS_CLASSES = [
     'is-active', 'is-prev', 'is-next', 'is-prev-2', 'is-next-2', 'is-hid-l', 'is-hid-r'
   ];
@@ -282,6 +329,7 @@
   var autoplayTimer = null;
   var drag = null;
   var suppressClick = false;
+  var pagItems = [];
 
   function q(sel, root) {
     return (root || document).querySelector(sel);
@@ -292,6 +340,7 @@
   }
 
   function findRec(el) {
+    if (!el) return null;
     if (el.closest) return el.closest('.r.t-rec');
     var p = el.parentElement;
     while (p && !(p.classList && p.classList.contains('t-rec'))) p = p.parentElement;
@@ -303,58 +352,29 @@
     if (rec) rec.classList.add('pt-card-source');
   }
 
-  function wrapCardPreservingStyles(card) {
-    var rec = findRec(card);
-    var wrap = document.createElement('div');
-    wrap.className = 'pt-slide';
-
-    if (rec && rec.id) {
-      var scope = 'pt-scope-' + rec.id;
-      wrap.classList.add(scope);
-      wrap.setAttribute('data-pt-rec', rec.id);
-
-      if (!document.querySelector('style[data-pt-from="' + rec.id + '"]')) {
-        var chunks = [];
-        qa('style', rec).forEach(function (st) {
-          if (st.textContent) chunks.push(st.textContent);
-        });
-        if (chunks.length) {
-          var css = chunks.join('\n').split('#' + rec.id).join('.' + scope);
-          var s = document.createElement('style');
-          s.setAttribute('data-pt-from', rec.id);
-          s.textContent = css;
-          document.head.appendChild(s);
-        }
-      }
-    }
-
-    wrap.appendChild(card);
-    return wrap;
+  /* копируем scoped CSS Тильды (#rec… → .pt-scope-rec…) */
+  function attachScopedStyles(el, wrap) {
+    var rec = findRec(el);
+    if (!rec || !rec.id) return;
+    var scope = 'pt-scope-' + rec.id;
+    wrap.classList.add(scope);
+    if (document.querySelector('style[data-pt-from="' + rec.id + '"]')) return;
+    var chunks = [];
+    qa('style', rec).forEach(function (st) {
+      if (st.textContent) chunks.push(st.textContent);
+    });
+    if (!chunks.length) return;
+    var s = document.createElement('style');
+    s.setAttribute('data-pt-from', rec.id);
+    s.textContent = chunks.join('\n').split('#' + rec.id).join('.' + scope);
+    document.head.appendChild(s);
   }
 
-  function markSubtitle(card) {
-    var texts = qa('.tn-elem[data-elem-type="text"], .t396__elem[data-elem-type="text"]', card);
-    if (texts.length < 2) {
-      texts = qa('.tn-elem, .t396__elem', card).filter(function (el) {
-        var atom = el.querySelector && el.querySelector('.tn-atom');
-        return el.getAttribute('data-elem-type') === 'text' ||
-          (atom && atom.textContent.trim());
-      });
-    }
-    if (texts.length >= 2) {
-      texts[1].classList.add('pt-slide-sub');
-    } else {
-      var mol = q('.tn-molecule', card) || card;
-      var kids = Array.prototype.filter.call(mol.children || [], function (n) {
-        return n.nodeType === 1;
-      });
-      if (kids[1]) kids[1].classList.add('pt-slide-sub');
-    }
-  }
-
-  function cardIndex(el) {
-    var m = (el.className || '').match(/\bcard(\d+)\b/);
-    return m ? parseInt(m[1], 10) : 999;
+  function mountFace(faceEl, sourceEl) {
+    if (!sourceEl) return;
+    hideSourceRec(sourceEl);
+    attachScopedStyles(sourceEl, faceEl);
+    faceEl.appendChild(sourceEl);
   }
 
   function relPos(i) {
@@ -366,9 +386,7 @@
     var n = slides.length;
     if (rel === 0) return 'is-active';
     var half = Math.floor(n / 2);
-    if (rel <= half) {
-      return rel === 1 ? 'is-next' : 'is-next-' + rel;
-    }
+    if (rel <= half) return rel === 1 ? 'is-next' : 'is-next-' + rel;
     var fromEnd = n - rel;
     return fromEnd === 1 ? 'is-prev' : 'is-prev-' + fromEnd;
   }
@@ -382,9 +400,7 @@
   }
 
   function clearPos(slide) {
-    for (var i = 0; i < POS_CLASSES.length; i++) {
-      slide.classList.remove(POS_CLASSES[i]);
-    }
+    for (var i = 0; i < POS_CLASSES.length; i++) slide.classList.remove(POS_CLASSES[i]);
   }
 
   function applyPositions(opts) {
@@ -403,7 +419,6 @@
         var jumping =
           (isLeftRel(oldRel, n) && isRightRel(rel, n)) ||
           (isRightRel(oldRel, n) && isLeftRel(rel, n));
-
         if (jumping) {
           slide.classList.add('pt-no-trans');
           clearPos(slide);
@@ -415,6 +430,27 @@
 
       clearPos(slide);
       slide.classList.add(cls);
+      /* активная — перевёрнута на контентную сторону (.cardN) */
+      slide.classList.toggle('is-flipped', rel === 0);
+    }
+
+    syncPagination();
+  }
+
+  function syncPagination() {
+    for (var i = 0; i < pagItems.length; i++) {
+      var item = pagItems[i];
+      if (!item || !item.wrap) continue;
+      var on = i === active;
+      item.wrap.classList.toggle('is-on', on);
+      if (item.bar) {
+        item.bar.classList.remove('pt-pag-run');
+        var atom = item.bar.querySelector('.tn-atom') || item.bar;
+        atom.style.animation = 'none';
+        void atom.offsetWidth;
+        atom.style.animation = '';
+        if (on) item.bar.classList.add('pt-pag-run');
+      }
     }
   }
 
@@ -423,10 +459,22 @@
       clearInterval(autoplayTimer);
       autoplayTimer = null;
     }
+    for (var i = 0; i < pagItems.length; i++) {
+      var item = pagItems[i];
+      if (item && item.bar) item.bar.classList.remove('pt-pag-run');
+    }
   }
 
   function startAutoplay() {
     stopAutoplay();
+    if (pagItems[active] && pagItems[active].bar) {
+      var bar = pagItems[active].bar;
+      var atom = bar.querySelector('.tn-atom') || bar;
+      atom.style.animation = 'none';
+      void atom.offsetWidth;
+      atom.style.animation = '';
+      bar.classList.add('pt-pag-run');
+    }
     autoplayTimer = setInterval(function () {
       if (!drag) go(1);
     }, AUTOPLAY_MS);
@@ -439,15 +487,36 @@
     var n = slides.length;
     active = (active + dir + n) % n;
     applyPositions({ from: from, dir: dir });
-    window.setTimeout(function () {
-      animating = false;
-    }, 720);
+    window.setTimeout(function () { animating = false; }, 720);
+  }
+
+  function goTo(index) {
+    if (index === active || animating || index < 0 || index >= slides.length) return;
+    var n = slides.length;
+    var forward = (index - active + n) % n;
+    var backward = (active - index + n) % n;
+    var dir = forward <= backward ? 1 : -1;
+    var steps = Math.min(forward, backward);
+    if (steps <= 1) {
+      go(dir);
+      return;
+    }
+    /* несколько шагов подряд */
+    var left = steps;
+    function step() {
+      if (left <= 0) return;
+      go(dir);
+      left--;
+      if (left > 0) setTimeout(step, 740);
+    }
+    step();
   }
 
   function sideFromEvent(e) {
     if (!stage) return 1;
     var rect = stage.getBoundingClientRect();
-    var x = e.clientX != null ? e.clientX : (e.touches && e.touches[0] ? e.touches[0].clientX : 0);
+    var x = e.clientX != null ? e.clientX :
+      (e.touches && e.touches[0] ? e.touches[0].clientX : 0);
     return x < rect.left + rect.width / 2 ? -1 : 1;
   }
 
@@ -461,13 +530,7 @@
   function onPointerDown(e) {
     if (animating) return;
     var point = e.touches ? e.touches[0] : e;
-    drag = {
-      x0: point.clientX,
-      y0: point.clientY,
-      dx: 0,
-      locked: null,
-      moved: false
-    };
+    drag = { x0: point.clientX, y0: point.clientY, dx: 0, locked: null, moved: false };
     suppressClick = false;
     stopAutoplay();
     if (stage) stage.classList.add('is-grabbing');
@@ -515,7 +578,6 @@
 
     var w = stage ? parseFloat(getComputedStyle(stage).getPropertyValue('--pt-w')) || 520 : 520;
     var shift = Math.max(-w * 0.55, Math.min(w * 0.55, dx));
-
     slides.forEach(function (slide) {
       var t = dragTransform(slide, shift);
       if (t) slide.style.transform = t;
@@ -534,7 +596,6 @@
     if (!drag) return;
     var dx = drag.dx;
     var locked = drag.locked;
-    var moved = drag.moved;
     drag = null;
     clearDragStyles();
 
@@ -542,23 +603,76 @@
       suppressClick = true;
       go(dx < 0 ? 1 : -1);
     }
-
     if (e && e.type && e.type.indexOf('touch') === -1) setCursorSide(e);
     startAutoplay();
   }
 
   function onStageClick(e) {
-    if (suppressClick) {
-      suppressClick = false;
-      return;
-    }
+    if (suppressClick) { suppressClick = false; return; }
     if (animating) return;
     go(sideFromEvent(e));
   }
 
+  /* курсор из иконки кнопок Тильды (--icon на .tn-atom__button-icon) */
+  function cursorFromButton(sel, fallback) {
+    var btn = q(sel);
+    if (!btn) return fallback;
+    var src = null;
+    var icon = btn.querySelector('.tn-atom__button-icon');
+    if (icon) {
+      var cs = getComputedStyle(icon);
+      var iconVar = (cs.getPropertyValue('--icon') || '').trim();
+      var m = iconVar.match(/url\(\s*['"]?([^"')]+)['"]?\s*\)/);
+      if (m) src = m[1];
+      if (!src) {
+        m = (cs.backgroundImage || '').match(/url\(\s*['"]?([^"')]+)['"]?\s*\)/);
+        if (m) src = m[1];
+      }
+    }
+    if (!src) {
+      var img = btn.querySelector('img');
+      src = img && (img.getAttribute('data-original') || img.getAttribute('src'));
+    }
+    if (!src) {
+      var atom = btn.querySelector('.tn-atom') || btn;
+      var bg = getComputedStyle(atom).backgroundImage;
+      var m2 = bg && bg.match(/url\(\s*['"]?([^"')]+)['"]?\s*\)/);
+      if (m2) src = m2[1];
+    }
+    if (!src) return fallback;
+    return 'url("' + src + '") 16 16, ' + fallback;
+  }
+
+  function applyCursorsFromButtons() {
+    if (!stage) return;
+    stage.style.setProperty('--pt-cur-prev', cursorFromButton('.slider-prev', 'w-resize'));
+    stage.style.setProperty('--pt-cur-next', cursorFromButton('.slider-next', 'e-resize'));
+  }
+
+  function bindPagination() {
+    pagItems = [];
+    for (var n = 1; n <= SLIDE_COUNT; n++) {
+      var wrap = q('.cslide4-' + n);
+      var bar = q('.slide4-' + n);
+      pagItems.push({ wrap: wrap, bar: bar });
+      if (!wrap) continue;
+      (function (idx) {
+        wrap.addEventListener('click', function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+          stopAutoplay();
+          goTo(idx);
+          startAutoplay();
+        });
+      })(n - 1);
+    }
+    if (stage) {
+      stage.style.setProperty('--pt-autoplay', (AUTOPLAY_MS / 1000) + 's');
+    }
+  }
+
   function bindInteractions() {
     if (!stage) return;
-
     stage.addEventListener('mousedown', onPointerDown);
     window.addEventListener('mousemove', onPointerMove);
     window.addEventListener('mouseup', onPointerUp);
@@ -566,7 +680,6 @@
     stage.addEventListener('touchmove', onPointerMove, { passive: false });
     stage.addEventListener('touchend', onPointerUp);
     stage.addEventListener('touchcancel', onPointerUp);
-
     stage.addEventListener('mousemove', setCursorSide);
     stage.addEventListener('click', onStageClick);
     stage.addEventListener('mouseleave', function () {
@@ -576,19 +689,44 @@
     stage.addEventListener('mouseenter', stopAutoplay);
   }
 
+  function buildSlide(n) {
+    var content = q('.card' + n);
+    var image = q('.card' + n + '-img');
+    if (!content && !image) return null;
+
+    var slide = document.createElement('div');
+    slide.className = 'pt-slide';
+    slide.setAttribute('data-pt-index', String(n - 1));
+
+    var flip = document.createElement('div');
+    flip.className = 'pt-flip';
+
+    /* фронт = оборотная картинка; бэк = контент (активная сторона) */
+    var faceFront = document.createElement('div');
+    faceFront.className = 'pt-face pt-face-front';
+    var faceBack = document.createElement('div');
+    faceBack.className = 'pt-face pt-face-back';
+
+    if (image) mountFace(faceFront, image);
+    if (content) mountFace(faceBack, content);
+
+    /* если картинки нет — на фронте тоже контент (без пустого слайда) */
+    if (!image && content) {
+      var cloneWrap = document.createElement('div');
+      cloneWrap.style.cssText = 'width:100%;height:100%;';
+      cloneWrap.innerHTML = content.innerHTML;
+      faceFront.appendChild(cloneWrap);
+    }
+
+    flip.appendChild(faceFront);
+    flip.appendChild(faceBack);
+    slide.appendChild(flip);
+    return slide;
+  }
+
   function build() {
     var frame = q('.slider');
     if (!frame) return;
-
-    var cards = qa(CARD_SELECTOR).filter(function (el, idx, arr) {
-      return arr.indexOf(el) === idx && !el.closest('.pt-stage');
-    });
-
-    cards.sort(function (a, b) {
-      return cardIndex(a) - cardIndex(b);
-    });
-
-    if (cards.length < 2) return;
 
     var host = frame.querySelector('.tn-atom') || frame;
     if (!host.style.position) host.style.position = 'relative';
@@ -599,14 +737,17 @@
     stage.className = 'pt-stage';
     host.appendChild(stage);
 
-    cards.forEach(function (card) {
-      hideSourceRec(card);
-      markSubtitle(card);
-      var slide = wrapCardPreservingStyles(card);
+    for (var n = 1; n <= SLIDE_COUNT; n++) {
+      var slide = buildSlide(n);
+      if (!slide) continue;
       stage.appendChild(slide);
       slides.push(slide);
-    });
+    }
 
+    if (slides.length < 2) return;
+
+    applyCursorsFromButtons();
+    bindPagination();
     applyPositions();
     bindInteractions();
 
@@ -623,14 +764,14 @@
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', function () {
-      setTimeout(boot, 300);
+      setTimeout(boot, 350);
     });
   } else {
-    setTimeout(boot, 300);
+    setTimeout(boot, 350);
   }
 
   setTimeout(function () {
     if (!document.querySelector('.pt-stage')) boot();
-  }, 1200);
+  }, 1400);
 })();
 </script>
