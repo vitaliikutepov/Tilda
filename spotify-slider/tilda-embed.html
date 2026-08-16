@@ -269,10 +269,10 @@
   .slide4-3,
   .slide4-4,
   .slide4-5 {
-    transform-origin: left center !important;
     opacity: 1 !important;
     border-radius: 4px !important;
     overflow: hidden !important;
+    position: relative !important;
   }
 
   .slide4-1 .tn-atom,
@@ -280,10 +280,11 @@
   .slide4-3 .tn-atom,
   .slide4-4 .tn-atom,
   .slide4-5 .tn-atom {
-    transform-origin: left center !important;
     background-color: #EFE8FB !important;
     background-image: none !important;
     border-radius: 4px !important;
+    transform: none !important;
+    transform-origin: left center !important;
   }
 
   /* неактивный: полная полоска #EFE8FB */
@@ -292,11 +293,11 @@
   .cslide4-3:not(.is-on) .slide4-3 .tn-atom,
   .cslide4-4:not(.is-on) .slide4-4 .tn-atom,
   .cslide4-5:not(.is-on) .slide4-5 .tn-atom {
-    transform: scaleX(1) !important;
+    width: 100% !important;
     animation: none !important;
   }
 
-  /* активный: трек чуть бледнее, заливка #EFE8FB с округлыми концами */
+  /* активный: трек бледнее, заливка растёт по ширине (скругление 4px сохраняется) */
   .cslide4-1.is-on,
   .cslide4-2.is-on,
   .cslide4-3.is-on,
@@ -314,8 +315,8 @@
   }
 
   @keyframes pt-pag-fill {
-    from { transform: scaleX(0); }
-    to { transform: scaleX(1); }
+    from { width: 0% !important; }
+    to { width: 100% !important; }
   }
 
   .pt-stage.pt-cursor-prev,
