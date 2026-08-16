@@ -132,29 +132,24 @@
   }
 
   /*
-   * Неактивные слайды в coverflow: parent rotateY ломает backface-visibility,
-   * поэтому контентную сторону прячем явно — видна только фотка.
+   * На боковых (coverflow) parent rotateY ломает backface-visibility —
+   * прячем контентную сторону только у позиций сбоку, НЕ у :not(.is-active),
+   * чтобы уход активного слайда оставался плавным.
    */
-  .pt-slide:not(.is-active) .pt-flip {
-    transform: none !important;
-    transition: none !important;
-  }
-
-  .pt-slide:not(.is-active) .pt-face-back {
+  .pt-slide.is-prev .pt-face-back,
+  .pt-slide.is-next .pt-face-back,
+  .pt-slide.is-prev-2 .pt-face-back,
+  .pt-slide.is-next-2 .pt-face-back,
+  .pt-slide.is-hid-l .pt-face-back,
+  .pt-slide.is-hid-r .pt-face-back {
     visibility: hidden !important;
     opacity: 0 !important;
     pointer-events: none !important;
   }
 
-  .pt-slide:not(.is-active) .pt-face-front {
-    visibility: visible !important;
-    opacity: 1 !important;
-    transform: none !important;
-  }
-
-  /* на боковых слайдах — только фото, без подписей с image-face */
-  .pt-slide:not(.is-active) .pt-face-front .tn-elem[data-elem-type="text"],
-  .pt-slide:not(.is-active) .pt-face-front .tn-elem[data-elem-type="text"] .tn-atom {
+  /* на фото-стороне подписи не нужны — активный текст только на .cardN (back) */
+  .pt-face-front .tn-elem[data-elem-type="text"],
+  .pt-face-front .tn-elem[data-elem-type="text"] .tn-atom {
     opacity: 0 !important;
     visibility: hidden !important;
   }
@@ -252,7 +247,7 @@
       scale(var(--pt-far-scale));
   }
 
-  /* пагинация: трек/неактивный и заливка = #EFE8FB, концы 4px */
+  /* пагинация: неактивный и заливка #EFE8FB, концы 4px */
   .cslide4-1,
   .cslide4-2,
   .cslide4-3,
@@ -273,31 +268,49 @@
     border-radius: 4px !important;
     overflow: hidden !important;
     position: relative !important;
+    background-color: transparent !important;
   }
 
+  /* исходный atom Тильды не используем как заливку — рисуем .pt-pag-fill */
   .slide4-1 .tn-atom,
   .slide4-2 .tn-atom,
   .slide4-3 .tn-atom,
   .slide4-4 .tn-atom,
   .slide4-5 .tn-atom {
-    background-color: #EFE8FB !important;
+    background-color: transparent !important;
     background-image: none !important;
-    border-radius: 4px !important;
-    transform: none !important;
-    transform-origin: left center !important;
+    opacity: 0 !important;
   }
 
-  /* неактивный: полная полоска #EFE8FB */
-  .cslide4-1:not(.is-on) .slide4-1 .tn-atom,
-  .cslide4-2:not(.is-on) .slide4-2 .tn-atom,
-  .cslide4-3:not(.is-on) .slide4-3 .tn-atom,
-  .cslide4-4:not(.is-on) .slide4-4 .tn-atom,
-  .cslide4-5:not(.is-on) .slide4-5 .tn-atom {
+  .slide4-1 .pt-pag-fill,
+  .slide4-2 .pt-pag-fill,
+  .slide4-3 .pt-pag-fill,
+  .slide4-4 .pt-pag-fill,
+  .slide4-5 .pt-pag-fill {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    bottom: 0 !important;
+    height: 100% !important;
+    width: 100%;
+    border-radius: 4px !important;
+    background-color: #EFE8FB !important;
+    transform-origin: left center;
+    pointer-events: none;
+  }
+
+  /* неактивный: полная полоска */
+  .cslide4-1:not(.is-on) .pt-pag-fill,
+  .cslide4-2:not(.is-on) .pt-pag-fill,
+  .cslide4-3:not(.is-on) .pt-pag-fill,
+  .cslide4-4:not(.is-on) .pt-pag-fill,
+  .cslide4-5:not(.is-on) .pt-pag-fill {
     width: 100% !important;
+    transform: none !important;
     animation: none !important;
   }
 
-  /* активный: трек бледнее, заливка растёт по ширине (скругление 4px сохраняется) */
+  /* активный: трек бледнее, заливка растёт (scaleX + radius на треке) */
   .cslide4-1.is-on,
   .cslide4-2.is-on,
   .cslide4-3.is-on,
@@ -306,17 +319,17 @@
     background-color: rgba(239, 232, 251, 0.35) !important;
   }
 
-  .cslide4-1.is-on .slide4-1.pt-pag-run .tn-atom,
-  .cslide4-2.is-on .slide4-2.pt-pag-run .tn-atom,
-  .cslide4-3.is-on .slide4-3.pt-pag-run .tn-atom,
-  .cslide4-4.is-on .slide4-4.pt-pag-run .tn-atom,
-  .cslide4-5.is-on .slide4-5.pt-pag-run .tn-atom {
+  .cslide4-1.is-on .slide4-1.pt-pag-run .pt-pag-fill,
+  .cslide4-2.is-on .slide4-2.pt-pag-run .pt-pag-fill,
+  .cslide4-3.is-on .slide4-3.pt-pag-run .pt-pag-fill,
+  .cslide4-4.is-on .slide4-4.pt-pag-run .pt-pag-fill,
+  .cslide4-5.is-on .slide4-5.pt-pag-run .pt-pag-fill {
     animation: pt-pag-fill var(--pt-autoplay, 5s) linear forwards;
   }
 
   @keyframes pt-pag-fill {
-    from { width: 0% !important; }
-    to { width: 100% !important; }
+    from { transform: scaleX(0); }
+    to { transform: scaleX(1); }
   }
 
   .pt-stage.pt-cursor-prev,
@@ -382,8 +395,8 @@
 (function () {
   'use strict';
 
-  if (window.__ptSpotifySliderV6) return;
-  window.__ptSpotifySliderV6 = true;
+  if (window.__ptSpotifySliderV7) return;
+  window.__ptSpotifySliderV7 = true;
 
   var AUTOPLAY_MS = 5000;
   var SWIPE_THRESHOLD = 60;
@@ -473,6 +486,13 @@
     for (var i = 0; i < POS_CLASSES.length; i++) slide.classList.remove(POS_CLASSES[i]);
   }
 
+  function setPosClass(slide, cls) {
+    for (var i = 0; i < POS_CLASSES.length; i++) {
+      if (POS_CLASSES[i] !== cls) slide.classList.remove(POS_CLASSES[i]);
+    }
+    slide.classList.add(cls);
+  }
+
   function applyPositions(opts) {
     opts = opts || {};
     var n = slides.length;
@@ -491,15 +511,13 @@
           (isRightRel(oldRel, n) && isLeftRel(rel, n));
         if (jumping) {
           slide.classList.add('pt-no-trans');
-          clearPos(slide);
-          slide.classList.add(dir > 0 ? 'is-hid-r' : 'is-hid-l');
+          setPosClass(slide, dir > 0 ? 'is-hid-r' : 'is-hid-l');
           void slide.offsetWidth;
-          slide.classList.remove('pt-no-trans', 'is-hid-l', 'is-hid-r');
+          slide.classList.remove('pt-no-trans');
         }
       }
 
-      clearPos(slide);
-      slide.classList.add(cls);
+      setPosClass(slide, cls);
       /* активная — перевёрнута на контентную сторону (.cardN) */
       slide.classList.toggle('is-flipped', rel === 0);
     }
@@ -515,10 +533,12 @@
       item.wrap.classList.toggle('is-on', on);
       if (item.bar) {
         item.bar.classList.remove('pt-pag-run');
-        var atom = item.bar.querySelector('.tn-atom') || item.bar;
-        atom.style.animation = 'none';
-        void atom.offsetWidth;
-        atom.style.animation = '';
+        var fill = item.fill || item.bar.querySelector('.pt-pag-fill');
+        if (fill) {
+          fill.style.animation = 'none';
+          void fill.offsetWidth;
+          fill.style.animation = '';
+        }
         if (on) item.bar.classList.add('pt-pag-run');
       }
     }
@@ -539,14 +559,16 @@
     stopAutoplay();
     if (pagItems[active] && pagItems[active].bar) {
       var bar = pagItems[active].bar;
-      var atom = bar.querySelector('.tn-atom') || bar;
-      atom.style.animation = 'none';
-      void atom.offsetWidth;
-      atom.style.animation = '';
+      var fill = pagItems[active].fill || bar.querySelector('.pt-pag-fill');
+      if (fill) {
+        fill.style.animation = 'none';
+        void fill.offsetWidth;
+        fill.style.animation = '';
+      }
       bar.classList.add('pt-pag-run');
     }
     autoplayTimer = setInterval(function () {
-      if (!drag) go(1);
+      if (!drag && !animating) go(1);
     }, AUTOPLAY_MS);
   }
 
@@ -806,12 +828,24 @@
     stage.style.setProperty('--pt-radius', m.r + 'px');
   }
 
+  function ensurePagFill(bar) {
+    if (!bar) return null;
+    var fill = bar.querySelector('.pt-pag-fill');
+    if (!fill) {
+      fill = document.createElement('span');
+      fill.className = 'pt-pag-fill';
+      bar.appendChild(fill);
+    }
+    return fill;
+  }
+
   function bindPagination() {
     pagItems = [];
     for (var n = 1; n <= SLIDE_COUNT; n++) {
       var wrap = q('.cslide4-' + n);
       var bar = q('.slide4-' + n);
-      pagItems.push({ wrap: wrap, bar: bar });
+      var fill = ensurePagFill(bar);
+      pagItems.push({ wrap: wrap, bar: bar, fill: fill });
       if (!wrap) continue;
       (function (idx) {
         wrap.addEventListener('click', function (e) {
