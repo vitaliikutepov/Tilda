@@ -1,0 +1,524 @@
+<!-- ============================================================
+     Таб-слайдер для Tilda Zero Block (страница parent-new)
+
+     Как подключить:
+     1. Зеро-блок с UI:
+        - контейнер слайдов — группа с классом  tab-container
+        - стрелки  .tab-prev  /  .tab-next
+        - кнопки табов  .tab1 … .tab6  (ряд в группе, на узких
+          экранах у неё overflow: hidden — скрипт включает свайп)
+     2. Контент слайдов — отдельные зеро-блоки (скрываются):
+          tab1 — #rec3057670801
+          tab2 — #rec3057679701
+          tab3 — #rec3057670801   (пока тот же, что tab1)
+          tab4 — #rec3057679701   (пока тот же, что tab2)
+          tab5 — #rec3057670801
+          tab6 — #rec3057679701
+        Соответствие меняется в массиве TAB_SOURCES ниже.
+     3. Вставьте весь этот файл в HTML-элемент Тильды
+        (в блок слайдера или в настройки страницы).
+
+     Поведение:
+     - слайды меняются внутри .tab-container (кроссфейд);
+     - активный таб: фон #8742EE, прогресс слева направо #9F68F1;
+     - автосмена каждые 6 секунд, сбрасывается по клику/стрелке;
+     - до 1366px ряд табов скроллится пальцем, активный
+       всегда доскролливается в видимую область.
+============================================================ -->
+
+<style>
+  /* блоки-источники убираем из потока, но оставляем layout,
+     чтобы Тильда продолжала считать позиции на ресайзе */
+  .pts-source-rec {
+    position: absolute !important;
+    top: -100000px !important;
+    left: 0 !important;
+    width: 100% !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+    margin: 0 !important;
+  }
+
+  .tab-container .tn-molecule {
+    position: relative !important;
+  }
+
+  .pts-stage {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    border-radius: inherit;
+    z-index: 1;
+  }
+
+  .pts-slide {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    box-sizing: border-box;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    overflow: hidden;
+    border-radius: inherit;
+    transition: opacity 0.45s ease, visibility 0.45s ease;
+  }
+  .pts-slide.is-active {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    z-index: 1;
+  }
+  .pts-stage:not(.pts-ready) .pts-slide {
+    transition: none !important;
+  }
+
+  .tab1 .tn-atom,
+  .tab2 .tn-atom,
+  .tab3 .tn-atom,
+  .tab4 .tn-atom,
+  .tab5 .tn-atom,
+  .tab6 .tn-atom {
+    position: relative !important;
+  }
+  .tab1,
+  .tab2,
+  .tab3,
+  .tab4,
+  .tab5,
+  .tab6 {
+    cursor: pointer;
+  }
+
+  .pts-progress {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 0;
+    background: #9F68F1;
+    border-radius: inherit;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .pts-tab-active .tn-atom {
+    background-color: #8742EE !important;
+    color: #ffffff !important;
+    overflow: hidden !important;
+    isolation: isolate;
+  }
+  .pts-tab-active .tn-atom .tn-atom__button-text,
+  .pts-tab-active .tn-atom .tn-atom__button-content {
+    color: #ffffff !important;
+    position: relative;
+    z-index: 1;
+  }
+  .pts-tab-active .tn-atom:hover,
+  .pts-tab-active .tn-atom:hover .tn-atom__button-text {
+    background-color: #8742EE !important;
+    color: #ffffff !important;
+  }
+
+  @keyframes pts-fill {
+    from { width: 0; }
+    to   { width: 100%; }
+  }
+
+  .tab-prev,
+  .tab-next {
+    cursor: pointer;
+    z-index: 4;
+  }
+
+  /* до 1366 ряд табов не помещается — свайп внутри дива */
+  @media screen and (max-width: 1365px) {
+    .pts-tabs-scroll {
+      overflow-x: auto !important;
+      overflow-y: hidden !important;
+      -webkit-overflow-scrolling: touch;
+      touch-action: pan-x;
+      overscroll-behavior-x: contain;
+      scrollbar-width: none;
+      flex-wrap: nowrap !important;
+      justify-content: flex-start !important;
+    }
+    .pts-tabs-scroll::-webkit-scrollbar {
+      display: none;
+      width: 0;
+      height: 0;
+    }
+    .pts-tabs-scroll > .tab1,
+    .pts-tabs-scroll > .tab2,
+    .pts-tabs-scroll > .tab3,
+    .pts-tabs-scroll > .tab4,
+    .pts-tabs-scroll > .tab5,
+    .pts-tabs-scroll > .tab6 {
+      flex-shrink: 0 !important;
+    }
+  }
+</style>
+
+<script>
+(function () {
+  'use strict';
+
+  if (window.__ptsTabSliderInit) return;
+  window.__ptsTabSliderInit = true;
+
+  /* ==================== НАСТРОЙКИ ==================== */
+
+  var TAB_SOURCES = [
+    'rec3057670801',  /* tab1 — Школам */
+    'rec3057679701',  /* tab2 — Справки в школу */
+    'rec3057670801',  /* tab3 — Дневник (пока tab1) */
+    'rec3057679701',  /* tab4 — Родительские собрания (пока tab2) */
+    'rec3057670801',  /* tab5 — Подготовка к экзаменам (пока tab1) */
+    'rec3057679701'   /* tab6 — Новости и события (пока tab2) */
+  ];
+
+  var AUTOPLAY_MS = 6000;
+  var SCROLL_BP = 1365; /* включительно: свайп табов до 1366 */
+
+  /* =================================================== */
+
+  var active = 0;
+  var slides = [];
+  var tabs = [];
+  var stageEl = null;
+  var tabsScroll = null;
+  var autoplayTimer = null;
+  var currentBp = null;
+  var dragMoved = false;
+
+  function q(sel, root) {
+    return (root || document).querySelector(sel);
+  }
+
+  function qa(sel, root) {
+    return Array.prototype.slice.call((root || document).querySelectorAll(sel));
+  }
+
+  function breakpointId() {
+    var w = window.innerWidth;
+    if (w <= 767) return 320;
+    if (w <= 1023) return 768;
+    if (w <= 1365) return 1024;
+    if (w <= 1919) return 1366;
+    return 1920;
+  }
+
+  function findRec(id) {
+    return document.getElementById(id);
+  }
+
+  function cardMolecule(rec) {
+    if (!rec) return null;
+    var board = q('.t396__artboard', rec) || rec;
+    return q('.tn-molecule', board);
+  }
+
+  function copyFlex(from, to) {
+    if (!from || !to) return;
+    var cs = window.getComputedStyle(from);
+    to.style.display = 'flex';
+    to.style.flexDirection = cs.flexDirection;
+    to.style.flexWrap = cs.flexWrap;
+    to.style.alignItems = cs.alignItems;
+    to.style.justifyContent = cs.justifyContent;
+    to.style.alignContent = cs.alignContent;
+    to.style.columnGap = cs.columnGap;
+    to.style.rowGap = cs.rowGap;
+    to.style.padding = cs.padding;
+  }
+
+  function uniquifyIds(root, suffix) {
+    qa('[id]', root).forEach(function (el) {
+      if (el.id.indexOf('molecule-') === 0) el.id = el.id + suffix;
+    });
+  }
+
+  function injectScopedCss(rec, scopeClass, suffix) {
+    if (!rec || !rec.id) return;
+    var chunks = [];
+    qa('style', rec).forEach(function (st) {
+      if (st.textContent) chunks.push(st.textContent);
+    });
+    if (!chunks.length) return;
+    var css = chunks.join('\n').split('#' + rec.id).join('.' + scopeClass);
+    /* только id молекул Тильды, не цветовые #hex */
+    css = css.replace(/#molecule-(\d+)/g, '#molecule-$1' + suffix);
+    var s = document.createElement('style');
+    s.setAttribute('data-pts-slide', scopeClass);
+    s.textContent = css;
+    document.head.appendChild(s);
+  }
+
+  function hydrateImages(root) {
+    qa('img', root).forEach(function (img) {
+      var full = img.getAttribute('data-original') ||
+        img.getAttribute('data-src') ||
+        img.src;
+      if (full) {
+        img.src = full;
+        img.removeAttribute('srcset');
+      }
+    });
+  }
+
+  function revealAnims(root) {
+    qa('.t396__elem--anim-hidden', root).forEach(function (el) {
+      el.classList.remove('t396__elem--anim-hidden');
+      el.style.opacity = '1';
+      el.style.transform = 'none';
+    });
+  }
+
+  function clearInjected() {
+    qa('style[data-pts-slide]').forEach(function (s) {
+      if (s.parentNode) s.parentNode.removeChild(s);
+    });
+    if (stageEl) stageEl.innerHTML = '';
+    slides = [];
+  }
+
+  function buildSlides(hostMol) {
+    clearInjected();
+    TAB_SOURCES.forEach(function (recId, i) {
+      var rec = findRec(recId);
+      var mol = cardMolecule(rec);
+      var slide = document.createElement('div');
+      var scope = 'pts-i-' + i;
+      var suffix = '-s' + i;
+      slide.className = 'pts-slide ' + scope;
+      slide.setAttribute('data-tab', String(i + 1));
+      slide.setAttribute('data-src', recId);
+
+      if (mol) {
+        Array.prototype.forEach.call(mol.children, function (ch) {
+          if (ch.nodeType === 1) slide.appendChild(ch.cloneNode(true));
+        });
+        copyFlex(hostMol, slide);
+      }
+
+      uniquifyIds(slide, suffix);
+      hydrateImages(slide);
+      revealAnims(slide);
+      injectScopedCss(rec, scope, suffix);
+      stageEl.appendChild(slide);
+      slides.push(slide);
+    });
+  }
+
+  function hideSources() {
+    var seen = {};
+    TAB_SOURCES.forEach(function (id) {
+      if (seen[id]) return;
+      seen[id] = true;
+      var rec = findRec(id);
+      if (rec) rec.classList.add('pts-source-rec');
+    });
+  }
+
+  function ensureProgress(tab) {
+    var atom = q('.tn-atom', tab) || tab;
+    var bar = q('.pts-progress', atom);
+    if (!bar) {
+      bar = document.createElement('span');
+      bar.className = 'pts-progress';
+      atom.insertBefore(bar, atom.firstChild);
+    }
+    return bar;
+  }
+
+  function restartProgress() {
+    for (var i = 0; i < tabs.length; i++) {
+      var bar = ensureProgress(tabs[i]);
+      bar.style.animation = 'none';
+      bar.style.width = '0px';
+      if (i === active) {
+        void bar.offsetWidth;
+        bar.style.animation = 'pts-fill ' + AUTOPLAY_MS + 'ms linear forwards';
+      }
+    }
+  }
+
+  function tabsNeedScroll() {
+    return window.innerWidth <= SCROLL_BP;
+  }
+
+  function ensureTabVisible(btn) {
+    if (!tabsScroll || !btn || !tabsNeedScroll()) return;
+    var sRect = tabsScroll.getBoundingClientRect();
+    var bRect = btn.getBoundingClientRect();
+    var pad = 16;
+    if (bRect.left >= sRect.left + pad && bRect.right <= sRect.right - pad) return;
+    var delta = (bRect.left + bRect.right) / 2 - (sRect.left + sRect.right) / 2;
+    var next = tabsScroll.scrollLeft + delta;
+    var max = tabsScroll.scrollWidth - tabsScroll.clientWidth;
+    if (next < 0) next = 0;
+    if (next > max) next = max;
+    if (typeof tabsScroll.scrollTo === 'function') {
+      tabsScroll.scrollTo({ left: next, behavior: 'smooth' });
+    } else {
+      tabsScroll.scrollLeft = next;
+    }
+  }
+
+  function applyActive() {
+    for (var i = 0; i < slides.length; i++) {
+      slides[i].classList.toggle('is-active', i === active);
+    }
+    for (var j = 0; j < tabs.length; j++) {
+      tabs[j].classList.toggle('pts-tab-active', j === active);
+    }
+    if (tabs[active]) ensureTabVisible(tabs[active]);
+    restartProgress();
+  }
+
+  function stopAutoplay() {
+    if (autoplayTimer) {
+      clearTimeout(autoplayTimer);
+      autoplayTimer = null;
+    }
+  }
+
+  function startAutoplay() {
+    stopAutoplay();
+    autoplayTimer = setTimeout(function () {
+      go(active + 1);
+    }, AUTOPLAY_MS);
+  }
+
+  function go(index) {
+    var n = TAB_SOURCES.length;
+    if (!n) return;
+    active = ((index % n) + n) % n;
+    applyActive();
+    startAutoplay();
+  }
+
+  function bindClick(el, fn) {
+    if (!el) return;
+    el.addEventListener('click', function (e) {
+      if (dragMoved) {
+        e.preventDefault();
+        e.stopPropagation();
+        return;
+      }
+      e.preventDefault();
+      e.stopPropagation();
+      fn(e);
+    }, true);
+  }
+
+  function init() {
+    var host = q('.tab-container');
+    if (!host) return;
+    var hostMol = q('.tn-molecule', host) || host;
+
+    hideSources();
+
+    stageEl = q('.pts-stage', hostMol);
+    if (!stageEl) {
+      stageEl = document.createElement('div');
+      stageEl.className = 'pts-stage';
+      hostMol.appendChild(stageEl);
+    }
+
+    tabs = [];
+    for (var i = 1; i <= TAB_SOURCES.length; i++) {
+      var t = q('.tab' + i);
+      if (t) tabs.push(t);
+    }
+
+    if (tabs[0]) {
+      tabsScroll = tabs[0].parentElement;
+      if (tabsScroll) tabsScroll.classList.add('pts-tabs-scroll');
+    }
+
+    buildSlides(hostMol);
+    stageEl.classList.add('pts-ready');
+
+    bindClick(q('.tab-next'), function () { go(active + 1); });
+    bindClick(q('.tab-prev'), function () { go(active - 1); });
+
+    tabs.forEach(function (tab, idx) {
+      bindClick(tab, function () { go(idx); });
+    });
+
+    if (tabsScroll) {
+      var startX = 0;
+      tabsScroll.addEventListener('pointerdown', function (e) {
+        startX = e.clientX;
+        dragMoved = false;
+      });
+      tabsScroll.addEventListener('pointermove', function (e) {
+        if (Math.abs(e.clientX - startX) > 10) dragMoved = true;
+      });
+      tabsScroll.addEventListener('pointerup', function () {
+        setTimeout(function () { dragMoved = false; }, 50);
+      });
+      tabsScroll.addEventListener('pointercancel', function () {
+        dragMoved = false;
+      });
+    }
+
+    document.addEventListener('visibilitychange', function () {
+      if (document.hidden) stopAutoplay();
+      else {
+        restartProgress();
+        startAutoplay();
+      }
+    });
+
+    currentBp = breakpointId();
+    var resizeTimer = null;
+    var initAt = Date.now();
+    window.addEventListener('resize', function () {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(function () {
+        if (Date.now() - initAt < 800) {
+          if (tabs[active]) ensureTabVisible(tabs[active]);
+          return;
+        }
+        var bp = breakpointId();
+        if (bp !== currentBp) {
+          currentBp = bp;
+          stageEl.classList.remove('pts-ready');
+          buildSlides(hostMol);
+          stageEl.classList.add('pts-ready');
+          applyActive();
+          startAutoplay();
+        } else if (tabs[active]) {
+          ensureTabVisible(tabs[active]);
+        }
+      }, 250);
+    });
+
+    go(0);
+  }
+
+  function waitAndInit() {
+    var started = Date.now();
+    (function poll() {
+      var host = q('.tab-container');
+      var first = findRec(TAB_SOURCES[0]);
+      var mol = cardMolecule(first);
+      var ready = host && mol && (mol.offsetWidth > 0 || mol.children.length > 0);
+      if (ready || Date.now() - started > 2500) {
+        if (host) init();
+        return;
+      }
+      if (Date.now() - started < 20000) setTimeout(poll, 100);
+    })();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', waitAndInit);
+  } else {
+    waitAndInit();
+  }
+})();
+</script>

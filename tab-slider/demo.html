@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Tab slider — Tilda demo</title>
+  <style>
+    :root {
+      --bg: #fbfafc;
+      --ink: #312740;
+      --tab-bg: rgba(135, 66, 238, 0.05);
+      --tab-hover: rgba(135, 66, 238, 0.1);
+      --active: #8742EE;
+      --progress: #9F68F1;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+    }
+    .page {
+      max-width: 1920px;
+      margin: 0 auto;
+      padding: 40px 20px 80px;
+    }
+    h1 {
+      font-size: 20px;
+      font-weight: 600;
+      margin: 0 0 8px;
+    }
+    .note {
+      color: #6b6280;
+      font-size: 14px;
+      margin: 0 0 28px;
+      max-width: 720px;
+      line-height: 1.45;
+    }
+
+    /* --- UI-блок слайдера (как зеро-блок rec3054217101) --- */
+    .ui-board {
+      position: relative;
+      max-width: 1600px;
+      margin: 0 auto;
+    }
+
+    .tn-group.tab-container {
+      position: relative;
+      width: 100%;
+      height: 540px;
+      border-radius: 40px;
+      overflow: hidden;
+    }
+    .tab-container .tn-molecule {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      display: flex;
+      overflow: hidden;
+      border-radius: 40px;
+      background-image: linear-gradient(0.181turn, rgba(135,66,238,1) 0%, rgba(169,112,255,1) 100%);
+      box-shadow: 0 3px 15px 0 rgba(205,205,216,0.1);
+    }
+
+    .tab-prev,
+    .tab-next {
+      position: absolute;
+      top: 242px;
+      width: 56px;
+      height: 56px;
+      border: 0;
+      border-radius: 50%;
+      background: #EDE4FB;
+      color: #4B2E83;
+      font-size: 28px;
+      line-height: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      z-index: 5;
+      padding: 0;
+    }
+    .tab-prev { left: -12px; }
+    .tab-next { right: -12px; }
+    .tab-prev .tn-atom,
+    .tab-next .tn-atom { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; }
+
+    .tn-group.menu1 {
+      margin-top: 16px;
+      width: 100%;
+      height: 55px;
+    }
+    .menu1 .tn-molecule {
+      display: flex;
+      flex-direction: row;
+      column-gap: 4px;
+      align-items: center;
+      width: 100%;
+      height: 100%;
+    }
+
+    .tn-elem.tab1,
+    .tn-elem.tab2,
+    .tn-elem.tab3,
+    .tn-elem.tab4,
+    .tn-elem.tab5,
+    .tn-elem.tab6 {
+      flex: 1 1 0;
+      min-width: 0;
+    }
+    .tn-elem[data-elem-type="button"] .tn-atom {
+      display: block;
+      text-align: center;
+      font-size: 16px;
+      font-weight: 600;
+      line-height: 1.55;
+      border-radius: 20px;
+      background: var(--tab-bg);
+      color: var(--ink);
+      white-space: nowrap;
+      cursor: pointer;
+    }
+    .tn-atom__button-content { padding: 15px 18px; display: block; }
+    .tn-atom__button-text { display: inline-block; }
+
+    @media (max-width: 1919px) {
+      .tn-group.tab-container { height: 444px; border-radius: 32px; }
+      .tab-container .tn-molecule { border-radius: 32px; }
+      .tn-elem[data-elem-type="button"] .tn-atom { font-size: 14px; border-radius: 14px; }
+      .tn-atom__button-content { padding: 9px 18px; }
+      .menu1 { height: 40px; }
+    }
+    @media (max-width: 1365px) {
+      .tn-group.tab-container { height: 640px; }
+      .menu1 .tn-molecule { overflow: hidden; justify-content: flex-start; }
+      .tn-elem.tab1,
+      .tn-elem.tab2,
+      .tn-elem.tab3,
+      .tn-elem.tab4,
+      .tn-elem.tab5,
+      .tn-elem.tab6 {
+        flex: 0 0 206px;
+        width: 206px;
+        min-width: 206px;
+      }
+      .tab-prev { left: -8px; top: 292px; }
+      .tab-next { right: -8px; top: 292px; }
+    }
+    @media (max-width: 1023px) {
+      .tn-group.tab-container { height: 565px; }
+      .tab-prev, .tab-next { top: 255px; }
+    }
+    @media (max-width: 767px) {
+      .page { padding: 24px 0 60px; }
+      .tn-group.tab-container {
+        width: calc(100% - 40px);
+        margin-left: 20px;
+        height: 430px;
+        border-radius: 24px;
+      }
+      .tab-container .tn-molecule { border-radius: 24px; }
+      .menu1 { width: 100%; height: 40px; }
+      .menu1 .tn-molecule { padding: 0 0 0 20px; }
+      .tn-elem.tab1 { flex-basis: 92px; width: 92px; min-width: 92px; }
+      .tn-elem.tab2 { flex-basis: 155px; width: 155px; min-width: 155px; }
+      .tn-elem.tab3 { flex-basis: 95px; width: 95px; min-width: 95px; }
+      .tn-elem.tab4 { flex-basis: 204px; width: 204px; min-width: 204px; }
+      .tn-elem.tab5 { flex-basis: 206px; width: 206px; min-width: 206px; }
+      .tn-elem.tab6 { flex-basis: 170px; width: 170px; min-width: 170px; }
+      .tab-prev, .tab-next { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <h1>Таб-слайдер для Тильды</h1>
+    <p class="note">
+      Демо логики сниппета <code>tilda-embed.html</code>.
+      Слайды берутся из скрытых блоков <code>#rec3057670801</code> / <code>#rec3057679701</code>.
+      На ширине до 1366px ряд табов свайпается, активный таб доскролливается.
+    </p>
+
+    <div class="ui-board">
+      <div class="t396__group tn-group tab-container">
+        <div class="tn-molecule" id="molecule-ui-card"></div>
+      </div>
+
+      <button class="t396__elem tn-elem tab-prev" type="button" aria-label="Назад">
+        <div class="tn-atom"><span class="tn-atom__button-text">‹</span></div>
+      </button>
+      <button class="t396__elem tn-elem tab-next" type="button" aria-label="Вперёд">
+        <div class="tn-atom"><span class="tn-atom__button-text">›</span></div>
+      </button>
+
+      <div class="t396__group tn-group menu1">
+        <div class="tn-molecule" id="molecule-tabs">
+          <div class="t396__elem tn-elem tab1" data-elem-type="button">
+            <div class="tn-atom"><div class="tn-atom__button-content"><span class="tn-atom__button-text">Школам</span></div></div>
+          </div>
+          <div class="t396__elem tn-elem tab2" data-elem-type="button">
+            <div class="tn-atom"><div class="tn-atom__button-content"><span class="tn-atom__button-text">Справки в школу</span></div></div>
+          </div>
+          <div class="t396__elem tn-elem tab3" data-elem-type="button">
+            <div class="tn-atom"><div class="tn-atom__button-content"><span class="tn-atom__button-text">Дневник</span></div></div>
+          </div>
+          <div class="t396__elem tn-elem tab4" data-elem-type="button">
+            <div class="tn-atom"><div class="tn-atom__button-content"><span class="tn-atom__button-text">Родительские собрания</span></div></div>
+          </div>
+          <div class="t396__elem tn-elem tab5" data-elem-type="button">
+            <div class="tn-atom"><div class="tn-atom__button-content"><span class="tn-atom__button-text">Подготовка к экзаменам</span></div></div>
+          </div>
+          <div class="t396__elem tn-elem tab6" data-elem-type="button">
+            <div class="tn-atom"><div class="tn-atom__button-content"><span class="tn-atom__button-text">Новости и события</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Источник tab1 / tab3 / tab5 -->
+  <div id="rec3057670801" class="r t-rec">
+    <style>
+      #rec3057670801 .tn-molecule { width: 100%; height: 100%; position: relative; }
+      #rec3057670801 .pts-demo-grid {
+        position: absolute; inset: 0; width: 100%; height: 120%;
+        object-fit: cover; opacity: 0.35; pointer-events: none;
+      }
+      #rec3057670801 .pts-demo-copy {
+        position: relative; z-index: 2;
+        padding: 60px; max-width: 645px; color: #fff;
+      }
+      #rec3057670801 .pts-demo-copy h2 {
+        margin: 0 0 24px; font-size: 40px; font-weight: 500; line-height: 1.2;
+      }
+      #rec3057670801 .pts-demo-copy p {
+        margin: 0; font-size: 20px; line-height: 1.4; opacity: 0.9; font-weight: 400;
+      }
+      #rec3057670801 .pts-demo-phone {
+        position: absolute; right: 0; top: 0; height: 100%; width: auto;
+        z-index: 1; pointer-events: none;
+      }
+      #rec3057670801 .pts-demo-pin {
+        position: absolute; right: 8%; top: 12%; width: 159px; z-index: 3;
+        pointer-events: none;
+      }
+      @media (max-width: 1365px) {
+        #rec3057670801 .pts-demo-copy { padding: 40px; text-align: center; max-width: 100%; }
+        #rec3057670801 .pts-demo-phone { width: 100%; height: auto; top: auto; bottom: 0; right: 0; }
+        #rec3057670801 .pts-demo-pin { display: none; }
+      }
+      @media (max-width: 767px) {
+        #rec3057670801 .pts-demo-copy { padding: 32px 16px 16px; }
+        #rec3057670801 .pts-demo-copy h2 { font-size: 24px; margin-bottom: 16px; }
+        #rec3057670801 .pts-demo-copy p { font-size: 14px; }
+      }
+    </style>
+    <div class="t396">
+      <div class="t396__artboard">
+        <div class="tn-group">
+          <div class="tn-molecule">
+            <img class="pts-demo-grid tn-atom__img" alt=""
+              src="https://static.tildacdn.com/tild3236-3133-4633-a433-646534396134/Frame_2136140246.png"
+              data-original="https://static.tildacdn.com/tild3236-3133-4633-a433-646534396134/Frame_2136140246.png" />
+            <div class="pts-demo-copy">
+              <h2>Общайтесь с педагогом и другими родителями</h2>
+              <p>Написать педагогу можно в личном или общем чате</p>
+            </div>
+            <img class="pts-demo-phone tn-atom__img" alt=""
+              src="https://static.tildacdn.com/tild6465-6565-4365-a432-366262626436/_ll6_2.png"
+              data-original="https://static.tildacdn.com/tild6465-6565-4365-a432-366262626436/_ll6_2.png" />
+            <img class="pts-demo-pin tn-atom__img" alt=""
+              src="https://static.tildacdn.com/tild6232-3733-4033-a639-323866353735/plastic_VZRSL_0052_0.png"
+              data-original="https://static.tildacdn.com/tild6232-3733-4033-a639-323866353735/plastic_VZRSL_0052_0.png" />
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Источник tab2 / tab4 / tab6 -->
+  <div id="rec3057679701" class="r t-rec">
+    <style>
+      #rec3057679701 .tn-molecule { width: 100%; height: 100%; position: relative; }
+      #rec3057679701 .pts-demo-grid {
+        position: absolute; inset: 0; width: 100%; height: 120%;
+        object-fit: cover; opacity: 0.35; pointer-events: none;
+      }
+      #rec3057679701 .pts-demo-copy {
+        position: relative; z-index: 2;
+        padding: 60px; max-width: 645px; color: #fff;
+      }
+      #rec3057679701 .pts-demo-copy h2 {
+        margin: 0 0 24px; font-size: 40px; font-weight: 500; line-height: 1.2;
+      }
+      #rec3057679701 .pts-demo-copy p {
+        margin: 0; font-size: 20px; line-height: 1.4; opacity: 0.9; font-weight: 400;
+      }
+      #rec3057679701 .pts-demo-phone {
+        position: absolute; right: 0; top: 0; height: 100%; width: auto;
+        z-index: 1; pointer-events: none;
+      }
+      #rec3057679701 .pts-demo-pin {
+        position: absolute; right: 8%; top: 12%; width: 159px; z-index: 3;
+        pointer-events: none;
+      }
+      @media (max-width: 1365px) {
+        #rec3057679701 .pts-demo-copy { padding: 40px; text-align: center; max-width: 100%; }
+        #rec3057679701 .pts-demo-phone { width: 100%; height: auto; top: auto; bottom: 0; right: 0; }
+        #rec3057679701 .pts-demo-pin { display: none; }
+      }
+      @media (max-width: 767px) {
+        #rec3057679701 .pts-demo-copy { padding: 32px 16px 16px; }
+        #rec3057679701 .pts-demo-copy h2 { font-size: 24px; margin-bottom: 16px; }
+        #rec3057679701 .pts-demo-copy p { font-size: 14px; }
+      }
+    </style>
+    <div class="t396">
+      <div class="t396__artboard">
+        <div class="tn-group">
+          <div class="tn-molecule">
+            <img class="pts-demo-grid tn-atom__img" alt=""
+              src="https://static.tildacdn.com/tild3236-3133-4633-a433-646534396134/Frame_2136140246.png"
+              data-original="https://static.tildacdn.com/tild3236-3133-4633-a433-646534396134/Frame_2136140246.png" />
+            <div class="pts-demo-copy">
+              <h2>Отправляйте документы в школу онлайн</h2>
+              <p>Можно в пару кликов создавать электронные заявления об отсутствии ребёнка на занятиях</p>
+            </div>
+            <img class="pts-demo-phone tn-atom__img" alt=""
+              src="https://static.tildacdn.com/tild6438-6264-4363-a161-613964306331/_kk5.png"
+              data-original="https://static.tildacdn.com/tild6438-6264-4363-a161-613964306331/_kk5.png" />
+            <img class="pts-demo-pin tn-atom__img" alt=""
+              src="https://static.tildacdn.com/tild6232-3733-4033-a639-323866353735/plastic_VZRSL_0052_0.png"
+              data-original="https://static.tildacdn.com/tild6232-3733-4033-a639-323866353735/plastic_VZRSL_0052_0.png" />
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="embed-slot"></div>
+  <script>
+    fetch('tilda-embed.html')
+      .then(function (r) { return r.text(); })
+      .then(function (html) {
+        var slot = document.getElementById('embed-slot');
+        var doc = new DOMParser().parseFromString(html, 'text/html');
+        Array.prototype.forEach.call(doc.querySelectorAll('style, script'), function (node) {
+          var clone = document.createElement(node.tagName.toLowerCase());
+          clone.textContent = node.textContent;
+          slot.appendChild(clone);
+        });
+      })
+      .catch(function (err) {
+        document.body.insertAdjacentHTML(
+          'beforeend',
+          '<p style="padding:20px;color:#c00">Не удалось загрузить tilda-embed.html: откройте demo.html через локальный сервер.</p>'
+        );
+        console.error(err);
+      });
+  </script>
+</body>
+</html>
