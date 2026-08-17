@@ -403,11 +403,13 @@
 (function () {
   'use strict';
 
-  if (window.__ptSpotifySliderV11) return;
-  window.__ptSpotifySliderV11 = true;
+  if (window.__ptSpotifySliderV12) return;
+  window.__ptSpotifySliderV12 = true;
 
   var AUTOPLAY_MS = 5000;
   var SWIPE_THRESHOLD = 60;
+  var FLIP_MS = 600;
+  var MOVE_MS = 700;
   var SLIDE_COUNT = 5;
   var POS_CLASSES = [
     'is-active', 'is-prev', 'is-next', 'is-prev-2', 'is-next-2', 'is-hid-l', 'is-hid-r'
@@ -527,8 +529,13 @@
       }
 
       setPosClass(slide, cls);
-      /* как в V8: активная flipped на контент, уход — плавный reverse-flip */
-      slide.classList.toggle('is-flipped', rel === 0);
+      /* активная — контент; уходящая уже развёрнута на фото в go() до move */
+      if (rel === 0) {
+        slide.classList.add('is-flipped');
+      } else if (!(prevActive !== null && i === prevActive)) {
+        /* не трогаем is-flipped у outgoing — его уже сняли до coverflow */
+        slide.classList.remove('is-flipped');
+      }
     }
 
     syncPagination();
@@ -611,9 +618,21 @@
     animating = true;
     var from = active;
     var n = slides.length;
-    active = (active + dir + n) % n;
-    applyPositions({ from: from, dir: dir });
-    window.setTimeout(function () { animating = false; }, 720);
+    var outgoing = slides[from];
+
+    function move() {
+      active = (from + dir + n) % n;
+      applyPositions({ from: from, dir: dir });
+      window.setTimeout(function () { animating = false; }, MOVE_MS + 40);
+    }
+
+    /* уход: сначала повернуться задней стороной (фото) в центре, потом уйти вбок */
+    if (outgoing && outgoing.classList.contains('is-flipped')) {
+      outgoing.classList.remove('is-flipped');
+      window.setTimeout(move, FLIP_MS);
+    } else {
+      move();
+    }
   }
 
   function goTo(index) {
@@ -627,13 +646,13 @@
       go(dir);
       return;
     }
-    /* несколько шагов подряд */
     var left = steps;
+    var stepGap = FLIP_MS + MOVE_MS + 80;
     function step() {
       if (left <= 0) return;
       go(dir);
       left--;
-      if (left > 0) setTimeout(step, 740);
+      if (left > 0) setTimeout(step, stepGap);
     }
     step();
   }
