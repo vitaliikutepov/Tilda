@@ -109,11 +109,6 @@
     transform: rotateY(180deg);
   }
 
-  /* уход с центра: мгновенно фото (без reverse-flip), иначе на кадр пропадают обе стороны */
-  .pt-slide.pt-snap-unflip .pt-flip {
-    transition: none !important;
-  }
-
   .pt-face {
     position: absolute;
     inset: 0;
@@ -137,16 +132,15 @@
   }
 
   /*
-   * На боковых (coverflow) parent rotateY ломает backface-visibility —
-   * прячем контентную сторону только у позиций сбоку, НЕ у :not(.is-active),
-   * чтобы уход активного слайда оставался плавным.
+   * Контентную сторону прячем на боковых только когда уже не flipped —
+   * как в V8: уход = плавный reverse-flip + coverflow вместе.
    */
-  .pt-slide.is-prev .pt-face-back,
-  .pt-slide.is-next .pt-face-back,
-  .pt-slide.is-prev-2 .pt-face-back,
-  .pt-slide.is-next-2 .pt-face-back,
-  .pt-slide.is-hid-l .pt-face-back,
-  .pt-slide.is-hid-r .pt-face-back {
+  .pt-slide.is-prev:not(.is-flipped) .pt-face-back,
+  .pt-slide.is-next:not(.is-flipped) .pt-face-back,
+  .pt-slide.is-prev-2:not(.is-flipped) .pt-face-back,
+  .pt-slide.is-next-2:not(.is-flipped) .pt-face-back,
+  .pt-slide.is-hid-l:not(.is-flipped) .pt-face-back,
+  .pt-slide.is-hid-r:not(.is-flipped) .pt-face-back {
     visibility: hidden !important;
     opacity: 0 !important;
     pointer-events: none !important;
@@ -409,8 +403,8 @@
 (function () {
   'use strict';
 
-  if (window.__ptSpotifySliderV10) return;
-  window.__ptSpotifySliderV10 = true;
+  if (window.__ptSpotifySliderV11) return;
+  window.__ptSpotifySliderV11 = true;
 
   var AUTOPLAY_MS = 5000;
   var SWIPE_THRESHOLD = 60;
@@ -533,22 +527,11 @@
       }
 
       setPosClass(slide, cls);
-
-      /* активная — flip на контент; уход — мгновенно обратно на фото (coverflow остаётся плавным) */
-      var wantFlip = rel === 0;
-      var hadFlip = slide.classList.contains('is-flipped');
-      if (wantFlip && !hadFlip) {
-        slide.classList.add('is-flipped');
-      } else if (!wantFlip && hadFlip) {
-        slide.classList.add('pt-snap-unflip');
-        slide.classList.remove('is-flipped');
-        void slide.offsetWidth;
-        slide.classList.remove('pt-snap-unflip');
-      }
+      /* как в V8: активная flipped на контент, уход — плавный reverse-flip */
+      slide.classList.toggle('is-flipped', rel === 0);
     }
 
     syncPagination();
-    /* не форсим reflow пагинации в том же кадре, что старт coverflow */
     requestAnimationFrame(function () {
       restartActiveProgress();
     });
