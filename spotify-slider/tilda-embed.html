@@ -132,15 +132,15 @@
   }
 
   /*
-   * Контентную сторону прячем на боковых только когда уже не flipped —
-   * как в V8: уход = плавный reverse-flip + coverflow вместе.
+   * На боковых (coverflow) parent rotateY ломает backface-visibility —
+   * прячем контентную сторону у позиций сбоку (как в V8).
    */
-  .pt-slide.is-prev:not(.is-flipped) .pt-face-back,
-  .pt-slide.is-next:not(.is-flipped) .pt-face-back,
-  .pt-slide.is-prev-2:not(.is-flipped) .pt-face-back,
-  .pt-slide.is-next-2:not(.is-flipped) .pt-face-back,
-  .pt-slide.is-hid-l:not(.is-flipped) .pt-face-back,
-  .pt-slide.is-hid-r:not(.is-flipped) .pt-face-back {
+  .pt-slide.is-prev .pt-face-back,
+  .pt-slide.is-next .pt-face-back,
+  .pt-slide.is-prev-2 .pt-face-back,
+  .pt-slide.is-next-2 .pt-face-back,
+  .pt-slide.is-hid-l .pt-face-back,
+  .pt-slide.is-hid-r .pt-face-back {
     visibility: hidden !important;
     opacity: 0 !important;
     pointer-events: none !important;
