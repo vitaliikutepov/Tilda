@@ -21,7 +21,8 @@
      Поведение:
      - слайды меняются внутри .tab-container (кроссфейд);
      - активный таб: фон #8742EE, прогресс слева направо #9F68F1;
-     - автосмена каждые 6 секунд, сбрасывается по клику/стрелке;
+     - автосмена каждые 6 секунд, сбрасывается по клику/стрелке/свайпу;
+     - на телефоне свайп по слайду: влево — следующий, вправо — предыдущий;
      - до 1366px ряд табов скроллится пальцем, активный
        всегда доскролливается в видимую область.
 ============================================================ -->
@@ -41,6 +42,10 @@
 
   .tab-container .tn-molecule {
     position: relative !important;
+    touch-action: pan-y;
+  }
+  .tab-container {
+    touch-action: pan-y;
   }
 
   .pts-stage,
@@ -260,6 +265,7 @@
 
   var AUTOPLAY_MS = 6000;
   var SCROLL_BP = 1365; /* включительно: свайп табов до 1366 */
+  var SWIPE_PX = 48;    /* минимальный сдвиг пальца для смены слайда */
 
   /* =================================================== */
 
@@ -495,6 +501,48 @@
     }, true);
   }
 
+  function bindSwipe(el) {
+    if (!el) return;
+    var x0 = 0;
+    var y0 = 0;
+    var axis = '';
+
+    el.addEventListener('touchstart', function (e) {
+      if (!e.changedTouches || !e.changedTouches[0]) return;
+      var t = e.changedTouches[0];
+      x0 = t.clientX;
+      y0 = t.clientY;
+      axis = '';
+    }, { passive: true });
+
+    el.addEventListener('touchmove', function (e) {
+      if (axis === 'v') return;
+      if (!e.changedTouches || !e.changedTouches[0]) return;
+      var t = e.changedTouches[0];
+      var dx = t.clientX - x0;
+      var dy = t.clientY - y0;
+      if (!axis) {
+        if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
+        axis = Math.abs(dx) > Math.abs(dy) ? 'h' : 'v';
+      }
+      if (axis === 'h' && e.cancelable) e.preventDefault();
+    }, { passive: false });
+
+    el.addEventListener('touchend', function (e) {
+      if (axis !== 'h') return;
+      if (!e.changedTouches || !e.changedTouches[0]) return;
+      var dx = e.changedTouches[0].clientX - x0;
+      axis = '';
+      if (Math.abs(dx) < SWIPE_PX) return;
+      if (dx < 0) go(active + 1);
+      else go(active - 1);
+    });
+
+    el.addEventListener('touchcancel', function () {
+      axis = '';
+    });
+  }
+
   function init() {
     var host = q('.tab-container');
     if (!host) return;
@@ -529,6 +577,7 @@
 
     bindClick(q('.tab-next'), function () { go(active + 1); }, true);
     bindClick(q('.tab-prev'), function () { go(active - 1); }, true);
+    bindSwipe(host);
 
     tabs.forEach(function (tab, idx) {
       bindClick(tab, function () { go(idx); }, false);
