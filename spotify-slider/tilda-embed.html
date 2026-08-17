@@ -247,7 +247,7 @@
       scale(var(--pt-far-scale));
   }
 
-  /* пагинация: неактивный и заливка #EFE8FB, концы 4px */
+  /* пагинация: трек/неактивный #EFE8FB, заливка автоплея #8742ee, концы 4px */
   .cslide4-1,
   .cslide4-2,
   .cslide4-3,
@@ -271,7 +271,7 @@
     background-color: transparent !important;
   }
 
-  /* исходный atom Тильды не используем как заливку — рисуем .pt-pag-fill */
+  /* atom Тильды прячем — прогресс рисует .pt-pag-fill */
   .slide4-1 .tn-atom,
   .slide4-2 .tn-atom,
   .slide4-3 .tn-atom,
@@ -294,29 +294,29 @@
     height: 100% !important;
     width: 100%;
     border-radius: 4px !important;
-    background-color: #EFE8FB !important;
+    background-color: #8742ee !important;
     transform-origin: left center;
     pointer-events: none;
+    z-index: 2;
   }
 
-  /* неактивный: полная полоска */
+  /* неактивный: только трек #EFE8FB, без заливки */
   .cslide4-1:not(.is-on) .pt-pag-fill,
   .cslide4-2:not(.is-on) .pt-pag-fill,
   .cslide4-3:not(.is-on) .pt-pag-fill,
   .cslide4-4:not(.is-on) .pt-pag-fill,
   .cslide4-5:not(.is-on) .pt-pag-fill {
-    width: 100% !important;
-    transform: none !important;
+    transform: scaleX(0) !important;
     animation: none !important;
   }
 
-  /* активный: трек бледнее, заливка растёт (scaleX + radius на треке) */
+  /* активный: тот же трек #EFE8FB + фиолетовая заливка */
   .cslide4-1.is-on,
   .cslide4-2.is-on,
   .cslide4-3.is-on,
   .cslide4-4.is-on,
   .cslide4-5.is-on {
-    background-color: rgba(239, 232, 251, 0.35) !important;
+    background-color: #EFE8FB !important;
   }
 
   .cslide4-1.is-on .slide4-1.pt-pag-run .pt-pag-fill,
@@ -395,8 +395,8 @@
 (function () {
   'use strict';
 
-  if (window.__ptSpotifySliderV7) return;
-  window.__ptSpotifySliderV7 = true;
+  if (window.__ptSpotifySliderV8) return;
+  window.__ptSpotifySliderV8 = true;
 
   var AUTOPLAY_MS = 5000;
   var SWIPE_THRESHOLD = 60;
