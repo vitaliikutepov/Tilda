@@ -1,0 +1,87 @@
+<style>
+@media screen and (min-width: 1366px) and (max-width: 1919px) {
+  #rec2518771401 .t396__artboard,
+  #rec2518771401 .t396__filter,
+  #rec2518771401 .t396__carrier {
+    height: 100vh !important;
+    max-height: 1080px !important;
+  }
+}
+</style>
+
+<script>
+(function () {
+  var REC_ID = '2518771401';
+  var MAX_H = 1080;
+  var MIN_W = 1366;
+  var MAX_W = 1919;
+  var started = false;
+
+  function inRange() {
+    var w = window.innerWidth;
+    return w >= MIN_W && w <= MAX_W;
+  }
+
+  function patch() {
+    if (typeof window.t396_ab__getHeight !== 'function') return false;
+    if (window.t396_ab__getHeight.__maxHPatched) return true;
+
+    var orig = window.t396_ab__getHeight;
+    window.t396_ab__getHeight = function (artboard, height) {
+      var h = orig.call(this, artboard, height);
+      try {
+        var id = artboard && artboard.getAttribute && artboard.getAttribute('data-artboard-recid');
+        if (id === REC_ID && inRange()) h = Math.min(h, MAX_H);
+      } catch (e) {}
+      return h;
+    };
+    window.t396_ab__getHeight.__maxHPatched = true;
+    return true;
+  }
+
+  function apply() {
+    if (!inRange()) return;
+    if (!patch()) return;
+    var artboard = document.querySelector('#rec' + REC_ID + ' .t396__artboard');
+    if (!artboard) return;
+    if (typeof t396_ab__renderView === 'function') t396_ab__renderView(artboard);
+    if (typeof t396_scaleBlock === 'function') t396_scaleBlock(REC_ID);
+  }
+
+  function start() {
+    if (started || !inRange()) return;
+    started = true;
+    apply();
+    var n = 0;
+    var timer = setInterval(function () {
+      if (!inRange()) {
+        clearInterval(timer);
+        return;
+      }
+      apply();
+      if (++n >= 20) clearInterval(timer);
+    }, 200);
+    window.addEventListener('resize', apply);
+  }
+
+  function boot() {
+    // На экранах ≤1365 и ≥1920 скрипт ничего не делает
+    if (!inRange()) {
+      window.addEventListener('resize', function onResizeIntoRange() {
+        if (inRange()) {
+          window.removeEventListener('resize', onResizeIntoRange);
+          start();
+        }
+      });
+      return;
+    }
+    start();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', boot);
+  } else {
+    boot();
+  }
+})();
+</script>
