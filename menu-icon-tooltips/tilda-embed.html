@@ -1,0 +1,122 @@
+<!-- ============================================================
+     Тултипы иконок меню (шапка Zero Block)
+
+     Баг: на Windows подписи («Перейти на сайт…») видны сразу,
+     а не по hover. Tilda SBS-анимация hover работает только если
+     текущий артборд-брейкпоинт >= 1200. У этой страницы сетка
+     320 / 768 / 1024 / 1366 / 1920, поэтому на ширине < 1366
+     Tilda считает res=1024, снимает .t396__elem--anim-hidden
+     и показывает тултипы. На Windows это типичный диапазон:
+     1080p при масштабе 150% даёт ~1280 CSS-пикселей (между 1024 и 1366).
+
+     Как подключить:
+     вставьте весь файл в HTML-элемент Тильды в шапке страницы
+     (блок T123 / HTML, лучше выше зеро-блока с иконками).
+
+     Сниппет сам находит группы с
+       data-animate-sbs-event="hover"
+       data-animate-sbs-trgels="<id иконки>"
+     и показывает их только при наведении / фокусе на иконке.
+============================================================ -->
+
+<style>
+  /* прячем сразу, до JS — иначе на Windows тултипы мигнут */
+  [data-animate-sbs-event="hover"][data-animate-sbs-trgels] {
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+    transition: opacity 0.1s ease, visibility 0.1s ease;
+  }
+  [data-animate-sbs-event="hover"][data-animate-sbs-trgels].pts-tip-on {
+    opacity: 1 !important;
+    visibility: visible !important;
+  }
+  [data-animate-sbs-event="hover"][data-animate-sbs-trgels].pts-tip-on .tn-atom__sbs-anim-wrapper {
+    opacity: 1 !important;
+    visibility: visible !important;
+  }
+</style>
+
+<script>
+(function () {
+  'use strict';
+
+  if (window.__ptsMenuTipFix) return;
+  window.__ptsMenuTipFix = true;
+
+  function triggerSelector(id) {
+    return '[data-elem-id="' + id + '"],[data-group-id="' + id + '"]';
+  }
+
+  function setOn(tip, on) {
+    if (!tip) return;
+    tip.classList.toggle('pts-tip-on', !!on);
+    var wrap = tip.querySelector('.tn-atom__sbs-anim-wrapper');
+    if (wrap) {
+      wrap.style.opacity = on ? '1' : '';
+      wrap.style.visibility = on ? 'visible' : '';
+    }
+  }
+
+  function bindPair(trigger, tip) {
+    if (!trigger || !tip || trigger.__ptsTipBound === tip) return;
+    trigger.__ptsTipBound = tip;
+
+    var hideTimer = null;
+
+    function show() {
+      if (hideTimer) {
+        clearTimeout(hideTimer);
+        hideTimer = null;
+      }
+      setOn(tip, true);
+    }
+
+    function hide() {
+      if (hideTimer) clearTimeout(hideTimer);
+      hideTimer = setTimeout(function () {
+        setOn(tip, false);
+      }, 40);
+    }
+
+    trigger.addEventListener('mouseenter', show);
+    trigger.addEventListener('mouseleave', hide);
+    trigger.addEventListener('focusin', show);
+    trigger.addEventListener('focusout', hide);
+  }
+
+  function init() {
+    var tips = document.querySelectorAll('[data-animate-sbs-event="hover"][data-animate-sbs-trgels]');
+    for (var i = 0; i < tips.length; i++) {
+      var tip = tips[i];
+      var ids = (tip.getAttribute('data-animate-sbs-trgels') || '').split(',');
+      for (var j = 0; j < ids.length; j++) {
+        var id = ids[j].replace(/^\s+|\s+$/g, '');
+        if (!id) continue;
+        var trigger = document.querySelector(triggerSelector(id));
+        bindPair(trigger, tip);
+      }
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+
+  window.addEventListener('load', init);
+
+  if (typeof t_onReady === 'function') {
+    t_onReady(function () {
+      if (typeof t_onFuncLoad === 'function') {
+        t_onFuncLoad('t396_init', function () {
+          setTimeout(init, 0);
+        });
+      } else {
+        init();
+      }
+    });
+  }
+})();
+</script>

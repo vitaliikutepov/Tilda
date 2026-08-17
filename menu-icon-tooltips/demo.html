@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Menu icon tooltips — Windows hover fix</title>
+  <style>
+    :root {
+      --bg: #111216;
+      --tip: #1a1b23;
+      --ink: #e7ecf3;
+      --muted: #97a1b0;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+    }
+    .page {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 40px 24px 80px;
+    }
+    h1 { font-size: 20px; font-weight: 600; margin: 0 0 8px; }
+    .note {
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.5;
+      max-width: 720px;
+      margin: 0 0 32px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+    @media (max-width: 800px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+    .panel {
+      background: #16171f;
+      border-radius: 16px;
+      padding: 20px;
+    }
+    .panel h2 {
+      margin: 0 0 6px;
+      font-size: 14px;
+      font-weight: 600;
+    }
+    .panel p {
+      margin: 0 0 16px;
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.4;
+    }
+    .t396__artboard {
+      position: relative;
+      height: 140px;
+      background: #111216;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .icons {
+      position: absolute;
+      top: 24px;
+      left: 24px;
+      display: flex;
+      gap: 16px;
+    }
+    .tn-elem[data-elem-type="image"] {
+      width: 40px;
+      height: 40px;
+    }
+    .tn-elem[data-elem-type="image"] a {
+      display: flex;
+      width: 40px;
+      height: 40px;
+      border-radius: 8px;
+      align-items: center;
+      justify-content: center;
+      background: #2a2c38;
+      color: #fff;
+      text-decoration: none;
+      font-size: 11px;
+      font-weight: 700;
+    }
+    .tn-elem[data-elem-type="image"] a:hover { background: #3a3d4d; }
+
+    /* как у Тильды: прячем только от 1200px и только с anim-hidden */
+    .broken .tn-group {
+      position: absolute;
+      top: 72px;
+      width: 200px;
+      padding: 12px;
+      border-radius: 10px;
+      background: var(--tip);
+      box-shadow: 0 10px 10px rgba(0,0,0,.1);
+      font-size: 14px;
+      line-height: 1.4;
+      text-align: center;
+    }
+    .broken .tn-group[data-group-id="tip-site"] { left: 8px; }
+    .broken .tn-group[data-group-id="tip-sandbox"] { left: 64px; }
+    .broken .tn-group[data-group-id="tip-email"] { left: 120px; }
+
+    .fixed .tn-group[data-animate-sbs-event="hover"] {
+      position: absolute;
+      top: 72px;
+      width: 200px;
+      padding: 12px;
+      border-radius: 10px;
+      background: var(--tip);
+      box-shadow: 0 10px 10px rgba(0,0,0,.1);
+      font-size: 14px;
+      line-height: 1.4;
+      text-align: center;
+    }
+    .fixed .tn-group[data-group-id="tip-site"] { left: 8px; }
+    .fixed .tn-group[data-group-id="tip-sandbox"] { left: 64px; }
+    .fixed .tn-group[data-group-id="tip-email"] { left: 120px; }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <h1>Тултипы иконок меню</h1>
+    <p class="note">
+      Слева — поведение Тильды на ширине &lt;&nbsp;1366px (как на Windows при DPI-масштабе):
+      класс <code>t396__elem--anim-hidden</code> снят, подписи видны сразу.
+      Справа — тот же блок со сниппетом: подписи только по hover/фокусу.
+    </p>
+
+    <div class="grid">
+      <div class="panel broken">
+        <h2>Как на Windows сейчас</h2>
+        <p>Tilda JS снял anim-hidden, CSS @media (min-width: 1200px) не спасает.</p>
+        <div class="t396__artboard">
+          <div class="icons">
+            <div class="tn-elem" data-elem-id="icon-site" data-elem-type="image">
+              <a href="#" aria-label="Positive Technologies">PT</a>
+            </div>
+            <div class="tn-elem" data-elem-id="icon-sandbox" data-elem-type="image">
+              <a href="#" aria-label="PT Sandbox">SB</a>
+            </div>
+            <div class="tn-elem" data-elem-id="icon-email" data-elem-type="image">
+              <a href="#" aria-label="PT Email Security">ES</a>
+            </div>
+          </div>
+          <!-- без data-animate-sbs-trgels: как после того, как Тильда сняла anim-hidden -->
+          <div class="tn-group" data-group-id="tip-site">
+            Перейти на сайт Positive Technologies
+          </div>
+          <div class="tn-group" data-group-id="tip-sandbox">
+            Перейти на страницу продукта
+          </div>
+          <div class="tn-group" data-group-id="tip-email">
+            Перейти на страницу продукта
+          </div>
+        </div>
+      </div>
+
+      <div class="panel fixed" id="fixed-demo">
+        <h2>Со сниппетом</h2>
+        <p>Наведите на иконку — тултип появляется только тогда.</p>
+        <div class="t396__artboard">
+          <div class="icons">
+            <div class="tn-elem" data-elem-id="fix-site" data-elem-type="image">
+              <a href="#" aria-label="Positive Technologies">PT</a>
+            </div>
+            <div class="tn-elem" data-elem-id="fix-sandbox" data-elem-type="image">
+              <a href="#" aria-label="PT Sandbox">SB</a>
+            </div>
+            <div class="tn-elem" data-elem-id="fix-email" data-elem-type="image">
+              <a href="#" aria-label="PT Email Security">ES</a>
+            </div>
+          </div>
+          <div class="tn-group" data-group-id="fix-tip-site" data-animate-sbs-event="hover" data-animate-sbs-trgels="fix-site">
+            Перейти на сайт Positive Technologies
+          </div>
+          <div class="tn-group" data-group-id="fix-tip-sandbox" data-animate-sbs-event="hover" data-animate-sbs-trgels="fix-sandbox">
+            Перейти на страницу продукта
+          </div>
+          <div class="tn-group" data-group-id="fix-tip-email" data-animate-sbs-event="hover" data-animate-sbs-trgels="fix-email">
+            Перейти на страницу продукта
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="embed-slot"></div>
+  <script>
+    function t_onReady(fn) {
+      if (document.readyState !== 'loading') fn();
+      else document.addEventListener('DOMContentLoaded', fn);
+    }
+    function t_onFuncLoad(name, ok) { ok(); }
+
+    fetch('tilda-embed.html')
+      .then(function (r) { return r.text(); })
+      .then(function (html) {
+        var slot = document.getElementById('embed-slot');
+        var doc = new DOMParser().parseFromString(html, 'text/html');
+        Array.prototype.forEach.call(doc.querySelectorAll('style, script'), function (node) {
+          var clone = document.createElement(node.tagName.toLowerCase());
+          clone.textContent = node.textContent;
+          slot.appendChild(clone);
+        });
+      })
+      .catch(function () {
+        document.body.insertAdjacentHTML(
+          'beforeend',
+          '<p style="padding:20px;color:#c00">Откройте demo.html через локальный сервер, чтобы подгрузить tilda-embed.html.</p>'
+        );
+      });
+  </script>
+</body>
+</html>
