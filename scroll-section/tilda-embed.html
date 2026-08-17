@@ -1,0 +1,443 @@
+<!-- ============================================================
+     Анимация .scroll-section для Tilda Zero Block
+
+     Как подключить:
+     1. В зеро-блоке повесьте CSS-класс  scroll-section
+        на элемент с картинкой: фигуру с фоном или изображение.
+        Класс можно повесить и на группу, если фон задан на ней.
+     2. Вставьте этот файл в HTML-элемент Тильды
+        (или в настройки страницы → HTML-код для BODY).
+
+     Поведение (только экраны 1024px и шире):
+     - до подхода к блоку секция растянута на всю ширину окна;
+     - по мере скролла к блоку сужается к ширине, left
+       и скруглению из редактора Тильды;
+     - ниже 1024px анимация выключена, остаются размеры Тильды.
+============================================================ -->
+
+<style>
+  @media screen and (min-width: 1024px) {
+    html.ss-lock-x {
+      overflow-x: hidden;
+    }
+
+    /* чтобы секция могла выйти за артборд на 100vw */
+    .ss-host,
+    .ss-host .t396,
+    .ss-host .t396__artboard {
+      overflow: visible !important;
+    }
+
+    .scroll-section.ss-ready {
+      overflow: hidden !important;
+      box-sizing: border-box !important;
+      max-width: none !important;
+    }
+
+    .scroll-section.ss-ready > .tn-atom,
+    .scroll-section.ss-ready > .tn-molecule {
+      width: 100% !important;
+      height: 100% !important;
+      max-width: none !important;
+      left: 0 !important;
+      top: 0 !important;
+      box-sizing: border-box !important;
+      background-size: cover !important;
+      background-position: center center !important;
+      background-repeat: no-repeat !important;
+    }
+
+    .scroll-section.ss-ready img,
+    .scroll-section.ss-ready .tn-atom__img {
+      width: 100% !important;
+      height: 100% !important;
+      max-width: none !important;
+      object-fit: cover !important;
+      object-position: center center !important;
+    }
+  }
+</style>
+
+<script>
+(function () {
+  'use strict';
+
+  if (window.__ssScrollSectionInit) return;
+  window.__ssScrollSectionInit = true;
+
+  var MIN_WIDTH = 1024;
+  var START_AT = 1;     /* progress 0: верх секции у нижнего края окна */
+  var END_AT = 0.22;    /* progress 1: верх секции на 22% высоты окна */
+
+  var sections = [];
+  var ticking = false;
+  var resizeTimer = null;
+
+  function q(sel, root) {
+    return (root || document).querySelector(sel);
+  }
+
+  function qa(sel, root) {
+    return Array.prototype.slice.call((root || document).querySelectorAll(sel));
+  }
+
+  function isDesktop() {
+    return window.innerWidth >= MIN_WIDTH;
+  }
+
+  function reducedMotion() {
+    return window.matchMedia &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  }
+
+  function clamp(t, a, b) {
+    return Math.max(a, Math.min(b, t));
+  }
+
+  function lerp(a, b, t) {
+    return a + (b - a) * t;
+  }
+
+  function easeOutCubic(t) {
+    return 1 - Math.pow(1 - t, 3);
+  }
+
+  function parseRadius(str) {
+    if (!str) return [0, 0, 0, 0];
+    var cleaned = String(str).split('/')[0];
+    var parts = cleaned.split(/\s+/).map(function (s) {
+      return parseFloat(s) || 0;
+    });
+    if (!parts.length) return [0, 0, 0, 0];
+    if (parts.length === 1) return [parts[0], parts[0], parts[0], parts[0]];
+    if (parts.length === 2) return [parts[0], parts[1], parts[0], parts[1]];
+    if (parts.length === 3) return [parts[0], parts[1], parts[2], parts[1]];
+    return parts.slice(0, 4);
+  }
+
+  function computedRadius(node) {
+    if (!node || !node.nodeType) return [0, 0, 0, 0];
+    var cs = window.getComputedStyle(node);
+    return [
+      parseFloat(cs.borderTopLeftRadius) || 0,
+      parseFloat(cs.borderTopRightRadius) || 0,
+      parseFloat(cs.borderBottomRightRadius) || 0,
+      parseFloat(cs.borderBottomLeftRadius) || 0
+    ];
+  }
+
+  function radiusMax(a, b) {
+    return [
+      Math.max(a[0], b[0]),
+      Math.max(a[1], b[1]),
+      Math.max(a[2], b[2]),
+      Math.max(a[3], b[3])
+    ];
+  }
+
+  function radiusPeak(values) {
+    return Math.max.apply(null, values || [0]);
+  }
+
+  function radiusCss(values) {
+    return values.map(function (v) { return v + 'px'; }).join(' ');
+  }
+
+  function lerpRadius(from, to, t) {
+    return [
+      lerp(from[0], to[0], t),
+      lerp(from[1], to[1], t),
+      lerp(from[2], to[2], t),
+      lerp(from[3], to[3], t)
+    ];
+  }
+
+  function radiusTargets(el) {
+    var nodes = [el];
+    qa('.tn-atom, .tn-molecule', el).forEach(function (n) {
+      if (nodes.indexOf(n) < 0) nodes.push(n);
+    });
+    return nodes;
+  }
+
+  var RADIUS_ATTRS = [
+    'data-field-border-radius-value',
+    'data-field-borderradius-value',
+    'data-field-container-border-radius-value'
+  ];
+
+  function radiusFromAttrs(node) {
+    var best = [0, 0, 0, 0];
+    if (!node || !node.getAttribute) return best;
+    for (var i = 0; i < RADIUS_ATTRS.length; i++) {
+      best = radiusMax(best, parseRadius(node.getAttribute(RADIUS_ATTRS[i])));
+    }
+    return best;
+  }
+
+  function directChild(el, selector) {
+    var kids = el.children;
+    for (var i = 0; i < kids.length; i++) {
+      if (kids[i].matches && kids[i].matches(selector)) return kids[i];
+    }
+    return null;
+  }
+
+  function parentScale(el) {
+    var parent = el.offsetParent || el.parentElement;
+    if (!parent) return { parent: null, scale: 1, rect: null };
+    var rect = parent.getBoundingClientRect();
+    var w = parent.offsetWidth;
+    var scale = w ? rect.width / w : 1;
+    if (!scale || !isFinite(scale)) scale = 1;
+    return { parent: parent, scale: scale, rect: rect };
+  }
+
+  function markParents(el, on) {
+    var n = el.parentElement;
+    while (n && n !== document.documentElement) {
+      if (n.classList && (
+        n.classList.contains('t396__artboard') ||
+        n.classList.contains('t396') ||
+        n.classList.contains('t-rec') ||
+        n.classList.contains('tn-group')
+      )) {
+        n.classList.toggle('ss-host', on);
+      }
+      n = n.parentElement;
+    }
+  }
+
+  function rememberTildaBox(el, force) {
+    if (force || el._ssLeftStyle == null) {
+      el._ssLeftStyle = el.style.left;
+      el._ssWidthStyle = el.style.width;
+    }
+  }
+
+  function originalRadiusInline(el, node) {
+    var list = el._ssRadiusInlines || [];
+    for (var i = 0; i < list.length; i++) {
+      if (list[i].node === node) return list[i].value;
+    }
+    return '';
+  }
+
+  function rememberRadiusInlines(el) {
+    if (el._ssRadiusInlines) return;
+    el._ssRadiusInlines = radiusTargets(el).map(function (node) {
+      return { node: node, value: node.style.borderRadius };
+    });
+  }
+
+  function clearAnimatedRadius(el) {
+    var nodes = radiusTargets(el);
+    for (var i = 0; i < nodes.length; i++) {
+      if (nodes[i].getAttribute('data-ss-radius')) {
+        nodes[i].style.removeProperty('border-radius');
+        var orig = originalRadiusInline(el, nodes[i]);
+        if (orig) nodes[i].style.borderRadius = orig;
+        nodes[i].removeAttribute('data-ss-radius');
+      }
+    }
+    el._ssAppliedRadius = null;
+  }
+
+  function restoreTildaBox(el) {
+    if (el._ssLeftStyle != null) el.style.left = el._ssLeftStyle;
+    if (el._ssWidthStyle != null) el.style.width = el._ssWidthStyle;
+    el.style.willChange = '';
+    clearAnimatedRadius(el);
+    el._ssAppliedLeft = null;
+    el._ssAppliedWidth = null;
+  }
+
+  function readTildaRadius(el) {
+    var best = [0, 0, 0, 0];
+    var nodes = radiusTargets(el);
+    var saved = [];
+    for (var i = 0; i < nodes.length; i++) {
+      var node = nodes[i];
+      if (node.getAttribute('data-ss-radius')) {
+        saved.push({ node: node, value: node.style.borderRadius });
+        node.style.removeProperty('border-radius');
+        var orig = originalRadiusInline(el, node);
+        if (orig) node.style.borderRadius = orig;
+      }
+      best = radiusMax(best, computedRadius(node));
+      best = radiusMax(best, radiusFromAttrs(node));
+    }
+    best = radiusMax(best, radiusFromAttrs(el));
+    for (var j = 0; j < saved.length; j++) {
+      saved[j].node.style.setProperty('border-radius', saved[j].value, 'important');
+    }
+    return best;
+  }
+
+  /* Скругление Тильды читаем только из исходных стилей, никогда
+     из уже анимированного inline 0px — иначе после ресайза оно «залипает». */
+  function snapshotRadius(el, allowUpgrade) {
+    var next = readTildaRadius(el);
+    var nextPeak = radiusPeak(next);
+    var curPeak = radiusPeak(el._ssRadius);
+    if (!el._ssRadius || (allowUpgrade && nextPeak > curPeak)) {
+      el._ssRadius = next;
+    }
+  }
+
+  function measureBox(el) {
+    el._ssLeftPx = el.offsetLeft;
+    el._ssWidthPx = el.offsetWidth;
+  }
+
+  function bindSection(el) {
+    if (el._ssBound) return;
+    el._ssBound = true;
+    el._ssFill = directChild(el, '.tn-atom, .tn-molecule');
+    rememberTildaBox(el, true);
+    rememberRadiusInlines(el);
+    measureBox(el);
+    snapshotRadius(el, true);
+    sections.push(el);
+  }
+
+  function disableSection(el) {
+    el.classList.remove('ss-ready');
+    restoreTildaBox(el);
+    markParents(el, false);
+    el.removeAttribute('data-ss-progress');
+  }
+
+  function enableSection(el) {
+    markParents(el, true);
+    el.classList.add('ss-ready');
+  }
+
+  function recaptureAfterResize(el) {
+    var leftChanged = el._ssAppliedLeft != null && el.style.left !== el._ssAppliedLeft;
+    var widthChanged = el._ssAppliedWidth != null && el.style.width !== el._ssAppliedWidth;
+    if (leftChanged) el._ssLeftStyle = el.style.left;
+    if (widthChanged) el._ssWidthStyle = el.style.width;
+    restoreTildaBox(el);
+    measureBox(el);
+    snapshotRadius(el, true);
+  }
+
+  function applyRadius(el, t) {
+    var radius = lerpRadius([0, 0, 0, 0], el._ssRadius || [0, 0, 0, 0], t);
+    var css = radiusCss(radius);
+    var nodes = radiusTargets(el);
+    for (var i = 0; i < nodes.length; i++) {
+      nodes[i].style.setProperty('border-radius', css, 'important');
+      nodes[i].setAttribute('data-ss-radius', '1');
+    }
+    el._ssAppliedRadius = css;
+  }
+
+  function applyFrame(el) {
+    var origW = el._ssWidthPx;
+    if (!origW) return;
+
+    var info = parentScale(el);
+    var scale = info.scale;
+    var parentRect = info.rect;
+    var vw = document.documentElement.clientWidth;
+    var fullWidth = vw / scale;
+    var fullLeft = parentRect ? (0 - parentRect.left) / scale : 0;
+
+    var vh = window.innerHeight || document.documentElement.clientHeight;
+    var top = el.getBoundingClientRect().top;
+    var start = vh * START_AT;
+    var end = vh * END_AT;
+    var raw = (start - top) / (start - end);
+    var t = easeOutCubic(clamp(raw, 0, 1));
+
+    if (reducedMotion()) t = 1;
+
+    var left = lerp(fullLeft, el._ssLeftPx, t);
+    var width = lerp(fullWidth, origW, t);
+
+    el.style.left = left + 'px';
+    el.style.width = width + 'px';
+    applyRadius(el, t);
+    el.style.willChange = (t > 0 && t < 1) ? 'left, width, border-radius' : '';
+    el._ssAppliedLeft = el.style.left;
+    el._ssAppliedWidth = el.style.width;
+    el.setAttribute('data-ss-progress', t.toFixed(3));
+  }
+
+  function tick() {
+    ticking = false;
+    var desktop = isDesktop();
+    document.documentElement.classList.toggle('ss-lock-x', desktop && sections.length > 0);
+
+    for (var i = 0; i < sections.length; i++) {
+      var el = sections[i];
+      if (!desktop || reducedMotion()) {
+        disableSection(el);
+        continue;
+      }
+      enableSection(el);
+      applyFrame(el);
+    }
+  }
+
+  function requestTick() {
+    if (ticking) return;
+    ticking = true;
+    window.requestAnimationFrame(tick);
+  }
+
+  function onResize() {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(function () {
+      for (var i = 0; i < sections.length; i++) {
+        recaptureAfterResize(sections[i]);
+      }
+      requestTick();
+    }, 250);
+  }
+
+  function init() {
+    qa('.scroll-section').forEach(bindSection);
+    if (!sections.length) return;
+
+    window.addEventListener('scroll', requestTick, { passive: true });
+    window.addEventListener('resize', onResize);
+    window.addEventListener('orientationchange', onResize);
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', onResize);
+    }
+    requestTick();
+
+    /* Тильда часто дописывает radius после первого layout — подхватим */
+    [400, 1000, 2000].forEach(function (ms) {
+      setTimeout(function () {
+        for (var i = 0; i < sections.length; i++) {
+          snapshotRadius(sections[i], true);
+        }
+        requestTick();
+      }, ms);
+    });
+  }
+
+  function waitAndInit() {
+    var started = Date.now();
+    (function poll() {
+      var el = q('.scroll-section');
+      var ready = el && (el.offsetWidth > 0 || el.children.length > 0);
+      if (ready || Date.now() - started > 2500) {
+        if (el) init();
+        return;
+      }
+      if (Date.now() - started < 20000) setTimeout(poll, 100);
+    })();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', waitAndInit);
+  } else {
+    waitAndInit();
+  }
+})();
+</script>
