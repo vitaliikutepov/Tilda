@@ -55,7 +55,7 @@
     --pt-depth-1: -110px;
     --pt-depth-2: -200px;
     --pt-dur: 700ms;
-    --pt-flip-dur: 0.6s;
+    --pt-flip-dur: 700ms;
     --pt-ease: cubic-bezier(0.25, 0.1, 0.25, 1);
     --pt-offset-1: calc(var(--pt-w) * 0.5 + var(--pt-gap) + var(--pt-w) * 0.5);
     --pt-offset-2: calc(var(--pt-offset-1) + var(--pt-w) * 0.5 + var(--pt-gap) + var(--pt-w) * 0.5);
@@ -132,15 +132,15 @@
   }
 
   /*
-   * На боковых (coverflow) parent rotateY ломает backface-visibility —
-   * прячем контентную сторону у позиций сбоку (как в V8).
+   * Контент на боковых прячем только после остановки.
+   * Во время pt-motion обе стороны нужны для плавного flip+coverflow.
    */
-  .pt-slide.is-prev .pt-face-back,
-  .pt-slide.is-next .pt-face-back,
-  .pt-slide.is-prev-2 .pt-face-back,
-  .pt-slide.is-next-2 .pt-face-back,
-  .pt-slide.is-hid-l .pt-face-back,
-  .pt-slide.is-hid-r .pt-face-back {
+  .pt-slide.is-prev:not(.pt-motion) .pt-face-back,
+  .pt-slide.is-next:not(.pt-motion) .pt-face-back,
+  .pt-slide.is-prev-2:not(.pt-motion) .pt-face-back,
+  .pt-slide.is-next-2:not(.pt-motion) .pt-face-back,
+  .pt-slide.is-hid-l:not(.pt-motion) .pt-face-back,
+  .pt-slide.is-hid-r:not(.pt-motion) .pt-face-back {
     visibility: hidden !important;
     opacity: 0 !important;
     pointer-events: none !important;
@@ -403,12 +403,11 @@
 (function () {
   'use strict';
 
-  if (window.__ptSpotifySliderV12) return;
-  window.__ptSpotifySliderV12 = true;
+  if (window.__ptSpotifySliderV13) return;
+  window.__ptSpotifySliderV13 = true;
 
   var AUTOPLAY_MS = 5000;
   var SWIPE_THRESHOLD = 60;
-  var FLIP_MS = 600;
   var MOVE_MS = 700;
   var SLIDE_COUNT = 5;
   var POS_CLASSES = [
@@ -529,13 +528,8 @@
       }
 
       setPosClass(slide, cls);
-      /* активная — контент; уходящая уже развёрнута на фото в go() до move */
-      if (rel === 0) {
-        slide.classList.add('is-flipped');
-      } else if (!(prevActive !== null && i === prevActive)) {
-        /* не трогаем is-flipped у outgoing — его уже сняли до coverflow */
-        slide.classList.remove('is-flipped');
-      }
+      /* уход: unflip + coverflow вместе; приход: flip + coverflow вместе */
+      slide.classList.toggle('is-flipped', rel === 0);
     }
 
     syncPagination();
@@ -618,21 +612,19 @@
     animating = true;
     var from = active;
     var n = slides.length;
-    var outgoing = slides[from];
+    active = (active + dir + n) % n;
 
-    function move() {
-      active = (from + dir + n) % n;
-      applyPositions({ from: from, dir: dir });
-      window.setTimeout(function () { animating = false; }, MOVE_MS + 40);
+    for (var i = 0; i < slides.length; i++) {
+      slides[i].classList.add('pt-motion');
     }
+    applyPositions({ from: from, dir: dir });
 
-    /* уход: сначала повернуться задней стороной (фото) в центре, потом уйти вбок */
-    if (outgoing && outgoing.classList.contains('is-flipped')) {
-      outgoing.classList.remove('is-flipped');
-      window.setTimeout(move, FLIP_MS);
-    } else {
-      move();
-    }
+    window.setTimeout(function () {
+      for (var j = 0; j < slides.length; j++) {
+        slides[j].classList.remove('pt-motion');
+      }
+      animating = false;
+    }, MOVE_MS + 40);
   }
 
   function goTo(index) {
@@ -647,12 +639,11 @@
       return;
     }
     var left = steps;
-    var stepGap = FLIP_MS + MOVE_MS + 80;
     function step() {
       if (left <= 0) return;
       go(dir);
       left--;
-      if (left > 0) setTimeout(step, stepGap);
+      if (left > 0) setTimeout(step, MOVE_MS + 80);
     }
     step();
   }
