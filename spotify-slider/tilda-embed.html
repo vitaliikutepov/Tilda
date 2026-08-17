@@ -295,6 +295,7 @@
     width: 100%;
     border-radius: 4px !important;
     background-color: #8742ee !important;
+    transform: scaleX(0);
     transform-origin: left center;
     pointer-events: none;
     z-index: 2;
@@ -325,6 +326,14 @@
   .cslide4-4.is-on .slide4-4.pt-pag-run .pt-pag-fill,
   .cslide4-5.is-on .slide4-5.pt-pag-run .pt-pag-fill {
     animation: pt-pag-fill var(--pt-autoplay, 5s) linear forwards;
+  }
+
+  .cslide4-1.is-on .slide4-1.pt-pag-run.pt-pag-paused .pt-pag-fill,
+  .cslide4-2.is-on .slide4-2.pt-pag-run.pt-pag-paused .pt-pag-fill,
+  .cslide4-3.is-on .slide4-3.pt-pag-run.pt-pag-paused .pt-pag-fill,
+  .cslide4-4.is-on .slide4-4.pt-pag-run.pt-pag-paused .pt-pag-fill,
+  .cslide4-5.is-on .slide4-5.pt-pag-run.pt-pag-paused .pt-pag-fill {
+    animation-play-state: paused;
   }
 
   @keyframes pt-pag-fill {
@@ -395,8 +404,8 @@
 (function () {
   'use strict';
 
-  if (window.__ptSpotifySliderV8) return;
-  window.__ptSpotifySliderV8 = true;
+  if (window.__ptSpotifySliderV9) return;
+  window.__ptSpotifySliderV9 = true;
 
   var AUTOPLAY_MS = 5000;
   var SWIPE_THRESHOLD = 60;
@@ -409,7 +418,8 @@
   var slides = [];
   var stage = null;
   var animating = false;
-  var autoplayTimer = null;
+  var autoplayPaused = false;
+  var progressGen = 0;
   var drag = null;
   var suppressClick = false;
   var pagItems = [];
@@ -523,6 +533,14 @@
     }
 
     syncPagination();
+    restartActiveProgress();
+  }
+
+  function resetFillEl(fill) {
+    if (!fill) return;
+    fill.style.animation = 'none';
+    fill.style.transform = 'scaleX(0)';
+    void fill.offsetWidth;
   }
 
   function syncPagination() {
@@ -531,45 +549,60 @@
       if (!item || !item.wrap) continue;
       var on = i === active;
       item.wrap.classList.toggle('is-on', on);
-      if (item.bar) {
-        item.bar.classList.remove('pt-pag-run');
-        var fill = item.fill || item.bar.querySelector('.pt-pag-fill');
-        if (fill) {
-          fill.style.animation = 'none';
-          void fill.offsetWidth;
-          fill.style.animation = '';
-        }
-        if (on) item.bar.classList.add('pt-pag-run');
+      if (!item.bar) continue;
+      if (!on) {
+        item.bar.classList.remove('pt-pag-run', 'pt-pag-paused');
+        resetFillEl(item.fill || item.bar.querySelector('.pt-pag-fill'));
       }
     }
   }
 
-  function stopAutoplay() {
-    if (autoplayTimer) {
-      clearInterval(autoplayTimer);
-      autoplayTimer = null;
+  /* один источник правды: полоска → animationend → смена слайда (без setInterval) */
+  function restartActiveProgress() {
+    progressGen += 1;
+    var gen = progressGen;
+    var item = pagItems[active];
+    if (!item || !item.bar) return;
+    var fill = item.fill || item.bar.querySelector('.pt-pag-fill');
+    item.bar.classList.remove('pt-pag-run', 'pt-pag-paused');
+    resetFillEl(fill);
+    if (fill) {
+      fill.setAttribute('data-pt-gen', String(gen));
+      fill.style.animation = '';
+      fill.style.transform = '';
     }
-    for (var i = 0; i < pagItems.length; i++) {
-      var item = pagItems[i];
-      if (item && item.bar) item.bar.classList.remove('pt-pag-run');
+    if (autoplayPaused) return;
+    item.bar.classList.add('pt-pag-run');
+  }
+
+  function stopAutoplay() {
+    autoplayPaused = true;
+    var item = pagItems[active];
+    if (item && item.bar && item.bar.classList.contains('pt-pag-run')) {
+      item.bar.classList.add('pt-pag-paused');
     }
   }
 
   function startAutoplay() {
-    stopAutoplay();
-    if (pagItems[active] && pagItems[active].bar) {
-      var bar = pagItems[active].bar;
-      var fill = pagItems[active].fill || bar.querySelector('.pt-pag-fill');
-      if (fill) {
-        fill.style.animation = 'none';
-        void fill.offsetWidth;
-        fill.style.animation = '';
-      }
-      bar.classList.add('pt-pag-run');
+    var wasPaused = autoplayPaused;
+    autoplayPaused = false;
+    var item = pagItems[active];
+    if (!item || !item.bar) return;
+    if (wasPaused && item.bar.classList.contains('pt-pag-run')) {
+      item.bar.classList.remove('pt-pag-paused');
+      return;
     }
-    autoplayTimer = setInterval(function () {
-      if (!drag && !animating) go(1);
-    }, AUTOPLAY_MS);
+    restartActiveProgress();
+  }
+
+  function onPagFillEnd(e) {
+    if (!e) return;
+    var name = e.animationName || '';
+    if (name && name !== 'pt-pag-fill' && name.indexOf('pt-pag-fill') === -1) return;
+    var fill = e.target;
+    if (!fill || fill.getAttribute('data-pt-gen') !== String(progressGen)) return;
+    if (autoplayPaused || drag || animating) return;
+    go(1);
   }
 
   function go(dir) {
@@ -836,6 +869,10 @@
       fill.className = 'pt-pag-fill';
       bar.appendChild(fill);
     }
+    if (!fill._ptPagBound) {
+      fill._ptPagBound = true;
+      fill.addEventListener('animationend', onPagFillEnd);
+    }
     return fill;
   }
 
@@ -851,7 +888,7 @@
         wrap.addEventListener('click', function (e) {
           e.preventDefault();
           e.stopPropagation();
-          stopAutoplay();
+          autoplayPaused = false;
           goTo(idx);
           startAutoplay();
         });
