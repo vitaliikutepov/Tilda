@@ -1,0 +1,1023 @@
+<!-- ============================================================
+     Слайдер в духе lifeatspotify.com для Tilda Zero Block
+
+     1. Контейнер: Shape с классом  slider
+     2. Слайды 1…5:
+          .cardN      — активная (контентная) сторона
+          .cardN-img  — оборотная (картинка)
+     3. Пагинация: .cslide4-N  содержит полоску  .slide4-N  (N=1…5)
+     4. Курсоры = фиолетовая кнопка (.slider-prev/.slider-next) + белая стрелка; оригиналы скрыты
+     5. Размер/радиус слайда = заготовка Zero Block на каждом вьюпорте (1920→520×460 / 1366→429×380 / 1024→482×380 / 768→354×354 / 320→280×240)
+
+     Поведение: coverflow 3D, flip активной карточки, цикл, swipe, автоплей.
+============================================================ -->
+
+<style>
+  .r.t-rec.pt-card-source {
+    position: absolute !important;
+    top: -100000px !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 0 !important;
+    overflow: hidden !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* оригиналы стрелок — скрыты, но остаются в DOM для курсора */
+  .slider-prev,
+  .slider-next {
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+  }
+
+  .slider,
+  .slider .tn-atom {
+    overflow: visible !important;
+  }
+
+  .pt-stage {
+    position: absolute;
+    inset: 0;
+    /* размеры/радиус = заготовки Zero Block (1920 / 1366 / 1024 / 768 / 320) */
+    --pt-w: 520px;
+    --pt-h: 460px;
+    --pt-radius: 40px;
+    --pt-gap: 16px;
+    /* без scale — размер = заготовка, глубину даёт rotateY + translateZ */
+    --pt-side-scale: 1;
+    --pt-far-scale: 1;
+    --pt-rotate-1: 42deg;
+    --pt-rotate-2: 58deg;
+    --pt-depth-1: -110px;
+    --pt-depth-2: -200px;
+    --pt-dur: 700ms;
+    --pt-flip-dur: 700ms;
+    --pt-ease: cubic-bezier(0.25, 0.1, 0.25, 1);
+    --pt-offset-1: calc(var(--pt-w) * 0.5 + var(--pt-gap) + var(--pt-w) * 0.5);
+    --pt-offset-2: calc(var(--pt-offset-1) + var(--pt-w) * 0.5 + var(--pt-gap) + var(--pt-w) * 0.5);
+    --pt-cur-prev: w-resize;
+    --pt-cur-next: e-resize;
+    perspective: 1200px;
+    perspective-origin: 50% 50%;
+    transform-style: preserve-3d;
+    pointer-events: auto;
+  }
+
+  .pt-stage:not(.pt-ready) { opacity: 0; }
+  .pt-stage.pt-ready {
+    opacity: 1;
+    transition: opacity 0.35s ease;
+  }
+
+  .pt-slide {
+    position: absolute !important;
+    left: 50% !important;
+    top: 50% !important;
+    width: var(--pt-w) !important;
+    height: var(--pt-h) !important;
+    margin: 0 !important;
+    transform: translate3d(-50%, -50%, 0);
+    transform-origin: center center;
+    transform-style: preserve-3d;
+    z-index: 1;
+    pointer-events: auto;
+    will-change: transform;
+    transition: transform var(--pt-dur) var(--pt-ease);
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  .pt-stage:not(.pt-ready) .pt-slide { transition: none !important; }
+  .pt-slide.pt-dragging,
+  .pt-slide.pt-no-trans { transition: none !important; }
+
+  /* --- flip (как у Spotify) --- */
+  .pt-flip {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    border-radius: var(--pt-radius);
+    transform-style: preserve-3d;
+    transition: transform var(--pt-flip-dur) var(--pt-ease);
+  }
+
+  .pt-slide.is-flipped .pt-flip {
+    transform: rotateY(180deg);
+  }
+
+  .pt-face {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: var(--pt-radius);
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+    /* flat — иначе при coverflow rotateY родителя просвечивает вторая сторона */
+    transform-style: flat;
+    overflow: hidden;
+    display: block;
+  }
+
+  .pt-face-front {
+    transform: rotateY(0deg);
+  }
+
+  .pt-face-back {
+    transform: rotateY(180deg);
+  }
+
+  /*
+   * Контент на боковых прячем только после остановки.
+   * Во время pt-motion обе стороны нужны для плавного flip+coverflow.
+   */
+  .pt-slide.is-prev:not(.pt-motion) .pt-face-back,
+  .pt-slide.is-next:not(.pt-motion) .pt-face-back,
+  .pt-slide.is-prev-2:not(.pt-motion) .pt-face-back,
+  .pt-slide.is-next-2:not(.pt-motion) .pt-face-back,
+  .pt-slide.is-hid-l:not(.pt-motion) .pt-face-back,
+  .pt-slide.is-hid-r:not(.pt-motion) .pt-face-back {
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }
+
+  /* на фото-стороне подписи не нужны — активный текст только на .cardN (back) */
+  .pt-face-front .tn-elem[data-elem-type="text"],
+  .pt-face-front .tn-elem[data-elem-type="text"] .tn-atom {
+    opacity: 0 !important;
+    visibility: hidden !important;
+  }
+
+  /* группа = ровно размер слайда (= заготовка на текущем вьюпорте) */
+  .pt-face > .tn-group,
+  .pt-face > .t396__group {
+    position: relative !important;
+    left: auto !important;
+    top: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+    width: 100% !important;
+    height: 100% !important;
+    max-width: none !important;
+    max-height: none !important;
+    margin: 0 !important;
+    transform: none !important;
+    border-radius: var(--pt-radius) !important;
+  }
+
+  .pt-face > .tn-group > .tn-molecule,
+  .pt-face > .t396__group > .tn-molecule,
+  .pt-face > .tn-group > [id^="molecule-"],
+  .pt-face > .t396__group > [id^="molecule-"] {
+    width: 100% !important;
+    height: 100% !important;
+    box-sizing: border-box !important;
+    border-radius: var(--pt-radius) !important;
+  }
+
+  /* убираем opacity:0 / анимации Тильды внутри карточки — текст сразу полный */
+  .pt-face .tn-group,
+  .pt-face .t396__group,
+  .pt-face .tn-molecule,
+  .pt-face [id^="molecule-"],
+  .pt-face .tn-elem,
+  .pt-face .tn-atom {
+    opacity: 1 !important;
+  }
+
+  /* coverflow-позиции — без прозрачности */
+  .pt-slide.is-active {
+    z-index: 5;
+    transform: translate3d(-50%, -50%, 0) rotateY(0deg) scale(1);
+  }
+
+  .pt-slide.is-prev {
+    z-index: 3;
+    transform:
+      translate3d(calc(-50% - var(--pt-offset-1)), -50%, var(--pt-depth-1))
+      rotateY(var(--pt-rotate-1))
+      scale(var(--pt-side-scale));
+  }
+
+  .pt-slide.is-next {
+    z-index: 3;
+    transform:
+      translate3d(calc(-50% + var(--pt-offset-1)), -50%, var(--pt-depth-1))
+      rotateY(calc(var(--pt-rotate-1) * -1))
+      scale(var(--pt-side-scale));
+  }
+
+  .pt-slide.is-prev-2 {
+    z-index: 2;
+    transform:
+      translate3d(calc(-50% - var(--pt-offset-2)), -50%, var(--pt-depth-2))
+      rotateY(var(--pt-rotate-2))
+      scale(var(--pt-far-scale));
+  }
+
+  .pt-slide.is-next-2 {
+    z-index: 2;
+    transform:
+      translate3d(calc(-50% + var(--pt-offset-2)), -50%, var(--pt-depth-2))
+      rotateY(calc(var(--pt-rotate-2) * -1))
+      scale(var(--pt-far-scale));
+  }
+
+  .pt-slide.is-hid-l {
+    z-index: 1;
+    pointer-events: none;
+    transform:
+      translate3d(calc(-50% - var(--pt-offset-2) - var(--pt-w) * 0.5), -50%, -260px)
+      rotateY(70deg)
+      scale(var(--pt-far-scale));
+  }
+
+  .pt-slide.is-hid-r {
+    z-index: 1;
+    pointer-events: none;
+    transform:
+      translate3d(calc(-50% + var(--pt-offset-2) + var(--pt-w) * 0.5), -50%, -260px)
+      rotateY(-70deg)
+      scale(var(--pt-far-scale));
+  }
+
+  /* пагинация: трек/неактивный #EFE8FB, заливка автоплея #8742ee, концы 4px */
+  .cslide4-1,
+  .cslide4-2,
+  .cslide4-3,
+  .cslide4-4,
+  .cslide4-5 {
+    cursor: pointer;
+    overflow: hidden !important;
+    border-radius: 4px !important;
+    background-color: #EFE8FB !important;
+  }
+
+  .slide4-1,
+  .slide4-2,
+  .slide4-3,
+  .slide4-4,
+  .slide4-5 {
+    opacity: 1 !important;
+    border-radius: 4px !important;
+    overflow: hidden !important;
+    position: relative !important;
+    background-color: transparent !important;
+  }
+
+  /* atom Тильды прячем — прогресс рисует .pt-pag-fill */
+  .slide4-1 .tn-atom,
+  .slide4-2 .tn-atom,
+  .slide4-3 .tn-atom,
+  .slide4-4 .tn-atom,
+  .slide4-5 .tn-atom {
+    background-color: transparent !important;
+    background-image: none !important;
+    opacity: 0 !important;
+  }
+
+  .slide4-1 .pt-pag-fill,
+  .slide4-2 .pt-pag-fill,
+  .slide4-3 .pt-pag-fill,
+  .slide4-4 .pt-pag-fill,
+  .slide4-5 .pt-pag-fill {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    bottom: 0 !important;
+    height: 100% !important;
+    width: 100%;
+    border-radius: 4px !important;
+    background-color: #8742ee !important;
+    transform: scaleX(0);
+    transform-origin: left center;
+    pointer-events: none;
+    z-index: 2;
+  }
+
+  /* неактивный: только трек #EFE8FB, без заливки */
+  .cslide4-1:not(.is-on) .pt-pag-fill,
+  .cslide4-2:not(.is-on) .pt-pag-fill,
+  .cslide4-3:not(.is-on) .pt-pag-fill,
+  .cslide4-4:not(.is-on) .pt-pag-fill,
+  .cslide4-5:not(.is-on) .pt-pag-fill {
+    transform: scaleX(0) !important;
+    animation: none !important;
+  }
+
+  /* активный: тот же трек #EFE8FB + фиолетовая заливка */
+  .cslide4-1.is-on,
+  .cslide4-2.is-on,
+  .cslide4-3.is-on,
+  .cslide4-4.is-on,
+  .cslide4-5.is-on {
+    background-color: #EFE8FB !important;
+  }
+
+  .cslide4-1.is-on .slide4-1.pt-pag-run .pt-pag-fill,
+  .cslide4-2.is-on .slide4-2.pt-pag-run .pt-pag-fill,
+  .cslide4-3.is-on .slide4-3.pt-pag-run .pt-pag-fill,
+  .cslide4-4.is-on .slide4-4.pt-pag-run .pt-pag-fill,
+  .cslide4-5.is-on .slide4-5.pt-pag-run .pt-pag-fill {
+    animation: pt-pag-fill var(--pt-autoplay, 5s) linear forwards;
+  }
+
+  .cslide4-1.is-on .slide4-1.pt-pag-run.pt-pag-paused .pt-pag-fill,
+  .cslide4-2.is-on .slide4-2.pt-pag-run.pt-pag-paused .pt-pag-fill,
+  .cslide4-3.is-on .slide4-3.pt-pag-run.pt-pag-paused .pt-pag-fill,
+  .cslide4-4.is-on .slide4-4.pt-pag-run.pt-pag-paused .pt-pag-fill,
+  .cslide4-5.is-on .slide4-5.pt-pag-run.pt-pag-paused .pt-pag-fill {
+    animation-play-state: paused;
+  }
+
+  @keyframes pt-pag-fill {
+    from { transform: scaleX(0); }
+    to { transform: scaleX(1); }
+  }
+
+  .pt-stage.pt-cursor-prev,
+  .pt-stage.pt-cursor-prev .pt-slide {
+    cursor: var(--pt-cur-prev) !important;
+  }
+  .pt-stage.pt-cursor-next,
+  .pt-stage.pt-cursor-next .pt-slide {
+    cursor: var(--pt-cur-next) !important;
+  }
+  .pt-stage.is-grabbing,
+  .pt-stage.is-grabbing .pt-slide {
+    cursor: grabbing !important;
+  }
+
+  /* брейкпоинты = screens Zero Block: 1920 / 1366 / 1024 / 768 / 320 */
+  @media screen and (max-width: 1919px) {
+    .pt-stage {
+      --pt-w: 429px;
+      --pt-h: 380px;
+      --pt-radius: 40px;
+      perspective: 1100px;
+    }
+  }
+
+  @media screen and (max-width: 1365px) {
+    .pt-stage {
+      --pt-w: 482px;
+      --pt-h: 380px;
+      --pt-radius: 32px;
+      --pt-rotate-1: 38deg;
+      --pt-rotate-2: 52deg;
+      perspective: 1000px;
+    }
+  }
+
+  @media screen and (max-width: 1023px) {
+    .pt-stage {
+      --pt-w: 354px;
+      --pt-h: 354px;
+      --pt-radius: 32px;
+      --pt-rotate-1: 32deg;
+      --pt-rotate-2: 46deg;
+      --pt-depth-1: -80px;
+      --pt-depth-2: -150px;
+      perspective: 900px;
+    }
+  }
+
+  @media screen and (max-width: 767px) {
+    .pt-stage {
+      --pt-w: 280px;
+      --pt-h: 240px;
+      --pt-radius: 24px;
+      --pt-rotate-1: 26deg;
+      --pt-rotate-2: 40deg;
+      perspective: 700px;
+    }
+  }
+</style>
+
+<script>
+(function () {
+  'use strict';
+
+  if (window.__ptSpotifySliderV13) return;
+  window.__ptSpotifySliderV13 = true;
+
+  var AUTOPLAY_MS = 5000;
+  var SWIPE_THRESHOLD = 60;
+  var MOVE_MS = 700;
+  var SLIDE_COUNT = 5;
+  var POS_CLASSES = [
+    'is-active', 'is-prev', 'is-next', 'is-prev-2', 'is-next-2', 'is-hid-l', 'is-hid-r'
+  ];
+
+  var active = 0;
+  var slides = [];
+  var stage = null;
+  var animating = false;
+  var autoplayPaused = false;
+  var progressGen = 0;
+  var drag = null;
+  var suppressClick = false;
+  var pagItems = [];
+
+  function q(sel, root) {
+    return (root || document).querySelector(sel);
+  }
+
+  function qa(sel, root) {
+    return Array.prototype.slice.call((root || document).querySelectorAll(sel));
+  }
+
+  function findRec(el) {
+    if (!el) return null;
+    if (el.closest) return el.closest('.r.t-rec');
+    var p = el.parentElement;
+    while (p && !(p.classList && p.classList.contains('t-rec'))) p = p.parentElement;
+    return p;
+  }
+
+  function hideSourceRec(el) {
+    var rec = findRec(el);
+    if (rec) rec.classList.add('pt-card-source');
+  }
+
+  /* копируем scoped CSS Тильды (#rec… → .pt-scope-rec…) */
+  function attachScopedStyles(el, wrap) {
+    var rec = findRec(el);
+    if (!rec || !rec.id) return;
+    var scope = 'pt-scope-' + rec.id;
+    wrap.classList.add(scope);
+    if (document.querySelector('style[data-pt-from="' + rec.id + '"]')) return;
+    var chunks = [];
+    qa('style', rec).forEach(function (st) {
+      if (st.textContent) chunks.push(st.textContent);
+    });
+    if (!chunks.length) return;
+    var s = document.createElement('style');
+    s.setAttribute('data-pt-from', rec.id);
+    s.textContent = chunks.join('\n').split('#' + rec.id).join('.' + scope);
+    document.head.appendChild(s);
+  }
+
+  function mountFace(faceEl, sourceEl) {
+    if (!sourceEl) return;
+    hideSourceRec(sourceEl);
+    attachScopedStyles(sourceEl, faceEl);
+    faceEl.appendChild(sourceEl);
+  }
+
+  function relPos(i) {
+    var n = slides.length;
+    return (i - active + n) % n;
+  }
+
+  function classForRel(rel) {
+    var n = slides.length;
+    if (rel === 0) return 'is-active';
+    var half = Math.floor(n / 2);
+    if (rel <= half) return rel === 1 ? 'is-next' : 'is-next-' + rel;
+    var fromEnd = n - rel;
+    return fromEnd === 1 ? 'is-prev' : 'is-prev-' + fromEnd;
+  }
+
+  function isRightRel(rel, n) {
+    return rel >= 1 && rel <= Math.floor(n / 2);
+  }
+
+  function isLeftRel(rel, n) {
+    return rel > Math.floor(n / 2);
+  }
+
+  function clearPos(slide) {
+    for (var i = 0; i < POS_CLASSES.length; i++) slide.classList.remove(POS_CLASSES[i]);
+  }
+
+  function setPosClass(slide, cls) {
+    for (var i = 0; i < POS_CLASSES.length; i++) {
+      if (POS_CLASSES[i] !== cls) slide.classList.remove(POS_CLASSES[i]);
+    }
+    slide.classList.add(cls);
+  }
+
+  function applyPositions(opts) {
+    opts = opts || {};
+    var n = slides.length;
+    var prevActive = typeof opts.from === 'number' ? opts.from : null;
+    var dir = opts.dir || 0;
+
+    for (var i = 0; i < n; i++) {
+      var slide = slides[i];
+      var rel = relPos(i);
+      var cls = classForRel(rel);
+
+      if (prevActive !== null && dir !== 0) {
+        var oldRel = (i - prevActive + n) % n;
+        var jumping =
+          (isLeftRel(oldRel, n) && isRightRel(rel, n)) ||
+          (isRightRel(oldRel, n) && isLeftRel(rel, n));
+        if (jumping) {
+          slide.classList.add('pt-no-trans');
+          setPosClass(slide, dir > 0 ? 'is-hid-r' : 'is-hid-l');
+          void slide.offsetWidth;
+          slide.classList.remove('pt-no-trans');
+        }
+      }
+
+      setPosClass(slide, cls);
+      /* уход: unflip + coverflow вместе; приход: flip + coverflow вместе */
+      slide.classList.toggle('is-flipped', rel === 0);
+    }
+
+    syncPagination();
+    requestAnimationFrame(function () {
+      restartActiveProgress();
+    });
+  }
+
+  function resetFillEl(fill) {
+    if (!fill) return;
+    fill.style.animation = 'none';
+    fill.style.transform = 'scaleX(0)';
+    void fill.offsetWidth;
+  }
+
+  function syncPagination() {
+    for (var i = 0; i < pagItems.length; i++) {
+      var item = pagItems[i];
+      if (!item || !item.wrap) continue;
+      var on = i === active;
+      item.wrap.classList.toggle('is-on', on);
+      if (!item.bar) continue;
+      if (!on) {
+        item.bar.classList.remove('pt-pag-run', 'pt-pag-paused');
+        resetFillEl(item.fill || item.bar.querySelector('.pt-pag-fill'));
+      }
+    }
+  }
+
+  /* один источник правды: полоска → animationend → смена слайда (без setInterval) */
+  function restartActiveProgress() {
+    progressGen += 1;
+    var gen = progressGen;
+    var item = pagItems[active];
+    if (!item || !item.bar) return;
+    var fill = item.fill || item.bar.querySelector('.pt-pag-fill');
+    item.bar.classList.remove('pt-pag-run', 'pt-pag-paused');
+    resetFillEl(fill);
+    if (fill) {
+      fill.setAttribute('data-pt-gen', String(gen));
+      fill.style.animation = '';
+      fill.style.transform = '';
+    }
+    if (autoplayPaused) return;
+    item.bar.classList.add('pt-pag-run');
+  }
+
+  function stopAutoplay() {
+    autoplayPaused = true;
+    var item = pagItems[active];
+    if (item && item.bar && item.bar.classList.contains('pt-pag-run')) {
+      item.bar.classList.add('pt-pag-paused');
+    }
+  }
+
+  function startAutoplay() {
+    var wasPaused = autoplayPaused;
+    autoplayPaused = false;
+    var item = pagItems[active];
+    if (!item || !item.bar) return;
+    if (wasPaused && item.bar.classList.contains('pt-pag-run')) {
+      item.bar.classList.remove('pt-pag-paused');
+      return;
+    }
+    restartActiveProgress();
+  }
+
+  function onPagFillEnd(e) {
+    if (!e) return;
+    var name = e.animationName || '';
+    if (name && name !== 'pt-pag-fill' && name.indexOf('pt-pag-fill') === -1) return;
+    var fill = e.target;
+    if (!fill || fill.getAttribute('data-pt-gen') !== String(progressGen)) return;
+    if (autoplayPaused || drag || animating) return;
+    go(1);
+  }
+
+  function go(dir) {
+    if (animating || !slides.length) return;
+    animating = true;
+    var from = active;
+    var n = slides.length;
+    active = (active + dir + n) % n;
+
+    for (var i = 0; i < slides.length; i++) {
+      slides[i].classList.add('pt-motion');
+    }
+    applyPositions({ from: from, dir: dir });
+
+    window.setTimeout(function () {
+      for (var j = 0; j < slides.length; j++) {
+        slides[j].classList.remove('pt-motion');
+      }
+      animating = false;
+    }, MOVE_MS + 40);
+  }
+
+  function goTo(index) {
+    if (index === active || animating || index < 0 || index >= slides.length) return;
+    var n = slides.length;
+    var forward = (index - active + n) % n;
+    var backward = (active - index + n) % n;
+    var dir = forward <= backward ? 1 : -1;
+    var steps = Math.min(forward, backward);
+    if (steps <= 1) {
+      go(dir);
+      return;
+    }
+    var left = steps;
+    function step() {
+      if (left <= 0) return;
+      go(dir);
+      left--;
+      if (left > 0) setTimeout(step, MOVE_MS + 80);
+    }
+    step();
+  }
+
+  function sideFromEvent(e) {
+    if (!stage) return 1;
+    var rect = stage.getBoundingClientRect();
+    var x = e.clientX != null ? e.clientX :
+      (e.touches && e.touches[0] ? e.touches[0].clientX : 0);
+    return x < rect.left + rect.width / 2 ? -1 : 1;
+  }
+
+  function setCursorSide(e) {
+    if (!stage || drag) return;
+    var dir = sideFromEvent(e);
+    stage.classList.toggle('pt-cursor-prev', dir < 0);
+    stage.classList.toggle('pt-cursor-next', dir > 0);
+  }
+
+  function onPointerDown(e) {
+    if (animating) return;
+    var point = e.touches ? e.touches[0] : e;
+    drag = { x0: point.clientX, y0: point.clientY, dx: 0, locked: null, moved: false };
+    suppressClick = false;
+    stopAutoplay();
+    if (stage) stage.classList.add('is-grabbing');
+    slides.forEach(function (s) { s.classList.add('pt-dragging'); });
+  }
+
+  function dragTransform(slide, shift) {
+    var t = shift;
+    if (slide.classList.contains('is-active')) {
+      return 'translate3d(calc(-50% + ' + t + 'px), -50%, 0) rotateY(0deg) scale(1)';
+    }
+    if (slide.classList.contains('is-prev')) {
+      return 'translate3d(calc(-50% - var(--pt-offset-1) + ' + (t * 0.55) + 'px), -50%, var(--pt-depth-1)) rotateY(var(--pt-rotate-1)) scale(var(--pt-side-scale))';
+    }
+    if (slide.classList.contains('is-next')) {
+      return 'translate3d(calc(-50% + var(--pt-offset-1) + ' + (t * 0.55) + 'px), -50%, var(--pt-depth-1)) rotateY(calc(var(--pt-rotate-1) * -1)) scale(var(--pt-side-scale))';
+    }
+    if (slide.classList.contains('is-prev-2')) {
+      return 'translate3d(calc(-50% - var(--pt-offset-2) + ' + (t * 0.35) + 'px), -50%, var(--pt-depth-2)) rotateY(var(--pt-rotate-2)) scale(var(--pt-far-scale))';
+    }
+    if (slide.classList.contains('is-next-2')) {
+      return 'translate3d(calc(-50% + var(--pt-offset-2) + ' + (t * 0.35) + 'px), -50%, var(--pt-depth-2)) rotateY(calc(var(--pt-rotate-2) * -1)) scale(var(--pt-far-scale))';
+    }
+    return '';
+  }
+
+  function onPointerMove(e) {
+    if (!drag) {
+      setCursorSide(e);
+      return;
+    }
+    var point = e.touches ? e.touches[0] : e;
+    var dx = point.clientX - drag.x0;
+    var dy = point.clientY - drag.y0;
+
+    if (drag.locked === null && (Math.abs(dx) > 6 || Math.abs(dy) > 6)) {
+      drag.locked = Math.abs(dx) >= Math.abs(dy) ? 'x' : 'y';
+    }
+    if (drag.locked === 'y') return;
+    if (drag.locked === 'x' && e.cancelable) e.preventDefault();
+
+    drag.dx = dx;
+    drag.moved = Math.abs(dx) > 8;
+    if (drag.moved) suppressClick = true;
+
+    var w = stage ? parseFloat(getComputedStyle(stage).getPropertyValue('--pt-w')) || 520 : 520;
+    var shift = Math.max(-w * 0.55, Math.min(w * 0.55, dx));
+    slides.forEach(function (slide) {
+      var t = dragTransform(slide, shift);
+      if (t) slide.style.transform = t;
+    });
+  }
+
+  function clearDragStyles() {
+    slides.forEach(function (s) {
+      s.classList.remove('pt-dragging');
+      s.style.transform = '';
+    });
+    if (stage) stage.classList.remove('is-grabbing');
+  }
+
+  function onPointerUp(e) {
+    if (!drag) return;
+    var dx = drag.dx;
+    var locked = drag.locked;
+    drag = null;
+    clearDragStyles();
+
+    if (locked === 'x' && Math.abs(dx) >= SWIPE_THRESHOLD) {
+      suppressClick = true;
+      go(dx < 0 ? 1 : -1);
+    }
+    if (e && e.type && e.type.indexOf('touch') === -1) setCursorSide(e);
+    startAutoplay();
+  }
+
+  function onStageClick(e) {
+    if (suppressClick) { suppressClick = false; return; }
+    if (animating) return;
+    go(sideFromEvent(e));
+  }
+
+  /* курсор = фиолетовая кнопка Тильды (#8742ee, radius 42) + белая стрелка */
+  var CURSOR_BG = '#8742ee';
+
+  function buttonBgColor(btn) {
+    var atom = (btn && btn.querySelector('.tn-atom')) || btn;
+    if (!atom) return CURSOR_BG;
+    var cs = getComputedStyle(atom);
+    var v = (cs.getPropertyValue('--t396-bgcolor-color') || '').trim();
+    if (v && v !== 'transparent' && v !== 'none' && v.indexOf('rgba(0, 0, 0, 0)') === -1) return v;
+    var bg = cs.backgroundColor;
+    if (bg && bg !== 'transparent' && bg !== 'rgba(0, 0, 0, 0)') return bg;
+    return CURSOR_BG;
+  }
+
+  var ARROW_NEXT =
+    'M8.19542 5.40717C8.52284 4.96267 9.14823 4.86715 9.59288 5.19428L9.59483 5.19623C9.59573 5.1969 9.5972 5.19803 9.59874 5.19916C9.60194 5.20153 9.60662 5.20464 9.61241 5.20893C9.62451 5.21789 9.64239 5.23104 9.66515 5.24799C9.71063 5.28189 9.77679 5.33128 9.86046 5.39448C10.0281 5.52109 10.2669 5.70355 10.5528 5.9267C11.1237 6.37221 11.8879 6.98595 12.6554 7.65229C13.4178 8.31427 14.2062 9.0481 14.8116 9.73334C15.1134 10.0748 15.3913 10.4282 15.5987 10.7724C15.7896 11.0891 16.0001 11.524 16.0001 11.9999C16.0001 12.4761 15.7897 12.9117 15.5987 13.2285C15.3913 13.5725 15.1133 13.9251 14.8116 14.2665C14.2061 14.9518 13.4178 15.6856 12.6554 16.3476C11.8879 17.0139 11.1237 17.6277 10.5528 18.0732C10.2669 18.2963 10.0281 18.4788 9.86046 18.6054C9.77676 18.6686 9.71064 18.718 9.66515 18.7519C9.64237 18.7689 9.62452 18.782 9.61241 18.791C9.60663 18.7952 9.60195 18.7984 9.59874 18.8007C9.59722 18.8018 9.59573 18.803 9.59483 18.8037L9.59386 18.8046L9.59288 18.8056C9.1482 19.1328 8.52186 19.0373 8.19444 18.5927C7.86726 18.148 7.96276 17.5217 8.40733 17.1943L8.41026 17.1923C8.41278 17.1905 8.41669 17.1875 8.42198 17.1835C8.43254 17.1757 8.44876 17.1641 8.46983 17.1484C8.51217 17.1168 8.57517 17.0693 8.65538 17.0087C8.81585 16.8875 9.04598 16.7117 9.32237 16.496C9.87648 16.0636 10.6124 15.4738 11.3448 14.8378C12.0823 14.1976 12.7941 13.5302 13.3136 12.9423C13.5742 12.6473 13.7652 12.3953 13.8858 12.1953C13.9431 12.1003 13.9717 12.0362 13.9864 11.9999C13.9717 11.9637 13.9431 11.8996 13.8858 11.8046C13.7652 11.6045 13.5743 11.3526 13.3136 11.0576C12.7941 10.4697 12.0823 9.80235 11.3448 9.16206C10.6124 8.5261 9.87647 7.93628 9.32237 7.50385C9.04597 7.28814 8.81585 7.11236 8.65538 6.99116C8.57517 6.93057 8.51217 6.88306 8.46983 6.85151C8.44877 6.83581 8.43254 6.82417 8.42198 6.81635C8.4167 6.81244 8.41277 6.80942 8.41026 6.80756L8.40733 6.80561C7.96264 6.47809 7.8679 5.85187 8.19542 5.40717Z';
+  var ARROW_PREV =
+    'M15.8046 5.40717C15.4772 4.96267 14.8518 4.86715 14.4071 5.19428L14.4052 5.19623C14.4043 5.1969 14.4028 5.19803 14.4013 5.19916C14.3981 5.20153 14.3934 5.20464 14.3876 5.20893C14.3755 5.21789 14.3576 5.23104 14.3349 5.24799C14.2894 5.28189 14.2232 5.33128 14.1395 5.39448C13.9719 5.52109 13.7331 5.70355 13.4472 5.9267C12.8763 6.37221 12.1121 6.98595 11.3446 7.65229C10.5822 8.31427 9.79385 9.0481 9.18837 9.73334C8.88663 10.0748 8.60874 10.4282 8.40126 10.7724C8.21039 11.0891 7.99991 11.524 7.99989 11.9999C7.99989 12.4761 8.21033 12.9117 8.40126 13.2285C8.60872 13.5725 8.88671 13.9251 9.18837 14.2665C9.79386 14.9518 10.5822 15.6856 11.3446 16.3476C12.1121 17.0139 12.8763 17.6277 13.4472 18.0732C13.7331 18.2963 13.9719 18.4788 14.1395 18.6054C14.2232 18.6686 14.2894 18.718 14.3349 18.7519C14.3576 18.7689 14.3755 18.782 14.3876 18.791C14.3934 18.7952 14.3981 18.7984 14.4013 18.8007C14.4028 18.8018 14.4043 18.803 14.4052 18.8037L14.4061 18.8046L14.4071 18.8056C14.8518 19.1328 15.4781 19.0373 15.8056 18.5927C16.1327 18.148 16.0372 17.5217 15.5927 17.1943L15.5897 17.1923C15.5872 17.1905 15.5833 17.1875 15.578 17.1835C15.5675 17.1757 15.5512 17.1641 15.5302 17.1484C15.4878 17.1168 15.4248 17.0693 15.3446 17.0087C15.1842 16.8875 14.954 16.7117 14.6776 16.496C14.1235 16.0636 13.3876 15.4738 12.6552 14.8378C11.9177 14.1976 11.2059 13.5302 10.6864 12.9423C10.4258 12.6473 10.2348 12.3953 10.1142 12.1953C10.0569 12.1003 10.0283 12.0362 10.0136 11.9999C10.0283 11.9637 10.0569 11.8996 10.1142 11.8046C10.2348 11.6045 10.4257 11.3526 10.6864 11.0576C11.2059 10.4697 11.9177 9.80235 12.6552 9.16206C13.3876 8.5261 14.1235 7.93628 14.6776 7.50385C14.954 7.28814 15.1842 7.11236 15.3446 6.99116C15.4248 6.93057 15.4878 6.88306 15.5302 6.85151C15.5512 6.83581 15.5675 6.82417 15.578 6.81635C15.5833 6.81244 15.5872 6.80942 15.5897 6.80756L15.5927 6.80561C16.0374 6.47809 16.1321 5.85187 15.8046 5.40717Z';
+
+  function roundRectPath(ctx, x, y, w, h, r) {
+    var rr = Math.min(r, w / 2, h / 2);
+    ctx.beginPath();
+    ctx.moveTo(x + rr, y);
+    ctx.arcTo(x + w, y, x + w, y + h, rr);
+    ctx.arcTo(x + w, y + h, x, y + h, rr);
+    ctx.arcTo(x, y + h, x, y, rr);
+    ctx.arcTo(x, y, x + w, y, rr);
+    ctx.closePath();
+  }
+
+  function cursorSizeForViewport() {
+    return window.matchMedia('(max-width: 767px)').matches ? 32 : 56;
+  }
+
+  function composeButtonCursor(sel, cssVar, fallback, isNext) {
+    if (!stage) return;
+    var btn = q(sel);
+    var bg = buttonBgColor(btn) || CURSOR_BG;
+    var size = cursorSizeForViewport();
+    var hot = Math.round(size / 2);
+    /* как у кнопки Тильды: padding 16 при 56 → иконка 24; radius 42 */
+    var pad = Math.round(size * (16 / 56));
+    var radius = Math.round(size * (42 / 56));
+    var d = isNext ? ARROW_NEXT : ARROW_PREV;
+
+    var canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    var ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, size, size);
+    ctx.fillStyle = bg;
+    roundRectPath(ctx, 0, 0, size, size, radius);
+    ctx.fill();
+
+    ctx.save();
+    ctx.translate(pad, pad);
+    ctx.scale((size - pad * 2) / 24, (size - pad * 2) / 24);
+    ctx.fillStyle = '#ffffff';
+    try {
+      ctx.fill(new Path2D(d));
+    } catch (err) {
+      ctx.beginPath();
+      if (isNext) {
+        ctx.moveTo(8, 5); ctx.lineTo(16, 12); ctx.lineTo(8, 19); ctx.closePath();
+      } else {
+        ctx.moveTo(16, 5); ctx.lineTo(8, 12); ctx.lineTo(16, 19); ctx.closePath();
+      }
+      ctx.fill();
+    }
+    ctx.restore();
+
+    var url = canvas.toDataURL('image/png');
+    stage.style.setProperty(cssVar, 'url("' + url + '") ' + hot + ' ' + hot + ', ' + fallback);
+  }
+
+  function applyCursorsFromButtons() {
+    var prev = q('.slider-prev');
+    var next = q('.slider-next');
+    var restore = [];
+    [prev, next].forEach(function (el) {
+      if (!el) return;
+      restore.push({
+        el: el,
+        opacity: el.style.getPropertyValue('opacity'),
+        visibility: el.style.getPropertyValue('visibility'),
+        display: el.style.getPropertyValue('display')
+      });
+      el.style.setProperty('opacity', '1', 'important');
+      el.style.setProperty('visibility', 'visible', 'important');
+      el.style.setProperty('display', 'block', 'important');
+    });
+
+    composeButtonCursor('.slider-prev', '--pt-cur-prev', 'w-resize', false);
+    composeButtonCursor('.slider-next', '--pt-cur-next', 'e-resize', true);
+
+    restore.forEach(function (r) {
+      if (r.opacity) r.el.style.setProperty('opacity', r.opacity);
+      else r.el.style.removeProperty('opacity');
+      if (r.visibility) r.el.style.setProperty('visibility', r.visibility);
+      else r.el.style.removeProperty('visibility');
+      if (r.display) r.el.style.setProperty('display', r.display);
+      else r.el.style.removeProperty('display');
+    });
+  }
+
+  /* размеры слайда жёстко по брейкпоинтам Тильды (не из offset — он может схлопнуться) */
+  function tildaSlideMetrics() {
+    var w = window.innerWidth || document.documentElement.clientWidth || 1920;
+    if (w <= 767) return { w: 280, h: 240, r: 24 };
+    if (w <= 1023) return { w: 354, h: 354, r: 32 };
+    if (w <= 1365) return { w: 482, h: 380, r: 32 };
+    if (w <= 1919) return { w: 429, h: 380, r: 40 };
+    return { w: 520, h: 460, r: 40 };
+  }
+
+  function syncSlideSizeFromCards() {
+    if (!stage) return;
+    var m = tildaSlideMetrics();
+    stage.style.setProperty('--pt-w', m.w + 'px');
+    stage.style.setProperty('--pt-h', m.h + 'px');
+    stage.style.setProperty('--pt-radius', m.r + 'px');
+  }
+
+  function ensurePagFill(bar) {
+    if (!bar) return null;
+    var fill = bar.querySelector('.pt-pag-fill');
+    if (!fill) {
+      fill = document.createElement('span');
+      fill.className = 'pt-pag-fill';
+      bar.appendChild(fill);
+    }
+    if (!fill._ptPagBound) {
+      fill._ptPagBound = true;
+      fill.addEventListener('animationend', onPagFillEnd);
+    }
+    return fill;
+  }
+
+  function bindPagination() {
+    pagItems = [];
+    for (var n = 1; n <= SLIDE_COUNT; n++) {
+      var wrap = q('.cslide4-' + n);
+      var bar = q('.slide4-' + n);
+      var fill = ensurePagFill(bar);
+      pagItems.push({ wrap: wrap, bar: bar, fill: fill });
+      if (!wrap) continue;
+      (function (idx) {
+        wrap.addEventListener('click', function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+          autoplayPaused = false;
+          goTo(idx);
+          startAutoplay();
+        });
+      })(n - 1);
+    }
+    if (stage) {
+      document.documentElement.style.setProperty('--pt-autoplay', (AUTOPLAY_MS / 1000) + 's');
+    }
+  }
+
+  function bindInteractions() {
+    if (!stage) return;
+    stage.addEventListener('mousedown', onPointerDown);
+    window.addEventListener('mousemove', onPointerMove);
+    window.addEventListener('mouseup', onPointerUp);
+    stage.addEventListener('touchstart', onPointerDown, { passive: true });
+    stage.addEventListener('touchmove', onPointerMove, { passive: false });
+    stage.addEventListener('touchend', onPointerUp);
+    stage.addEventListener('touchcancel', onPointerUp);
+    stage.addEventListener('mousemove', setCursorSide);
+    stage.addEventListener('click', onStageClick);
+    stage.addEventListener('mouseleave', function () {
+      stage.classList.remove('pt-cursor-prev', 'pt-cursor-next');
+      if (!drag) startAutoplay();
+    });
+    stage.addEventListener('mouseenter', stopAutoplay);
+  }
+
+  function buildSlide(n) {
+    var content = q('.card' + n);
+    var image = q('.card' + n + '-img');
+    if (!content && !image) return null;
+
+    var slide = document.createElement('div');
+    slide.className = 'pt-slide';
+    slide.setAttribute('data-pt-index', String(n - 1));
+
+    var flip = document.createElement('div');
+    flip.className = 'pt-flip';
+
+    /* фронт = оборотная картинка; бэк = контент (активная сторона) */
+    var faceFront = document.createElement('div');
+    faceFront.className = 'pt-face pt-face-front';
+    var faceBack = document.createElement('div');
+    faceBack.className = 'pt-face pt-face-back';
+
+    if (image) mountFace(faceFront, image);
+    if (content) mountFace(faceBack, content);
+
+    /* если картинки нет — на фронте тоже контент (без пустого слайда) */
+    if (!image && content) {
+      var cloneWrap = document.createElement('div');
+      cloneWrap.style.cssText = 'width:100%;height:100%;';
+      cloneWrap.innerHTML = content.innerHTML;
+      faceFront.appendChild(cloneWrap);
+    }
+
+    flip.appendChild(faceFront);
+    flip.appendChild(faceBack);
+    slide.appendChild(flip);
+    return slide;
+  }
+
+  function build() {
+    var frame = q('.slider');
+    if (!frame) return;
+
+    var host = frame.querySelector('.tn-atom') || frame;
+    if (!host.style.position) host.style.position = 'relative';
+    host.style.width = '100%';
+    host.style.height = '100%';
+
+    stage = document.createElement('div');
+    stage.className = 'pt-stage';
+    host.appendChild(stage);
+
+    for (var n = 1; n <= SLIDE_COUNT; n++) {
+      var slide = buildSlide(n);
+      if (!slide) continue;
+      stage.appendChild(slide);
+      slides.push(slide);
+    }
+
+    if (slides.length < 2) return;
+
+    applyCursorsFromButtons();
+    bindPagination();
+    applyPositions();
+    bindInteractions();
+
+    syncSlideSizeFromCards();
+    window.addEventListener('resize', function () {
+      syncSlideSizeFromCards();
+      applyCursorsFromButtons();
+    });
+
+    requestAnimationFrame(function () {
+      syncSlideSizeFromCards();
+      stage.classList.add('pt-ready');
+      startAutoplay();
+    });
+  }
+
+  function boot() {
+    if (document.querySelector('.pt-stage')) return;
+    build();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function () {
+      setTimeout(boot, 350);
+    });
+  } else {
+    setTimeout(boot, 350);
+  }
+
+  setTimeout(function () {
+    if (!document.querySelector('.pt-stage')) boot();
+  }, 1400);
+})();
+</script>
