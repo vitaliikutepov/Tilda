@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Inactive accordion — Tilda demo</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: #212228;
+      color: #fff;
+    }
+    .page {
+      max-width: 1600px;
+      margin: 0 auto;
+      padding: 40px 24px 80px;
+    }
+    h1 {
+      font-size: 20px;
+      font-weight: 600;
+      margin: 0 0 8px;
+    }
+    .note {
+      color: #909eaf;
+      font-size: 14px;
+      margin: 0 0 28px;
+      max-width: 720px;
+      line-height: 1.45;
+    }
+    .stack { display: flex; flex-direction: column; gap: 8px; }
+
+    .t396__artboard {
+      position: relative;
+      height: 120px;
+    }
+    .t396__carrier,
+    .t396__filter { height: 100%; }
+    .t396__artboard > .tn-group {
+      height: 100%;
+    }
+
+    .tn-molecule {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      column-gap: 40px;
+      height: 100%;
+      padding: 28px 60px;
+      border-radius: 16px;
+      background: #0a0a0c;
+      cursor: pointer;
+    }
+
+    .tn-group[data-group-id="icon-text"] .tn-molecule {
+      padding: 0;
+      background: transparent;
+      border-radius: 0;
+      column-gap: 16px;
+      justify-content: flex-start;
+      cursor: inherit;
+    }
+    .tn-group[data-group-id="icons"] .tn-molecule {
+      padding: 0;
+      background: transparent;
+      border-radius: 0;
+      width: 40px;
+      height: 40px;
+      justify-content: center;
+      cursor: inherit;
+    }
+
+    [data-elem-type="image"] img {
+      width: 64px;
+      height: 64px;
+      display: block;
+      border-radius: 12px;
+    }
+    [data-elem-type="text"] .tn-atom {
+      font-size: 32px;
+      font-weight: 600;
+      line-height: 1.2;
+    }
+    [data-elem-type="text"] .muted { color: #909eaf; }
+
+    [data-elem-type="button"] {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      border: 1px solid rgba(255,255,255,0.12);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      line-height: 1;
+    }
+    .minus { display: none; }
+    .is-open .minus { display: flex; }
+    .is-open .plus { display: none; }
+
+    .panel {
+      display: none;
+      padding: 8px 60px 28px;
+      color: #c5ccd6;
+      font-size: 16px;
+      line-height: 1.5;
+    }
+    .is-open + .panel { display: block; }
+
+    @media screen and (max-width: 1199px) {
+      .tn-molecule { padding: 20px 40px; }
+      [data-elem-type="text"] .tn-atom { font-size: 24px; }
+      .t396__artboard { height: 104px; }
+    }
+    @media screen and (max-width: 767px) {
+      .page { padding: 24px 16px 60px; }
+      .t396__artboard { height: 72px; }
+      .tn-molecule {
+        padding: 16px;
+        border-radius: 12px;
+        column-gap: 16px;
+      }
+      [data-elem-type="image"] img { width: 40px; height: 40px; }
+      [data-elem-type="text"] .tn-atom { font-size: 16px; }
+      [data-elem-type="button"] { width: 32px; height: 32px; font-size: 18px; }
+      .panel { padding: 8px 16px 20px; font-size: 14px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <h1>Неактивные аккордеоны направлений</h1>
+    <p class="note">
+      В <code>INACTIVE_IDS</code> сейчас <code>rec3084349501</code> (Кибербезопасность).
+      Этот аккордеон затемнён, со стикером, без плюса/минуса и не раскрывается.
+      Первые два кликабельны. Сузьте окно ниже 768px, чтобы увидеть стикер под текстом.
+    </p>
+
+    <div class="stack">
+      <div id="rec2914914801" class="r t-rec" data-record-type="396">
+        <div class="t396">
+          <div class="t396__artboard">
+            <div class="t396__carrier"></div>
+            <div class="t396__filter"></div>
+            <div class="tn-group t396__group">
+              <div class="tn-molecule" data-demo-toggle>
+                <div class="tn-group" data-group-id="icon-text">
+                  <div class="tn-molecule">
+                    <div class="t396__elem tn-elem" data-elem-type="image">
+                      <div class="tn-atom">
+                        <img alt="" src="https://static.tildacdn.com/tild3238-3030-4732-a535-626632373033/Frame_2147238858.png" />
+                      </div>
+                    </div>
+                    <div class="t396__elem tn-elem" data-elem-type="text">
+                      <div class="tn-atom">Разработка <span class="muted">Python</span></div>
+                    </div>
+                  </div>
+                </div>
+                <div class="tn-group" data-group-id="icons">
+                  <div class="tn-molecule">
+                    <div class="t396__elem tn-elem plus" data-elem-type="button">+</div>
+                    <div class="t396__elem tn-elem minus" data-elem-type="button">−</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="panel">Контент направления Python. Этот аккордеон активен.</div>
+
+      <div id="rec2915718001" class="r t-rec" data-record-type="396">
+        <div class="t396">
+          <div class="t396__artboard">
+            <div class="t396__carrier"></div>
+            <div class="t396__filter"></div>
+            <div class="tn-group t396__group">
+              <div class="tn-molecule" data-demo-toggle>
+                <div class="tn-group" data-group-id="icon-text">
+                  <div class="tn-molecule">
+                    <div class="t396__elem tn-elem" data-elem-type="image">
+                      <div class="tn-atom">
+                        <img alt="" src="https://static.tildacdn.com/tild3238-3030-4732-a535-626632373033/Frame_2147238858.png" />
+                      </div>
+                    </div>
+                    <div class="t396__elem tn-elem" data-elem-type="text">
+                      <div class="tn-atom">Тестирование <span class="muted">QA</span></div>
+                    </div>
+                  </div>
+                </div>
+                <div class="tn-group" data-group-id="icons">
+                  <div class="tn-molecule">
+                    <div class="t396__elem tn-elem plus" data-elem-type="button">+</div>
+                    <div class="t396__elem tn-elem minus" data-elem-type="button">−</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="panel">Контент направления QA. Этот аккордеон активен.</div>
+
+      <div id="rec3084349501" class="r t-rec" data-record-type="396">
+        <div class="t396">
+          <div class="t396__artboard">
+            <div class="t396__carrier"></div>
+            <div class="t396__filter"></div>
+            <div class="tn-group t396__group">
+              <div class="tn-molecule" data-demo-toggle>
+                <div class="tn-group" data-group-id="icon-text">
+                  <div class="tn-molecule">
+                    <div class="t396__elem tn-elem" data-elem-type="image">
+                      <div class="tn-atom">
+                        <img alt="" src="https://static.tildacdn.com/tild3238-3030-4732-a535-626632373033/Frame_2147238858.png" />
+                      </div>
+                    </div>
+                    <div class="t396__elem tn-elem" data-elem-type="text">
+                      <div class="tn-atom">Кибербезопасность <span class="muted">Продуктовая экспертиза (PT Sandbox)</span></div>
+                    </div>
+                  </div>
+                </div>
+                <div class="tn-group" data-group-id="icons">
+                  <div class="tn-molecule">
+                    <div class="t396__elem tn-elem plus" data-elem-type="button">+</div>
+                    <div class="t396__elem tn-elem minus" data-elem-type="button">−</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="panel">Этот контент не должен открываться: блок неактивен.</div>
+    </div>
+  </div>
+
+  <div id="embed-slot"></div>
+  <script>
+    document.querySelectorAll('[data-demo-toggle]').forEach(function (card) {
+      card.addEventListener('click', function () {
+        card.classList.toggle('is-open');
+      });
+    });
+
+    fetch('tilda-embed.html')
+      .then(function (r) { return r.text(); })
+      .then(function (html) {
+        var slot = document.getElementById('embed-slot');
+        var doc = new DOMParser().parseFromString(html, 'text/html');
+        Array.prototype.forEach.call(doc.querySelectorAll('style, script'), function (node) {
+          var clone = document.createElement(node.tagName.toLowerCase());
+          clone.textContent = node.textContent;
+          slot.appendChild(clone);
+        });
+      })
+      .catch(function (err) {
+        document.body.insertAdjacentHTML(
+          'beforeend',
+          '<p style="padding:20px;color:#c00">Не удалось загрузить tilda-embed.html: откройте demo.html через локальный сервер.</p>'
+        );
+        console.error(err);
+      });
+  </script>
+</body>
+</html>

@@ -1,0 +1,330 @@
+<!-- ============================================================
+     Неактивные аккордеоны направлений (Tilda Zero Block)
+
+     Страница: https://pt-start.ptsecurity.com/fast-track
+
+     Как подключить:
+     1. В INACTIVE_IDS ниже перечислите id блоков-шапок аккордеона
+        через запятую (с # или без). Классы в Тильде задавать не нужно.
+     2. Вставьте весь этот файл в HTML-элемент Тильды
+        (в настройки страницы или отдельный HTML-блок ниже аккордеонов).
+
+     Что делает скрипт для каждого id:
+     - перекрывает карточку полупрозрачным #212228 (50%) по всей
+       динамической высоте и блокирует клик (аккордеон не раскроется);
+     - прячет кнопки плюс/минус (opacity: 0);
+     - до 768px: увеличивает нижний паддинг карточки и ставит стикер
+       под текстом заголовка;
+     - от 768px: стикер справа, на 10px выходит за правый край карточки.
+============================================================ -->
+
+<style>
+  .pts-acc-inactive,
+  .pts-acc-inactive .t396__artboard,
+  .pts-acc-inactive .t396__filter,
+  .pts-acc-inactive .t396__carrier,
+  .pts-acc-inactive .tn-group,
+  .pts-acc-inactive .tn-molecule {
+    overflow: visible !important;
+  }
+
+  .pts-acc-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(33, 34, 40, 0.5);
+    border-radius: inherit;
+    z-index: 20;
+    cursor: default;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  .pts-acc-sticker {
+    position: absolute;
+    z-index: 21;
+    pointer-events: none;
+    display: block;
+    height: auto;
+    max-width: none;
+  }
+
+  .pts-acc-icon {
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }
+</style>
+
+<script>
+(function () {
+  'use strict';
+
+  if (window.__ptsAccInactiveInit) return;
+  window.__ptsAccInactiveInit = true;
+
+  /* ==================== НАСТРОЙКИ ==================== */
+
+  /*
+    Id шапок аккордеона (Zero Block), которые должны быть неактивны.
+    Через запятую, с # или без. Классы в Тильде задавать не нужно.
+
+    Примеры на /fast-track:
+      rec2914914801 — Разработка Python
+      rec2915718001 — Тестирование QA
+      rec3084349501 — Кибербезопасность
+  */
+  var INACTIVE_IDS = 'rec3084349501';
+
+  var STICKER_SRC = 'https://static.tildacdn.com/tild3639-3431-4430-a264-316433346261/Group_2085662084_1.svg';
+  var STICKER_W = 475;
+  var STICKER_H = 83;
+  var STICKER_OUTSET = 10; /* насколько стикер выходит за правый край от 768 */
+  var MOBILE_MAX = 767;    /* «до 768»: стикер под текстом */
+  var STICKER_GAP = 8;     /* зазор между строкой заголовка и стикером на мобиле */
+
+  /* =================================================== */
+
+  var recs = [];
+  var layoutLock = false;
+
+  function q(sel, root) {
+    return (root || document).querySelector(sel);
+  }
+
+  function qa(sel, root) {
+    return Array.prototype.slice.call((root || document).querySelectorAll(sel));
+  }
+
+  function isMobile() {
+    return window.innerWidth <= MOBILE_MAX;
+  }
+
+  function parseIds(str) {
+    return String(str || '')
+      .split(/[,;\s]+/)
+      .map(function (s) { return s.replace(/^#/, '').trim(); })
+      .filter(Boolean);
+  }
+
+  function findRec(id) {
+    return document.getElementById(id);
+  }
+
+  /* Карточка аккордеона — внешняя молекула блока, без привязки к plus/content */
+  function findCard(rec) {
+    if (!rec) return null;
+    return q('.tn-molecule', rec) || q('.t396__artboard', rec) || rec;
+  }
+
+  function findButtons(rec) {
+    return qa('[data-elem-type="button"]', rec);
+  }
+
+  function stopEvent(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+  }
+
+  function ensureUi(rec) {
+    var card = findCard(rec);
+    if (!card) return null;
+
+    if (!rec._ptsAccBound) {
+      rec._ptsAccBound = true;
+      rec.classList.add('pts-acc-inactive');
+      ['click', 'pointerdown', 'touchstart'].forEach(function (type) {
+        rec.addEventListener(type, stopEvent, true);
+      });
+    }
+
+    findButtons(rec).forEach(function (btn) {
+      btn.classList.add('pts-acc-icon');
+    });
+
+    var overlay = q('.pts-acc-overlay', card);
+    if (!overlay) {
+      overlay = document.createElement('div');
+      overlay.className = 'pts-acc-overlay';
+      overlay.setAttribute('aria-hidden', 'true');
+      card.appendChild(overlay);
+    }
+
+    var sticker = q('.pts-acc-sticker', card);
+    if (!sticker) {
+      sticker = document.createElement('img');
+      sticker.className = 'pts-acc-sticker';
+      sticker.src = STICKER_SRC;
+      sticker.alt = '';
+      sticker.setAttribute('aria-hidden', 'true');
+      card.appendChild(sticker);
+    }
+
+    if (card.style.position !== 'absolute' && card.style.position !== 'fixed') {
+      var pos = window.getComputedStyle(card).position;
+      if (pos === 'static') card.style.position = 'relative';
+    }
+
+    return { rec: rec, card: card, overlay: overlay, sticker: sticker };
+  }
+
+  function heightTargets(rec) {
+    var list = qa('.t396__artboard, .t396__filter, .t396__carrier', rec);
+    var group = q('.t396__artboard > .tn-group, .t396__artboard > .t396__group', rec);
+    if (group) list.push(group);
+    return list;
+  }
+
+  function clearHeights(rec) {
+    heightTargets(rec).forEach(function (el) {
+      el.style.removeProperty('height');
+      delete el.dataset.ptsExtra;
+    });
+    var card = findCard(rec);
+    if (card) card.style.removeProperty('padding-bottom');
+  }
+
+  function applyExtraHeight(rec, extra) {
+    if (extra <= 0) {
+      clearHeights(rec);
+      return;
+    }
+    heightTargets(rec).forEach(function (el) {
+      var prev = parseFloat(el.dataset.ptsExtra || '0') || 0;
+      if (prev === extra) return;
+      var base = el.offsetHeight - prev;
+      if (base < 0) base = el.offsetHeight;
+      el.style.setProperty('height', (base + extra) + 'px', 'important');
+      el.dataset.ptsExtra = String(extra);
+    });
+  }
+
+  function stickerBox(card) {
+    var cardRect = card.getBoundingClientRect();
+    var text = q('[data-elem-type="text"]', card);
+    var textRect = text ? text.getBoundingClientRect() : null;
+    var cs = window.getComputedStyle(card);
+    var padRight = parseFloat(cs.paddingRight) || 16;
+    var padBottom = parseFloat(cs.paddingTop) || 16;
+    var left = textRect ? Math.max(0, textRect.left - cardRect.left) : padBottom;
+    var maxW = Math.max(80, cardRect.width - left - padRight);
+    var width = Math.min(STICKER_W, maxW);
+    var height = width * (STICKER_H / STICKER_W);
+    return {
+      left: left,
+      width: width,
+      height: height,
+      padBottom: padBottom
+    };
+  }
+
+  function placeDesktop(sticker) {
+    sticker.style.left = 'auto';
+    sticker.style.right = -STICKER_OUTSET + 'px';
+    sticker.style.top = '50%';
+    sticker.style.bottom = 'auto';
+    sticker.style.width = STICKER_W + 'px';
+    sticker.style.transform = 'translateY(-50%)';
+  }
+
+  function placeMobile(sticker, box) {
+    sticker.style.left = box.left + 'px';
+    sticker.style.right = 'auto';
+    sticker.style.top = 'auto';
+    sticker.style.bottom = box.padBottom + 'px';
+    sticker.style.width = box.width + 'px';
+    sticker.style.transform = 'none';
+  }
+
+  function layout(rec) {
+    var ui = ensureUi(rec);
+    if (!ui || layoutLock) return;
+
+    layoutLock = true;
+    try {
+      if (isMobile()) {
+        var box = stickerBox(ui.card);
+        var extra = Math.ceil(STICKER_GAP + box.height);
+        var cs = window.getComputedStyle(ui.card);
+        var basePad = parseFloat(cs.paddingTop) || 16;
+        ui.card.style.setProperty('padding-bottom', (basePad + extra) + 'px', 'important');
+        applyExtraHeight(rec, extra);
+        placeMobile(ui.sticker, box);
+      } else {
+        clearHeights(rec);
+        placeDesktop(ui.sticker);
+      }
+    } finally {
+      layoutLock = false;
+    }
+  }
+
+  function layoutAll() {
+    recs.forEach(layout);
+  }
+
+  function init() {
+    recs = parseIds(INACTIVE_IDS).map(findRec).filter(Boolean);
+    if (!recs.length) return;
+
+    recs.forEach(function (rec) {
+      ensureUi(rec);
+      layout(rec);
+    });
+
+    var currentMobile = isMobile();
+    var resizeTimer = null;
+
+    function onResize() {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(function () {
+        var nowMobile = isMobile();
+        if (nowMobile !== currentMobile) {
+          currentMobile = nowMobile;
+          recs.forEach(clearHeights);
+          setTimeout(layoutAll, 50);
+          setTimeout(layoutAll, 400);
+        } else {
+          layoutAll();
+        }
+      }, 120);
+    }
+
+    window.addEventListener('resize', onResize);
+    window.addEventListener('orientationchange', onResize);
+
+    if (typeof ResizeObserver === 'function') {
+      recs.forEach(function (rec) {
+        var card = findCard(rec);
+        if (!card) return;
+        var ro = new ResizeObserver(function () {
+          layout(rec);
+        });
+        ro.observe(card);
+      });
+    }
+  }
+
+  function waitAndInit() {
+    var ids = parseIds(INACTIVE_IDS);
+    if (!ids.length) return;
+    var started = Date.now();
+    (function poll() {
+      var ready = ids.some(function (id) {
+        var rec = findRec(id);
+        return rec && findCard(rec);
+      });
+      if (ready || Date.now() - started > 2500) {
+        init();
+        return;
+      }
+      if (Date.now() - started < 20000) setTimeout(poll, 100);
+    })();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', waitAndInit);
+  } else {
+    waitAndInit();
+  }
+})();
+</script>
