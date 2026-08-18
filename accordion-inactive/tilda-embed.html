@@ -19,6 +19,11 @@
 ============================================================ -->
 
 <style>
+  .pts-acc-inactive {
+    position: relative;
+    z-index: 3;
+    overflow: visible !important;
+  }
   .pts-acc-inactive,
   .pts-acc-inactive .t396__artboard,
   .pts-acc-inactive .t396__filter,
@@ -155,8 +160,12 @@
       sticker.className = 'pts-acc-sticker';
       sticker.src = STICKER_SRC;
       sticker.alt = '';
+      sticker.draggable = false;
       sticker.setAttribute('aria-hidden', 'true');
       card.appendChild(sticker);
+    }
+
+    card.style.cursor = 'default';
     }
 
     if (card.style.position !== 'absolute' && card.style.position !== 'fixed') {
