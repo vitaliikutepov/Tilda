@@ -29,7 +29,8 @@
       max-width: 720px;
       line-height: 1.45;
     }
-    .stack { display: flex; flex-direction: column; gap: 8px; }
+    .stack { display: flex; flex-direction: column; gap: 0; }
+    .r { padding-bottom: 0; }
 
     .t396__artboard {
       position: relative;
@@ -133,9 +134,9 @@
   <div class="page">
     <h1>Неактивные аккордеоны направлений</h1>
     <p class="note">
-      В <code>INACTIVE_IDS</code> сейчас <code>rec3084349501</code> (Кибербезопасность).
-      Этот аккордеон затемнён, со стикером 250px, без плюса/минуса и не раскрывается.
-      Первые два кликабельны. Сузьте окно ниже 768px, чтобы увидеть стикер под текстом.
+      В демо неактивны Python (<code>rec2914914801</code>, короткая шапка 72px) и
+      Кибербезопасность. На мобилке нижние 56px не должны наезжать на следующий аккордеон.
+      QA кликабелен. Сузьте окно ниже 768px.
     </p>
 
     <div class="stack">
@@ -248,6 +249,10 @@
     fetch('tilda-embed.html')
       .then(function (r) { return r.text(); })
       .then(function (html) {
+        html = html.replace(
+          /var INACTIVE_IDS = '[^']*'/,
+          "var INACTIVE_IDS = 'rec2914914801, rec3084349501'"
+        );
         var slot = document.getElementById('embed-slot');
         var doc = new DOMParser().parseFromString(html, 'text/html');
         Array.prototype.forEach.call(doc.querySelectorAll('style, script'), function (node) {

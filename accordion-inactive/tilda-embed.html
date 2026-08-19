@@ -13,10 +13,23 @@
 <style>
   .pts-acc-inactive {
     position: relative;
-    z-index: 3;
     overflow: visible !important;
+    /* z-index хоста Тильды не должен рисовать стикер поверх следующего rec */
+    isolation: isolate;
   }
 
+  /* На мобилке занимает место в потоке между rec, чтобы короткая шапка не наезжала */
+  .pts-acc-spacer {
+    display: none;
+    width: 100%;
+    height: 0;
+    pointer-events: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  .pts-acc-inactive .t396,
   .pts-acc-inactive .t396__artboard,
   .pts-acc-host,
   .pts-acc-card {
@@ -25,7 +38,6 @@
 
   .pts-acc-host {
     position: relative !important;
-    z-index: 5;
   }
 
   .pts-acc-inactive .t396__filter {
@@ -84,8 +96,9 @@
 
   /* мобилка: +56px чёрного снизу, стикер по центру в этой полосе */
   @media screen and (max-width: 767px) {
-    .pts-acc-inactive {
-      margin-bottom: 56px;
+    .pts-acc-spacer {
+      display: block;
+      height: 56px;
     }
 
     .pts-acc-card {
@@ -196,6 +209,16 @@
       sticker.className = 'pts-acc-sticker';
       sticker.setAttribute('aria-hidden', 'true');
       host.appendChild(sticker);
+    }
+
+    if (rec.parentNode) {
+      var next = rec.nextElementSibling;
+      if (!next || !next.classList.contains('pts-acc-spacer')) {
+        var spacer = document.createElement('div');
+        spacer.className = 'pts-acc-spacer';
+        spacer.setAttribute('aria-hidden', 'true');
+        rec.parentNode.insertBefore(spacer, rec.nextSibling);
+      }
     }
 
     if (!rec._ptsAccBound) {
