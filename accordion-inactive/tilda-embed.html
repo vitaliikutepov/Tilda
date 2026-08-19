@@ -14,12 +14,23 @@
   .pts-acc-inactive {
     position: relative;
     overflow: visible !important;
+    /* z-index хоста Тильды не должен рисовать стикер поверх следующего rec */
+    isolation: isolate;
+  }
+
+  /* На мобилке занимает место в потоке между rec, чтобы короткая шапка не наезжала */
+  .pts-acc-spacer {
+    display: none;
+    width: 100%;
+    height: 0;
+    pointer-events: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
   }
 
   .pts-acc-inactive .t396,
   .pts-acc-inactive .t396__artboard,
-  .pts-acc-inactive .t396__carrier,
-  .pts-acc-inactive .t396__filter,
   .pts-acc-host,
   .pts-acc-card {
     overflow: visible !important;
@@ -48,7 +59,7 @@
     pointer-events: none !important;
   }
 
-  /* слой поверх карточки: только он ловит мышь и клики */
+  /* слой поверх всего аккордеона: только он ловит мышь и клики */
   .pts-acc-overlay {
     position: absolute;
     inset: 0;
@@ -83,30 +94,11 @@
     transform: translateY(-50%);
   }
 
-  /*
-    Мобилка: чёрный «хвост» ЖИВЁТ СНАРУЖИ rec (сосед), а не overflow артборда.
-    Иначе Тильда обрезает стикер и нижнее скругление.
-  */
-  .pts-acc-tail {
-    display: none;
-    position: relative;
-    box-sizing: border-box;
-    height: 0;
-    margin: 0;
-    padding: 0;
-    border: 0;
-    overflow: visible;
-    pointer-events: none;
-    background: transparent;
-  }
-
+  /* мобилка: чёрная полоса снизу + запас под стикером, углы 12px */
   @media screen and (max-width: 767px) {
-    .pts-acc-tail {
+    .pts-acc-spacer {
       display: block;
-      height: 56px;
-      background-color: #0a0a0c;
-      border-radius: 0 0 12px 12px;
-      pointer-events: auto;
+      height: 80px;
     }
 
     .pts-acc-card {
@@ -114,25 +106,34 @@
       border-bottom-right-radius: 0 !important;
     }
 
-    .pts-acc-inactive .pts-acc-overlay {
-      border-radius: 12px 12px 0 0;
-    }
-
-    .pts-acc-tail .pts-acc-overlay {
-      inset: 0;
+    .pts-acc-card::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 100%;
+      height: 80px;
+      background-color: #0a0a0c;
       border-radius: 0 0 12px 12px;
+      pointer-events: none;
+      z-index: 19;
     }
 
-    .pts-acc-tail .pts-acc-sticker {
-      top: 50%;
+    .pts-acc-overlay {
+      bottom: -80px;
+      border-radius: 12px;
+    }
+
+    .pts-acc-sticker {
+      top: 100%;
       right: auto;
       left: 50%;
       bottom: auto;
-      margin: 0;
+      margin-top: 6px;
       height: 44px;
       background-image: url("https://static.tildacdn.com/tild3639-3431-4430-a264-316433346261/Group_2085662084_1.svg");
       background-size: 250px 44px;
-      transform: translate(-50%, -50%);
+      transform: translateX(-50%);
     }
   }
 </style>
@@ -158,8 +159,6 @@
   var INACTIVE_IDS = 'rec3084349501';
 
   /* =================================================== */
-
-  var tails = [];
 
   function q(sel, root) {
     return (root || document).querySelector(sel);
@@ -187,40 +186,6 @@
     if (e.stopImmediatePropagation) e.stopImmediatePropagation();
   }
 
-  function isMobile() {
-    return window.matchMedia('(max-width: 767px)').matches;
-  }
-
-  function layoutTail(item) {
-    var rec = item.rec;
-    var host = item.host;
-    var tail = item.tail;
-    var sticker = item.sticker;
-
-    if (!rec || !host || !tail || !sticker) return;
-
-    if (!isMobile()) {
-      tail.style.marginLeft = '';
-      tail.style.marginTop = '';
-      tail.style.width = '';
-      if (sticker.parentNode !== host) host.appendChild(sticker);
-      return;
-    }
-
-    if (sticker.parentNode !== tail) tail.appendChild(sticker);
-
-    var recRect = rec.getBoundingClientRect();
-    var hostRect = host.getBoundingClientRect();
-    /* стыкуем хвост к низу карточки (1px нахлёст — без щели), ширина как у карточки */
-    tail.style.marginTop = (hostRect.bottom - recRect.bottom - 1) + 'px';
-    tail.style.marginLeft = (hostRect.left - recRect.left) + 'px';
-    tail.style.width = Math.max(0, hostRect.width) + 'px';
-  }
-
-  function layoutAll() {
-    tails.forEach(layoutTail);
-  }
-
   function ensureUi(rec) {
     var card = findCard(rec);
     if (!card) return;
@@ -230,7 +195,7 @@
     host.classList.add('pts-acc-host');
     card.classList.add('pts-acc-card');
 
-    var overlay = q('.pts-acc-overlay', host);
+    var overlay = q('.pts-acc-overlay', rec);
     if (!overlay) {
       overlay = document.createElement('div');
       overlay.className = 'pts-acc-overlay';
@@ -239,54 +204,27 @@
       host.appendChild(overlay);
     }
 
-    var next = rec.nextElementSibling;
-    if (next && next.classList.contains('pts-acc-spacer')) {
-      next.parentNode.removeChild(next);
-      next = rec.nextElementSibling;
-    }
-
-    var tail = next && next.classList.contains('pts-acc-tail') ? next : null;
-    if (!tail) {
-      tail = document.createElement('div');
-      tail.className = 'pts-acc-tail';
-      tail.setAttribute('aria-hidden', 'true');
-      rec.parentNode.insertBefore(tail, rec.nextSibling);
-    }
-
-    var sticker = q('.pts-acc-sticker', rec) || q('.pts-acc-sticker', tail);
-    if (!sticker) {
-      sticker = document.createElement('div');
+    if (!q('.pts-acc-sticker', rec)) {
+      var sticker = document.createElement('div');
       sticker.className = 'pts-acc-sticker';
       sticker.setAttribute('aria-hidden', 'true');
       host.appendChild(sticker);
     }
 
-    var tailOverlay = q('.pts-acc-overlay', tail);
-    if (!tailOverlay) {
-      tailOverlay = document.createElement('div');
-      tailOverlay.className = 'pts-acc-overlay';
-      tailOverlay.setAttribute('aria-hidden', 'true');
-      tailOverlay.addEventListener('click', stopClick, true);
-      tail.appendChild(tailOverlay);
+    if (rec.parentNode) {
+      var next = rec.nextElementSibling;
+      if (!next || !next.classList.contains('pts-acc-spacer')) {
+        var spacer = document.createElement('div');
+        spacer.className = 'pts-acc-spacer';
+        spacer.setAttribute('aria-hidden', 'true');
+        rec.parentNode.insertBefore(spacer, rec.nextSibling);
+      }
     }
 
     if (!rec._ptsAccBound) {
       rec._ptsAccBound = true;
       host.addEventListener('click', stopClick, true);
-      tail.addEventListener('click', stopClick, true);
     }
-
-    var item = { rec: rec, host: host, tail: tail, sticker: sticker };
-    var exists = false;
-    for (var i = 0; i < tails.length; i += 1) {
-      if (tails[i].rec === rec) {
-        tails[i] = item;
-        exists = true;
-        break;
-      }
-    }
-    if (!exists) tails.push(item);
-    layoutTail(item);
   }
 
   function init() {
@@ -294,10 +232,6 @@
       var rec = document.getElementById(id);
       if (rec) ensureUi(rec);
     });
-    layoutAll();
-    window.requestAnimationFrame(layoutAll);
-    setTimeout(layoutAll, 50);
-    setTimeout(layoutAll, 250);
   }
 
   function waitAndInit() {
@@ -314,9 +248,6 @@
       setTimeout(poll, 100);
     })();
   }
-
-  window.addEventListener('resize', layoutAll);
-  window.addEventListener('orientationchange', layoutAll);
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', waitAndInit);
