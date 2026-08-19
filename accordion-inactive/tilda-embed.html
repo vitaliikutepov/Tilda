@@ -14,9 +14,11 @@
   .pts-acc-inactive {
     position: relative;
     overflow: visible !important;
+    /* z-index хоста Тильды не должен рисовать стикер поверх следующего rec */
+    isolation: isolate;
   }
 
-  /* На мобилке место в потоке под полосой со стикером */
+  /* На мобилке занимает место в потоке между rec, чтобы короткая шапка не наезжала */
   .pts-acc-spacer {
     display: none;
     width: 100%;
@@ -36,17 +38,6 @@
 
   .pts-acc-host {
     position: relative !important;
-    z-index: 2;
-  }
-
-  /* обёртка: на мобилке клипит низ в 12px, чтобы spacer не перекрывал скругление */
-  .pts-acc-round {
-    position: absolute;
-    inset: 0;
-    z-index: 19;
-    overflow: visible;
-    pointer-events: none;
-    border-radius: 16px;
   }
 
   .pts-acc-inactive .t396__filter {
@@ -103,29 +94,11 @@
     transform: translateY(-50%);
   }
 
-  /* мобилка: полоса 80px со скруглением; spacer +12px, чтобы зазор был ПОД радиусом */
+  /* мобилка: чёрная полоса снизу + запас под стикером, углы 12px */
   @media screen and (max-width: 767px) {
     .pts-acc-spacer {
       display: block;
-      height: 92px;
-    }
-
-    .pts-acc-round {
-      bottom: -80px;
-      overflow: hidden;
-      border-radius: 12px;
-    }
-
-    .pts-acc-round::after {
-      content: "";
-      position: absolute;
-      left: 0;
-      right: 0;
-      bottom: 0;
       height: 80px;
-      background-color: #0a0a0c;
-      z-index: 0;
-      pointer-events: none;
     }
 
     .pts-acc-card {
@@ -133,17 +106,31 @@
       border-bottom-right-radius: 0 !important;
     }
 
+    .pts-acc-card::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 100%;
+      height: 80px;
+      background-color: #0a0a0c;
+      border-radius: 0 0 12px 12px;
+      pointer-events: none;
+      z-index: 19;
+    }
+
     .pts-acc-overlay {
-      inset: 0;
+      bottom: -80px;
       border-radius: 12px;
     }
 
+    /* ближе к тексту (нахлёст 4px на карточку), снизу полосы остаётся 40px */
     .pts-acc-sticker {
-      top: auto;
+      top: 100%;
       right: auto;
       left: 50%;
-      bottom: 16px;
-      margin-top: 0;
+      bottom: auto;
+      margin-top: -4px;
       height: 44px;
       background-image: url("https://static.tildacdn.com/tild3639-3431-4430-a264-316433346261/Group_2085662084_1.svg");
       background-size: 250px 44px;
@@ -209,33 +196,20 @@
     host.classList.add('pts-acc-host');
     card.classList.add('pts-acc-card');
 
-    var round = q('.pts-acc-round', host);
-    if (!round) {
-      round = document.createElement('div');
-      round.className = 'pts-acc-round';
-      round.setAttribute('aria-hidden', 'true');
-      host.appendChild(round);
-    }
-
     var overlay = q('.pts-acc-overlay', rec);
     if (!overlay) {
       overlay = document.createElement('div');
       overlay.className = 'pts-acc-overlay';
       overlay.setAttribute('aria-hidden', 'true');
       overlay.addEventListener('click', stopClick, true);
-      round.appendChild(overlay);
-    } else if (overlay.parentNode !== round) {
-      round.appendChild(overlay);
+      host.appendChild(overlay);
     }
 
-    var sticker = q('.pts-acc-sticker', rec);
-    if (!sticker) {
-      sticker = document.createElement('div');
+    if (!q('.pts-acc-sticker', rec)) {
+      var sticker = document.createElement('div');
       sticker.className = 'pts-acc-sticker';
       sticker.setAttribute('aria-hidden', 'true');
-      round.appendChild(sticker);
-    } else if (sticker.parentNode !== round) {
-      round.appendChild(sticker);
+      host.appendChild(sticker);
     }
 
     if (rec.parentNode) {
