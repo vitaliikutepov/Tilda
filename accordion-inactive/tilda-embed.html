@@ -102,13 +102,12 @@
   /* мобилка: чёрная полоса снизу + запас под стикером, углы 12px */
   @media screen and (max-width: 767px) {
     /*
-      80px полосы + 10px зазора до следующего блока.
-      Умножаем на --zoom: Тильда ставит его на rec и зумит содержимое
-      артборда; без множителя полоса выходит за rec и её срезает сосед.
+      60px полосы — вровень со следующим блоком, без лишнего зазора.
+      Умножаем на --zoom: Тильда ставит его на rec и зумит содержимое артборда.
     */
     .pts-acc-spacer {
       display: block;
-      height: calc(90px * var(--zoom, 1));
+      height: calc(60px * var(--zoom, 1));
     }
 
     .pts-acc-card {
@@ -122,7 +121,7 @@
       left: 0;
       right: 0;
       top: 100%;
-      height: 80px;
+      height: 60px;
       background-color: #0a0a0c;
       border-radius: 0 0 12px 12px;
       pointer-events: none;
@@ -130,11 +129,11 @@
     }
 
     .pts-acc-overlay {
-      bottom: -80px;
+      bottom: -60px;
       border-radius: 12px;
     }
 
-    /* ближе к тексту (нахлёст 4px на карточку), снизу полосы остаётся 40px */
+    /* ближе к тексту (нахлёст 4px на карточку), снизу полосы 20px */
     .pts-acc-sticker {
       top: 100%;
       right: auto;
