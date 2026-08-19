@@ -41,6 +41,9 @@
     cursor: default;
     transition: none !important;
     animation: none !important;
+    background-color: var(--pts-acc-bg, #0a0a0c) !important;
+    --t396-bgcolor-color: var(--pts-acc-bg, #0a0a0c);
+    --t396-bgcolor-hover-color: var(--pts-acc-bg, #0a0a0c);
   }
 
   .pts-acc-inactive .tn-atom,
@@ -52,16 +55,20 @@
 
   .pts-acc-inactive .tn-atom:hover,
   .pts-acc-inactive .tn-molecule:hover,
-  .pts-acc-card:hover,
+  .pts-acc-inactive .pts-acc-card:hover,
+  .pts-acc-inactive .pts-acc-card:active,
   .pts-acc-card .tn-atom:hover,
   .pts-acc-card .tn-molecule:hover {
-    background-color: var(--t396-bgcolor-color, inherit) !important;
+    background-color: var(--pts-acc-bg, #0a0a0c) !important;
+    background-image: none !important;
     color: inherit !important;
     border-color: inherit !important;
     box-shadow: none !important;
     transform: none !important;
     filter: none !important;
     animation: none !important;
+    --t396-bgcolor-color: var(--pts-acc-bg, #0a0a0c);
+    --t396-bgcolor-hover-color: var(--pts-acc-bg, #0a0a0c);
   }
 
   .pts-acc-card > *:not(.pts-acc-overlay) {
@@ -76,12 +83,24 @@
   .pts-acc-overlay {
     position: absolute;
     inset: 0;
-    background: rgba(33, 34, 40, 0.5);
     border-radius: inherit;
     z-index: 20;
     cursor: default;
     -webkit-user-select: none;
     user-select: none;
+  }
+
+  .pts-acc-overlay,
+  .pts-acc-overlay:hover,
+  .pts-acc-overlay:active,
+  .pts-acc-overlay:focus {
+    background: rgba(33, 34, 40, 0.5) !important;
+    background-color: rgba(33, 34, 40, 0.5) !important;
+    background-image: none !important;
+    transition: none !important;
+    filter: none !important;
+    opacity: 1 !important;
+    box-shadow: none !important;
   }
 
   .pts-acc-sticker {
@@ -198,6 +217,7 @@
     if (!card) return;
 
     rec.classList.add('pts-acc-inactive');
+    card.style.setProperty('--pts-acc-bg', window.getComputedStyle(card).backgroundColor);
     card.classList.add('pts-acc-card');
 
     var overlay = q('.pts-acc-overlay', card);
