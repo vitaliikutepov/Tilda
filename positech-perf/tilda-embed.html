@@ -2,23 +2,20 @@
      Ускорение загрузки positech.id (Tilda)
 
      Куда вставлять:
-     Настройки страницы → Дополнительно → HTML-код в HEAD.
-     Если HEAD недоступен — HTML-блок T123 самым первым на странице
-     (эффект слабее: браузер сначала парсит ~4 МБ HTML).
+     Настройки страницы → Дополнительно → HTML-код в HEAD
+     (важно: как можно выше, до виджетов Nolim/Annexx и второго GTM).
 
      Что делает сниппет:
-     - сразу показывает контент (Тильда на первом визите прячет
-       .t-records {opacity:0} до DOMContentLoaded + 400 мс);
-     - не даёт hero/globe-видео качать mp4, пока они не в вьюпорте;
-     - ставит loading=lazy картинкам ниже первого экрана.
-     Сниппет не уменьшает сам HTML (~4 МБ) и не убирает 8 копий
-     jQuery/Owl — это правки в редакторе, см. README.
+     - сразу показывает контент (Тильда прячет .t-records);
+     - оставляет один jQuery (Тильды) и не даёт 1.12.4 его заменить —
+       слайдеры Owl живут на том же $;
+     - грузит owl.carousel / animate.css только один раз;
+     - грузит gtm.js с одним и тем же id только один раз;
+     - не качает hero/globe mp4, пока ролик не в кадре;
+     - loading=lazy для картинок ниже первого экрана.
 ============================================================ -->
 
 <style>
-  /* Тильда на первом визите (desktop ≥980px) красит страницу
-     в opacity:0, пока не отработает inline-скрипт в конце head.
-     Пока парсится 4 МБ HTML, пользователь видит пустой экран. */
   .t-records,
   .t-records.t-records_animated {
     opacity: 1 !important;
@@ -27,6 +24,194 @@
 </style>
 
 <script>
+/* ---- 1) Дедуп библиотек: должен выполниться сразу, не ждать DOM ---- */
+(function () {
+  'use strict';
+  if (window.__ptsDedupeInit) return;
+  window.__ptsDedupeInit = true;
+
+  var seen = {};
+
+  function urlOf(el) {
+    return ((el && (el.src || el.href ||
+      (el.getAttribute && (el.getAttribute('src') || el.getAttribute('href'))))) || '')
+      .toString();
+  }
+
+  function libKey(url) {
+    url = (url || '').toString();
+    if (!url || url.indexOf('javascript:') === 0) return '';
+    if (/googletagmanager\.com\/gtm\.js/i.test(url)) {
+      var id = (url.match(/[?&]id=([^&]+)/) || [])[1] || 'gtm';
+      return 'gtm:' + decodeURIComponent(id);
+    }
+    if (/(?:^|\/)jquery[-.][\d.]+(?:\.min)?\.js/i.test(url) ||
+        /code\.jquery\.com\/jquery/i.test(url)) {
+      return 'jquery';
+    }
+    if (/owl\.carousel(?:\.min)?\.js/i.test(url)) return 'owl-js';
+    if (/owl\.carousel.*\.css/i.test(url)) return 'owl-css';
+    if (/animate(?:\.min)?\.css/i.test(url)) return 'animate-css';
+    if (/\/aos(?:@[\d.]+)?\/dist\/aos\.css/i.test(url)) return 'aos-css';
+    return '';
+  }
+
+  function alreadyHaveJquery() {
+    return typeof window.jQuery === 'function';
+  }
+
+  /* true = этот URL для этого тега дубль и его нельзя грузить.
+     Первый тег с ключом помечаем __ptsLibOk, чтобы MutationObserver
+     не нейтрализовал тот же узел, который только что разрешил сеттер. */
+  function shouldBlock(url, el) {
+    var key = libKey(url);
+    if (!key) return false;
+    if (el && el.__ptsLibOk === key) return false;
+    if (seen[key] || (key === 'jquery' && alreadyHaveJquery())) return true;
+    seen[key] = true;
+    if (el) el.__ptsLibOk = key;
+    return false;
+  }
+
+  /* Тильда уже кладёт jquery-1.10.2 в head. Замораживаем ссылку, чтобы
+     восемь копий 1.12.4 не перезаписывали window.jQuery / $ — иначе
+     $.fn.owlCarousel с предыдущих слайдеров пропадает. Сам объект
+     jQuery.fn не замораживаем: плагины должны на него вешаться. */
+  function freezeJquery() {
+    if (typeof window.jQuery !== 'function' || window.__ptsJqueryFrozen) return;
+    var jq = window.jQuery;
+    try {
+      Object.defineProperty(window, 'jQuery', {
+        configurable: true,
+        enumerable: true,
+        writable: false,
+        value: jq
+      });
+      Object.defineProperty(window, '$', {
+        configurable: true,
+        enumerable: true,
+        writable: false,
+        value: jq
+      });
+      window.__ptsJqueryFrozen = true;
+      seen.jquery = true;
+    } catch (e) {}
+  }
+
+  if (alreadyHaveJquery()) freezeJquery();
+  else {
+    var tries = 0;
+    var wait = setInterval(function () {
+      tries += 1;
+      if (alreadyHaveJquery()) {
+        freezeJquery();
+        clearInterval(wait);
+      } else if (tries > 200) {
+        clearInterval(wait);
+      }
+    }, 25);
+  }
+
+  function neutralizeScript(el) {
+    try {
+      el.type = 'text/plain';
+      el.async = true;
+      if (el.removeAttribute) el.removeAttribute('src');
+    } catch (e) {}
+  }
+
+  function neutralizeLink(el) {
+    try {
+      el.media = 'not all';
+      el.disabled = true;
+      if (el.removeAttribute) el.removeAttribute('href');
+    } catch (e) {}
+  }
+
+  function guardNode(el) {
+    if (!el || el.nodeType !== 1 || el.__ptsDedupe) return;
+    var tag = (el.tagName || '').toLowerCase();
+    var url = urlOf(el);
+    if (!url) return;
+    if (!shouldBlock(url, el)) {
+      if (libKey(url) === 'jquery') freezeJquery();
+      return;
+    }
+    el.__ptsDedupe = true;
+    if (tag === 'script') neutralizeScript(el);
+    else if (tag === 'link') neutralizeLink(el);
+  }
+
+  function patchSrc(proto, attr) {
+    var desc = Object.getOwnPropertyDescriptor(proto, attr);
+    if (!desc || !desc.set) return;
+    Object.defineProperty(proto, attr, {
+      configurable: true,
+      enumerable: !!desc.enumerable,
+      get: desc.get,
+      set: function (v) {
+        if (shouldBlock(v, this)) {
+          if ((this.tagName || '').toLowerCase() === 'script') neutralizeScript(this);
+          else neutralizeLink(this);
+          return;
+        }
+        desc.set.call(this, v);
+        if (libKey(v) === 'jquery') freezeJquery();
+      }
+    });
+  }
+
+  patchSrc(HTMLScriptElement.prototype, 'src');
+  if (typeof HTMLLinkElement !== 'undefined') patchSrc(HTMLLinkElement.prototype, 'href');
+
+  var origSetAttr = Element.prototype.setAttribute;
+  Element.prototype.setAttribute = function (name, value) {
+    var attr = String(name).toLowerCase();
+    var tag = (this.tagName || '').toLowerCase();
+    if ((tag === 'script' && attr === 'src') || (tag === 'link' && attr === 'href')) {
+      if (shouldBlock(value, this)) {
+        if (tag === 'script') neutralizeScript(this);
+        else neutralizeLink(this);
+        return;
+      }
+    }
+    var result = origSetAttr.apply(this, arguments);
+    if (tag === 'script' && attr === 'src' && libKey(value) === 'jquery') freezeJquery();
+    return result;
+  };
+
+  function walk(el) {
+    if (!el || el.nodeType !== 1) return;
+    guardNode(el);
+    if (!el.querySelectorAll) return;
+    var kids = el.querySelectorAll('script, link');
+    for (var i = 0; i < kids.length; i++) guardNode(kids[i]);
+  }
+
+  if (typeof MutationObserver === 'function') {
+    var mo = new MutationObserver(function (muts) {
+      for (var i = 0; i < muts.length; i++) {
+        var nodes = muts[i].addedNodes;
+        for (var n = 0; n < nodes.length; n++) walk(nodes[n]);
+      }
+    });
+    mo.observe(document.documentElement || document, { childList: true, subtree: true });
+  }
+
+  /* Если GTM уже успел вставиться раньше этого файла */
+  try {
+    var existing = document.querySelectorAll('script[src*="googletagmanager.com/gtm.js"]');
+    for (var g = 0; g < existing.length; g++) {
+      var k = libKey(existing[g].src);
+      if (k) seen[k] = true;
+    }
+    if (alreadyHaveJquery()) seen.jquery = true;
+  } catch (e2) {}
+})();
+</script>
+
+<script>
+/* ---- 2) Видео / unhide / lazy images ---- */
 (function () {
   'use strict';
   if (window.__ptsPerfInit) return;
