@@ -1,0 +1,410 @@
+<!-- ============================================================
+     Ускорение загрузки positech.id (Tilda)
+
+     Куда вставлять:
+     Настройки страницы → Дополнительно → HTML-код в HEAD
+     (важно: как можно выше, до виджетов Nolim/Annexx и второго GTM).
+
+     Что делает сниппет:
+     - сразу показывает контент (Тильда прячет .t-records);
+     - оставляет один jQuery (Тильды) и не даёт 1.12.4 его заменить —
+       слайдеры Owl живут на том же $;
+     - грузит owl.carousel / animate.css только один раз;
+     - грузит gtm.js с одним и тем же id только один раз;
+     - не качает hero/globe mp4, пока ролик не в кадре;
+     - loading=lazy для картинок ниже первого экрана.
+============================================================ -->
+
+<style>
+  .t-records,
+  .t-records.t-records_animated {
+    opacity: 1 !important;
+    transition: none !important;
+  }
+</style>
+
+<script>
+/* ---- 1) Дедуп библиотек: должен выполниться сразу, не ждать DOM ---- */
+(function () {
+  'use strict';
+  if (window.__ptsDedupeInit) return;
+  window.__ptsDedupeInit = true;
+
+  var seen = {};
+
+  function urlOf(el) {
+    return ((el && (el.src || el.href ||
+      (el.getAttribute && (el.getAttribute('src') || el.getAttribute('href'))))) || '')
+      .toString();
+  }
+
+  function libKey(url) {
+    url = (url || '').toString();
+    if (!url || url.indexOf('javascript:') === 0) return '';
+    if (/googletagmanager\.com\/gtm\.js/i.test(url)) {
+      var id = (url.match(/[?&]id=([^&]+)/) || [])[1] || 'gtm';
+      return 'gtm:' + decodeURIComponent(id);
+    }
+    if (/(?:^|\/)jquery[-.][\d.]+(?:\.min)?\.js/i.test(url) ||
+        /code\.jquery\.com\/jquery/i.test(url)) {
+      return 'jquery';
+    }
+    if (/owl\.carousel(?:\.min)?\.js/i.test(url)) return 'owl-js';
+    if (/owl\.carousel.*\.css/i.test(url)) return 'owl-css';
+    if (/animate(?:\.min)?\.css/i.test(url)) return 'animate-css';
+    if (/\/aos(?:@[\d.]+)?\/dist\/aos\.css/i.test(url)) return 'aos-css';
+    return '';
+  }
+
+  function alreadyHaveJquery() {
+    return typeof window.jQuery === 'function';
+  }
+
+  /* true = этот URL для этого тега дубль и его нельзя грузить.
+     Первый тег с ключом помечаем __ptsLibOk, чтобы MutationObserver
+     не нейтрализовал тот же узел, который только что разрешил сеттер. */
+  function shouldBlock(url, el) {
+    var key = libKey(url);
+    if (!key) return false;
+    if (el && el.__ptsLibOk === key) return false;
+    if (seen[key] || (key === 'jquery' && alreadyHaveJquery())) return true;
+    seen[key] = true;
+    if (el) el.__ptsLibOk = key;
+    return false;
+  }
+
+  /* Тильда уже кладёт jquery-1.10.2 в head. Замораживаем ссылку, чтобы
+     восемь копий 1.12.4 не перезаписывали window.jQuery / $ — иначе
+     $.fn.owlCarousel с предыдущих слайдеров пропадает. Сам объект
+     jQuery.fn не замораживаем: плагины должны на него вешаться. */
+  function freezeJquery() {
+    if (typeof window.jQuery !== 'function' || window.__ptsJqueryFrozen) return;
+    var jq = window.jQuery;
+    try {
+      Object.defineProperty(window, 'jQuery', {
+        configurable: true,
+        enumerable: true,
+        writable: false,
+        value: jq
+      });
+      Object.defineProperty(window, '$', {
+        configurable: true,
+        enumerable: true,
+        writable: false,
+        value: jq
+      });
+      window.__ptsJqueryFrozen = true;
+      seen.jquery = true;
+    } catch (e) {}
+  }
+
+  if (alreadyHaveJquery()) freezeJquery();
+  else {
+    var tries = 0;
+    var wait = setInterval(function () {
+      tries += 1;
+      if (alreadyHaveJquery()) {
+        freezeJquery();
+        clearInterval(wait);
+      } else if (tries > 200) {
+        clearInterval(wait);
+      }
+    }, 25);
+  }
+
+  function neutralizeScript(el) {
+    try {
+      el.type = 'text/plain';
+      el.async = true;
+      if (el.removeAttribute) el.removeAttribute('src');
+    } catch (e) {}
+  }
+
+  function neutralizeLink(el) {
+    try {
+      el.media = 'not all';
+      el.disabled = true;
+      if (el.removeAttribute) el.removeAttribute('href');
+    } catch (e) {}
+  }
+
+  function guardNode(el) {
+    if (!el || el.nodeType !== 1 || el.__ptsDedupe) return;
+    var tag = (el.tagName || '').toLowerCase();
+    var url = urlOf(el);
+    if (!url) return;
+    if (!shouldBlock(url, el)) {
+      if (libKey(url) === 'jquery') freezeJquery();
+      return;
+    }
+    el.__ptsDedupe = true;
+    if (tag === 'script') neutralizeScript(el);
+    else if (tag === 'link') neutralizeLink(el);
+  }
+
+  function patchSrc(proto, attr) {
+    var desc = Object.getOwnPropertyDescriptor(proto, attr);
+    if (!desc || !desc.set) return;
+    Object.defineProperty(proto, attr, {
+      configurable: true,
+      enumerable: !!desc.enumerable,
+      get: desc.get,
+      set: function (v) {
+        if (shouldBlock(v, this)) {
+          if ((this.tagName || '').toLowerCase() === 'script') neutralizeScript(this);
+          else neutralizeLink(this);
+          return;
+        }
+        desc.set.call(this, v);
+        if (libKey(v) === 'jquery') freezeJquery();
+      }
+    });
+  }
+
+  patchSrc(HTMLScriptElement.prototype, 'src');
+  if (typeof HTMLLinkElement !== 'undefined') patchSrc(HTMLLinkElement.prototype, 'href');
+
+  var origSetAttr = Element.prototype.setAttribute;
+  Element.prototype.setAttribute = function (name, value) {
+    var attr = String(name).toLowerCase();
+    var tag = (this.tagName || '').toLowerCase();
+    if ((tag === 'script' && attr === 'src') || (tag === 'link' && attr === 'href')) {
+      if (shouldBlock(value, this)) {
+        if (tag === 'script') neutralizeScript(this);
+        else neutralizeLink(this);
+        return;
+      }
+    }
+    var result = origSetAttr.apply(this, arguments);
+    if (tag === 'script' && attr === 'src' && libKey(value) === 'jquery') freezeJquery();
+    return result;
+  };
+
+  function walk(el) {
+    if (!el || el.nodeType !== 1) return;
+    guardNode(el);
+    if (!el.querySelectorAll) return;
+    var kids = el.querySelectorAll('script, link');
+    for (var i = 0; i < kids.length; i++) guardNode(kids[i]);
+  }
+
+  if (typeof MutationObserver === 'function') {
+    var mo = new MutationObserver(function (muts) {
+      for (var i = 0; i < muts.length; i++) {
+        var nodes = muts[i].addedNodes;
+        for (var n = 0; n < nodes.length; n++) walk(nodes[n]);
+      }
+    });
+    mo.observe(document.documentElement || document, { childList: true, subtree: true });
+  }
+
+  /* Если GTM уже успел вставиться раньше этого файла */
+  try {
+    var existing = document.querySelectorAll('script[src*="googletagmanager.com/gtm.js"]');
+    for (var g = 0; g < existing.length; g++) {
+      var k = libKey(existing[g].src);
+      if (k) seen[k] = true;
+    }
+    if (alreadyHaveJquery()) seen.jquery = true;
+  } catch (e2) {}
+})();
+</script>
+
+<script>
+/* ---- 2) Видео / unhide / lazy images ---- */
+(function () {
+  'use strict';
+  if (window.__ptsPerfInit) return;
+  window.__ptsPerfInit = true;
+
+  var DROPBOX = 'dropboxusercontent.com';
+  var GLOBE = '/vide6235-3031-4534-a364-356533396431/globe.mp4';
+  var ALLOWED = '__ptsAllowPlay';
+  var origPlay = HTMLMediaElement.prototype.play;
+  var srcDesc = Object.getOwnPropertyDescriptor(HTMLMediaElement.prototype, 'src');
+  var watched = [];
+  var io = null;
+
+  function isHeavyUrl(u) {
+    u = (u || '').toString();
+    return u.indexOf(DROPBOX) !== -1 || u.indexOf(GLOBE) !== -1;
+  }
+
+  function mediaUrl(el) {
+    return (el.__ptsDeferredSrc || el.currentSrc || el.src ||
+      (el.getAttribute && el.getAttribute('src')) ||
+      (el.getAttribute && el.getAttribute('data-src')) || '').toString();
+  }
+
+  function isHeavyVideo(el) {
+    if (isHeavyUrl(mediaUrl(el))) return true;
+    var wrap = el.closest && el.closest('[data-mp4video]');
+    return !!(wrap && isHeavyUrl(wrap.getAttribute('data-mp4video')));
+  }
+
+  function inView(el) {
+    var r = el.getBoundingClientRect();
+    var vh = window.innerHeight || 800;
+    return r.bottom > -80 && r.top < vh + 80;
+  }
+
+  function setSrc(el, v) {
+    if (srcDesc && srcDesc.set) srcDesc.set.call(el, v);
+    else el.setAttribute('src', v);
+  }
+
+  function arm(el) {
+    if (el[ALLOWED]) return;
+    el.preload = 'none';
+    el.autoplay = false;
+    try { el.removeAttribute('autoplay'); } catch (e) {}
+    if (typeof el.pause === 'function' && !el.paused) {
+      try { el.pause(); } catch (e2) {}
+    }
+  }
+
+  function watch(el) {
+    if (!el || el.__ptsWatched) return;
+    el.__ptsWatched = true;
+    watched.push(el);
+    arm(el);
+    if (io) io.observe(el);
+  }
+
+  function allowAndPlay(el) {
+    el[ALLOWED] = true;
+    if (el.__ptsDeferredSrc) {
+      setSrc(el, el.__ptsDeferredSrc);
+      el.__ptsDeferredSrc = '';
+    } else if (!el.getAttribute('src') && el.dataset && el.dataset.src) {
+      setSrc(el, el.dataset.src);
+    }
+    el.muted = true;
+    el.playsInline = true;
+    el.setAttribute('playsinline', '');
+    el.setAttribute('muted', '');
+    origPlay.call(el).catch(function () {});
+  }
+
+  function scanVideos(root) {
+    var list = (root || document).querySelectorAll('video');
+    for (var i = 0; i < list.length; i++) {
+      if (isHeavyVideo(list[i])) watch(list[i]);
+    }
+    var holders = (root || document).querySelectorAll('[data-mp4video]');
+    for (var j = 0; j < holders.length; j++) {
+      var src = holders[j].getAttribute('data-mp4video') || '';
+      if (!isHeavyUrl(src)) continue;
+      var v = holders[j].querySelector('video');
+      if (v) watch(v);
+    }
+  }
+
+  function tick() {
+    var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    for (var i = 0; i < watched.length; i++) {
+      var el = watched[i];
+      if (reduced) {
+        if (!el.paused) try { el.pause(); } catch (e0) {}
+        continue;
+      }
+      if (inView(el)) {
+        if (!el[ALLOWED]) allowAndPlay(el);
+        else if (el.paused) origPlay.call(el).catch(function () {});
+      } else if (!el.paused) {
+        try { el.pause(); } catch (e1) {}
+      }
+    }
+  }
+
+  HTMLMediaElement.prototype.play = function () {
+    if (this[ALLOWED] || !isHeavyVideo(this)) {
+      return origPlay.apply(this, arguments);
+    }
+    arm(this);
+    watch(this);
+    if (inView(this) && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      allowAndPlay(this);
+      return origPlay.apply(this, arguments);
+    }
+    return Promise.resolve();
+  };
+
+  if (srcDesc && srcDesc.set) {
+    Object.defineProperty(HTMLMediaElement.prototype, 'src', {
+      configurable: true,
+      enumerable: !!srcDesc.enumerable,
+      get: srcDesc.get,
+      set: function (v) {
+        if (!this[ALLOWED] && isHeavyUrl(v)) {
+          this.__ptsDeferredSrc = v;
+          this.preload = 'none';
+          this.autoplay = false;
+          watch(this);
+          return;
+        }
+        srcDesc.set.call(this, v);
+      }
+    });
+  }
+
+  function lazyImages() {
+    var imgs = document.querySelectorAll('img');
+    var fold = (window.innerHeight || 800) + 100;
+    for (var i = 0; i < imgs.length; i++) {
+      var img = imgs[i];
+      if (img.loading === 'lazy') continue;
+      var top = img.getBoundingClientRect().top;
+      if (top > fold) {
+        img.loading = 'lazy';
+        img.decoding = 'async';
+      }
+    }
+  }
+
+  function unhide() {
+    var recs = document.querySelectorAll('.t-records');
+    for (var i = 0; i < recs.length; i++) {
+      recs[i].classList.add('t-records_animated', 't-records_visible');
+      recs[i].style.opacity = '1';
+    }
+    try { sessionStorage.setItem('visited', 'y'); } catch (e) {}
+  }
+
+  function start() {
+    unhide();
+    scanVideos(document);
+    lazyImages();
+    tick();
+    if ('IntersectionObserver' in window) {
+      io = new IntersectionObserver(function () { tick(); }, {
+        rootMargin: '80px 0px',
+        threshold: 0.01
+      });
+      for (var i = 0; i < watched.length; i++) io.observe(watched[i]);
+      var mo = new MutationObserver(function (muts) {
+        for (var m = 0; m < muts.length; m++) {
+          var nodes = muts[m].addedNodes;
+          for (var n = 0; n < nodes.length; n++) {
+            if (nodes[n].nodeType !== 1) continue;
+            if (nodes[n].tagName === 'VIDEO' && isHeavyVideo(nodes[n])) watch(nodes[n]);
+            else scanVideos(nodes[n]);
+          }
+        }
+        tick();
+      });
+      mo.observe(document.documentElement, { childList: true, subtree: true });
+    } else {
+      window.addEventListener('scroll', tick, { passive: true });
+      setInterval(function () { scanVideos(document); tick(); }, 500);
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', start);
+  } else {
+    start();
+  }
+  setTimeout(unhide, 0);
+})();
+</script>
