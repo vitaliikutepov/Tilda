@@ -18,7 +18,12 @@
     isolation: isolate;
   }
 
-  /* На мобилке занимает место в потоке между rec, чтобы короткая шапка не наезжала */
+  /*
+    Резервирует место под полосу со стикером. Живёт ВНУТРИ rec:
+    Тильда зумит зеро-блок на мобилке (~×1.22), и только внутри rec
+    spacer масштабируется вместе с полосой — иначе следующий блок
+    наезжает и срезает нижние скругления.
+  */
   .pts-acc-spacer {
     display: none;
     width: 100%;
@@ -96,9 +101,14 @@
 
   /* мобилка: чёрная полоса снизу + запас под стикером, углы 12px */
   @media screen and (max-width: 767px) {
+    /*
+      80px полосы + 10px зазора до следующего блока.
+      Умножаем на --zoom: Тильда ставит его на rec и зумит содержимое
+      артборда; без множителя полоса выходит за rec и её срезает сосед.
+    */
     .pts-acc-spacer {
       display: block;
-      height: 80px;
+      height: calc(90px * var(--zoom, 1));
     }
 
     .pts-acc-card {
@@ -212,14 +222,15 @@
       host.appendChild(sticker);
     }
 
-    if (rec.parentNode) {
-      var next = rec.nextElementSibling;
-      if (!next || !next.classList.contains('pts-acc-spacer')) {
-        var spacer = document.createElement('div');
-        spacer.className = 'pts-acc-spacer';
-        spacer.setAttribute('aria-hidden', 'true');
-        rec.parentNode.insertBefore(spacer, rec.nextSibling);
-      }
+    var oldSpacer = rec.nextElementSibling;
+    if (oldSpacer && oldSpacer.classList.contains('pts-acc-spacer')) {
+      oldSpacer.parentNode.removeChild(oldSpacer);
+    }
+    if (!q('.pts-acc-spacer', rec)) {
+      var spacer = document.createElement('div');
+      spacer.className = 'pts-acc-spacer';
+      spacer.setAttribute('aria-hidden', 'true');
+      rec.appendChild(spacer);
     }
 
     if (!rec._ptsAccBound) {
