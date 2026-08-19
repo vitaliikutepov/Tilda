@@ -15,20 +15,16 @@
     position: relative;
     z-index: 3;
     overflow: visible !important;
-    --t396-speedhover: 0s;
-    --t396-shadowshoverspeed: 0s;
-    --t396-bgcolor-hover-color: var(--t396-bgcolor-color);
-    --t396-color-hover-color: var(--t396-color-color);
   }
 
   .pts-acc-inactive .t396__artboard,
-  .pts-acc-inactive .t396__artboard > .tn-group,
+  .pts-acc-host,
   .pts-acc-card {
     overflow: visible !important;
   }
 
-  .pts-acc-inactive .t396__artboard > .tn-group {
-    position: relative;
+  .pts-acc-host {
+    position: relative !important;
     z-index: 5;
   }
 
@@ -36,43 +32,14 @@
     pointer-events: none;
   }
 
-  .pts-acc-card {
-    position: relative !important;
-    cursor: default;
-    transition: none !important;
-    animation: none !important;
-    background-color: var(--pts-acc-bg, #0a0a0c) !important;
-    --t396-bgcolor-color: var(--pts-acc-bg, #0a0a0c);
-    --t396-bgcolor-hover-color: var(--pts-acc-bg, #0a0a0c);
-  }
-
-  .pts-acc-inactive .tn-atom,
+  /* фон карточки не трогаем; ховер Тильды не доходит — pointer-events none */
+  .pts-acc-card,
   .pts-acc-inactive .tn-molecule,
-  .pts-acc-card .tn-atom {
+  .pts-acc-inactive .tn-atom,
+  .pts-acc-inactive .tn-elem {
+    pointer-events: none !important;
     transition: none !important;
     animation: none !important;
-  }
-
-  .pts-acc-inactive .tn-atom:hover,
-  .pts-acc-inactive .tn-molecule:hover,
-  .pts-acc-inactive .pts-acc-card:hover,
-  .pts-acc-inactive .pts-acc-card:active,
-  .pts-acc-card .tn-atom:hover,
-  .pts-acc-card .tn-molecule:hover {
-    background-color: var(--pts-acc-bg, #0a0a0c) !important;
-    background-image: none !important;
-    color: inherit !important;
-    border-color: inherit !important;
-    box-shadow: none !important;
-    transform: none !important;
-    filter: none !important;
-    animation: none !important;
-    --t396-bgcolor-color: var(--pts-acc-bg, #0a0a0c);
-    --t396-bgcolor-hover-color: var(--pts-acc-bg, #0a0a0c);
-  }
-
-  .pts-acc-card > *:not(.pts-acc-overlay) {
-    pointer-events: none !important;
   }
 
   .pts-acc-inactive [data-elem-type="button"] {
@@ -80,34 +47,24 @@
     pointer-events: none !important;
   }
 
+  /* слой поверх всего аккордеона: только он ловит мышь и клики */
   .pts-acc-overlay {
     position: absolute;
     inset: 0;
-    border-radius: inherit;
     z-index: 20;
+    border-radius: 16px;
     cursor: default;
+    pointer-events: auto !important;
+    background: rgba(33, 34, 40, 0.5);
     -webkit-user-select: none;
     user-select: none;
-  }
-
-  .pts-acc-overlay,
-  .pts-acc-overlay:hover,
-  .pts-acc-overlay:active,
-  .pts-acc-overlay:focus {
-    background: rgba(33, 34, 40, 0.5) !important;
-    background-color: rgba(33, 34, 40, 0.5) !important;
-    background-image: none !important;
-    transition: none !important;
-    filter: none !important;
-    opacity: 1 !important;
-    box-shadow: none !important;
   }
 
   .pts-acc-sticker {
     position: absolute;
     z-index: 21;
     width: 250px;
-    pointer-events: none;
+    pointer-events: none !important;
     flex-shrink: 0;
     background-repeat: no-repeat;
     background-position: center;
@@ -206,6 +163,10 @@
     return q('.tn-molecule', rec) || q('.t396__artboard', rec) || rec;
   }
 
+  function findHost(card) {
+    return card.parentElement || card;
+  }
+
   function stopClick(e) {
     e.preventDefault();
     e.stopPropagation();
@@ -215,30 +176,31 @@
   function ensureUi(rec) {
     var card = findCard(rec);
     if (!card) return;
+    var host = findHost(card);
 
     rec.classList.add('pts-acc-inactive');
-    card.style.setProperty('--pts-acc-bg', window.getComputedStyle(card).backgroundColor);
+    host.classList.add('pts-acc-host');
     card.classList.add('pts-acc-card');
 
-    var overlay = q('.pts-acc-overlay', card);
+    var overlay = q('.pts-acc-overlay', rec);
     if (!overlay) {
       overlay = document.createElement('div');
       overlay.className = 'pts-acc-overlay';
       overlay.setAttribute('aria-hidden', 'true');
       overlay.addEventListener('click', stopClick, true);
-      card.appendChild(overlay);
+      host.appendChild(overlay);
     }
 
-    if (!q('.pts-acc-sticker', card)) {
+    if (!q('.pts-acc-sticker', rec)) {
       var sticker = document.createElement('div');
       sticker.className = 'pts-acc-sticker';
       sticker.setAttribute('aria-hidden', 'true');
-      card.appendChild(sticker);
+      host.appendChild(sticker);
     }
 
     if (!rec._ptsAccBound) {
       rec._ptsAccBound = true;
-      card.addEventListener('click', stopClick, true);
+      host.addEventListener('click', stopClick, true);
     }
   }
 
