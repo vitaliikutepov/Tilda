@@ -1,0 +1,269 @@
+<!-- ============================================================
+     Неактивные аккордеоны направлений (Tilda Zero Block)
+
+     Страница: https://pt-start.ptsecurity.com/fast-track
+
+     Как подключить:
+     1. В INACTIVE_IDS ниже перечислите id блоков-шапок аккордеона
+        через запятую (с # или без). Классы в Тильде задавать не нужно.
+     2. Вставьте весь этот файл в HTML-элемент Тильды
+        (в настройки страницы или отдельный HTML-блок ниже аккордеонов).
+============================================================ -->
+
+<style>
+  .pts-acc-inactive {
+    position: relative;
+    overflow: visible !important;
+    /* z-index хоста Тильды не должен рисовать стикер поверх следующего rec */
+    isolation: isolate;
+  }
+
+  /*
+    Резервирует место под полосу со стикером. Живёт ВНУТРИ rec:
+    Тильда зумит зеро-блок на мобилке (~×1.22), и только внутри rec
+    spacer масштабируется вместе с полосой — иначе следующий блок
+    наезжает и срезает нижние скругления.
+  */
+  .pts-acc-spacer {
+    display: none;
+    width: 100%;
+    height: 0;
+    pointer-events: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  .pts-acc-inactive .t396,
+  .pts-acc-inactive .t396__artboard,
+  .pts-acc-host,
+  .pts-acc-card {
+    overflow: visible !important;
+  }
+
+  .pts-acc-host {
+    position: relative !important;
+  }
+
+  .pts-acc-inactive .t396__filter {
+    pointer-events: none;
+  }
+
+  /* фон карточки не трогаем; ховер Тильды не доходит — pointer-events none */
+  .pts-acc-card,
+  .pts-acc-inactive .tn-molecule,
+  .pts-acc-inactive .tn-atom,
+  .pts-acc-inactive .tn-elem {
+    pointer-events: none !important;
+    transition: none !important;
+    animation: none !important;
+  }
+
+  .pts-acc-inactive [data-elem-type="button"] {
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }
+
+  /* слой поверх всего аккордеона: только он ловит мышь и клики */
+  .pts-acc-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 20;
+    border-radius: 16px;
+    cursor: default;
+    pointer-events: auto !important;
+    background: rgba(33, 34, 40, 0.5);
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  .pts-acc-sticker {
+    position: absolute;
+    z-index: 21;
+    width: 250px;
+    pointer-events: none !important;
+    flex-shrink: 0;
+    background-repeat: no-repeat;
+    background-position: center;
+  }
+
+  /* десктоп: 340×109 → 250×80 */
+  .pts-acc-sticker {
+    top: 50%;
+    right: -10px;
+    left: auto;
+    bottom: auto;
+    height: 80px;
+    background-image: url("https://static.tildacdn.com/tild6434-6538-4366-b931-303736653364/Group_2085662084.svg");
+    background-size: 250px 80px;
+    transform: translateY(-50%);
+  }
+
+  /* мобилка: чёрная полоса снизу + запас под стикером, углы 12px */
+  @media screen and (max-width: 767px) {
+    /*
+      60px полосы — вровень со следующим блоком, без лишнего зазора.
+      Умножаем на --zoom: Тильда ставит его на rec и зумит содержимое артборда.
+    */
+    .pts-acc-spacer {
+      display: block;
+      height: calc(60px * var(--zoom, 1));
+    }
+
+    .pts-acc-card {
+      border-bottom-left-radius: 0 !important;
+      border-bottom-right-radius: 0 !important;
+    }
+
+    .pts-acc-card::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 100%;
+      height: 60px;
+      background-color: #0a0a0c;
+      border-radius: 0 0 12px 12px;
+      pointer-events: none;
+      z-index: 19;
+    }
+
+    .pts-acc-overlay {
+      bottom: -60px;
+      border-radius: 12px;
+    }
+
+    /* ближе к тексту (нахлёст 4px на карточку), снизу полосы 20px */
+    .pts-acc-sticker {
+      top: 100%;
+      right: auto;
+      left: 50%;
+      bottom: auto;
+      margin-top: -4px;
+      height: 44px;
+      background-image: url("https://static.tildacdn.com/tild3639-3431-4430-a264-316433346261/Group_2085662084_1.svg");
+      background-size: 250px 44px;
+      transform: translateX(-50%);
+    }
+  }
+</style>
+
+<script>
+(function () {
+  'use strict';
+
+  if (window.__ptsAccInactiveInit) return;
+  window.__ptsAccInactiveInit = true;
+
+  /* ==================== НАСТРОЙКИ ==================== */
+
+  /*
+    Id шапок аккордеона (Zero Block), которые должны быть неактивны.
+    Через запятую, с # или без. Классы в Тильде задавать не нужно.
+
+    Примеры на /fast-track:
+      rec2914914801 — Разработка Python
+      rec2915718001 — Тестирование QA
+      rec3084349501 — Кибербезопасность
+  */
+  var INACTIVE_IDS = 'rec3084349501';
+
+  /* =================================================== */
+
+  function q(sel, root) {
+    return (root || document).querySelector(sel);
+  }
+
+  function parseIds(str) {
+    return String(str || '')
+      .split(/[,;\s]+/)
+      .map(function (s) { return s.replace(/^#/, '').trim(); })
+      .filter(Boolean);
+  }
+
+  function findCard(rec) {
+    if (!rec) return null;
+    return q('.tn-molecule', rec) || q('.t396__artboard', rec) || rec;
+  }
+
+  function findHost(card) {
+    return card.parentElement || card;
+  }
+
+  function stopClick(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+  }
+
+  function ensureUi(rec) {
+    var card = findCard(rec);
+    if (!card) return;
+    var host = findHost(card);
+
+    rec.classList.add('pts-acc-inactive');
+    host.classList.add('pts-acc-host');
+    card.classList.add('pts-acc-card');
+
+    var overlay = q('.pts-acc-overlay', rec);
+    if (!overlay) {
+      overlay = document.createElement('div');
+      overlay.className = 'pts-acc-overlay';
+      overlay.setAttribute('aria-hidden', 'true');
+      overlay.addEventListener('click', stopClick, true);
+      host.appendChild(overlay);
+    }
+
+    if (!q('.pts-acc-sticker', rec)) {
+      var sticker = document.createElement('div');
+      sticker.className = 'pts-acc-sticker';
+      sticker.setAttribute('aria-hidden', 'true');
+      host.appendChild(sticker);
+    }
+
+    var oldSpacer = rec.nextElementSibling;
+    if (oldSpacer && oldSpacer.classList.contains('pts-acc-spacer')) {
+      oldSpacer.parentNode.removeChild(oldSpacer);
+    }
+    if (!q('.pts-acc-spacer', rec)) {
+      var spacer = document.createElement('div');
+      spacer.className = 'pts-acc-spacer';
+      spacer.setAttribute('aria-hidden', 'true');
+      rec.appendChild(spacer);
+    }
+
+    if (!rec._ptsAccBound) {
+      rec._ptsAccBound = true;
+      host.addEventListener('click', stopClick, true);
+    }
+  }
+
+  function init() {
+    parseIds(INACTIVE_IDS).forEach(function (id) {
+      var rec = document.getElementById(id);
+      if (rec) ensureUi(rec);
+    });
+  }
+
+  function waitAndInit() {
+    var ids = parseIds(INACTIVE_IDS);
+    if (!ids.length) return;
+    var n = 0;
+    (function poll() {
+      var ready = ids.some(function (id) { return document.getElementById(id); });
+      if (ready || n > 30) {
+        init();
+        return;
+      }
+      n += 1;
+      setTimeout(poll, 100);
+    })();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', waitAndInit);
+  } else {
+    waitAndInit();
+  }
+})();
+</script>
