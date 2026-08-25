@@ -1,33 +1,50 @@
-<!-- ============================================================
-     Стек карточек с нахлёстом и раскрытием по ховеру
-     (Tilda: HTML-элемент зеро-блока или блок T123)
+<!--
+  В ТИЛЬДУ ВСТАВЛЯТЬ ЭТОТ ФАЙЛ (tilda-embed.html).
+  Не вставляйте demo.html — это локальный превью, карточки с него
+  не загрузятся (там fetch чужого файла).
 
-     Как подключить:
-     1. Зеро-блок: тёмный фон (#050203 или чёрный).
-     2. Вставить весь этот файл в HTML-элемент.
-     3. Ссылку кнопки «Оставить заявку» заменить на попап Тильды,
-        например href="#popup:form" (id попапа из настроек).
-     4. Тексты карточек, подсказки и описания — в разметке ниже.
+  Куда вставить:
+  1) Блок T123 «Вставка HTML-кода» — предпочтительно,
+     высота блока подстроится сама.
+  2) Или элемент HTML в зеро-блоке: ширина 100%, высота от 600px,
+     выравнивание сверху, контейнер Grid. После вставки — ОПУБЛИКОВАТЬ
+     (в редакторе HTML не рисуется).
 
-     Поведение:
-     - 4 карточки стоят стопкой, каждая перекрывает нижний край
-       предыдущей (нахлёст --ocs-overlap).
-     - По ховеру карточка выдвигается вниз: появляется описание.
-     - Карточки ниже плавно съезжают, сохраняя нахлёст.
-     - На тач-экранах раскрытие по тапу (одна открытая карточка).
-     - Нижняя карточка всегда показывает CTA-блок.
-============================================================ -->
+  Кнопку «Оставить заявку»: href="#popup:ВАШ_ПОПАП"
+-->
 
 <style>
+  /* Тильда: атом HTML абсолютный, overflow hidden — иначе стек не виден / режется */
+  .t396__artboard:has(.ocs-root),
+  .t396__elem:has(.ocs-root),
+  .t396__elem:has(.ocs-root) .tn-atom,
+  .t396__elem:has(.ocs-root) .tn-atom__html {
+    overflow: visible !important;
+  }
+  .t396__elem:has(.ocs-root) {
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 560px !important;
+    display: block !important;
+  }
+  .t396__elem:has(.ocs-root) .tn-atom,
+  .t396__elem:has(.ocs-root) .tn-atom__html {
+    position: relative !important;
+    display: block !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 560px;
+  }
+  .t-code:has(.ocs-root),
+  .t123:has(.ocs-root) {
+    overflow: visible !important;
+  }
+
   .ocs-root {
     --ocs-overlap: 20px;
     --ocs-radius: 18px;
-    --ocs-card: #2a1216;
-    --ocs-card-2: #1c0b0e;
-    --ocs-ink: #ffffff;
-    --ocs-muted: rgba(255, 255, 255, 0.48);
-    --ocs-hint: #8a8a8a;
-    --ocs-warn: #e31b23;
     --ocs-ease: cubic-bezier(0.22, 1, 0.36, 1);
     --ocs-time: 0.48s;
     box-sizing: border-box;
@@ -35,10 +52,11 @@
     isolation: isolate;
     width: 100%;
     max-width: 640px;
+    min-height: 520px;
     margin: 0 auto;
     padding: 28px 16px 40px;
     font-family: Inter, "Helvetica Neue", Arial, sans-serif;
-    color: var(--ocs-ink);
+    color: #ffffff;
     -webkit-font-smoothing: antialiased;
   }
   .ocs-root *,
@@ -63,6 +81,7 @@
     z-index: 1;
     display: flex;
     flex-direction: column;
+    width: 100%;
   }
 
   .ocs-card {
@@ -72,7 +91,7 @@
     border: 0;
     padding: 0;
     background: transparent;
-    color: inherit;
+    color: #fff;
     font: inherit;
     text-align: left;
     cursor: pointer;
@@ -113,14 +132,16 @@
   }
   .ocs-card__icon svg { width: 100%; height: 100%; display: block; }
 
-  .ocs-card__title {
+  .ocs-root .ocs-card__title {
     flex: 1 1 auto;
-    margin: 0;
-    font-size: 17px;
-    font-weight: 700;
-    line-height: 1.25;
+    margin: 0 !important;
+    padding: 0 !important;
+    font-size: 17px !important;
+    font-weight: 700 !important;
+    line-height: 1.25 !important;
     letter-spacing: -0.01em;
-    color: var(--ocs-ink);
+    color: #ffffff !important;
+    background: none !important;
   }
 
   .ocs-card__help {
@@ -178,14 +199,14 @@
     overflow: hidden;
     min-height: 0;
   }
-  .ocs-card__text {
-    margin: 0;
+  .ocs-root .ocs-card__text {
+    margin: 0 !important;
     padding: 0 22px 22px 58px;
     max-width: 52ch;
-    color: rgba(255, 255, 255, 0.58);
-    font-size: 14px;
-    font-weight: 400;
-    line-height: 1.45;
+    color: rgba(255, 255, 255, 0.58) !important;
+    font-size: 14px !important;
+    font-weight: 400 !important;
+    line-height: 1.45 !important;
     opacity: 0;
     transform: translateY(-10px);
     transition:
@@ -200,40 +221,39 @@
   .ocs-card:last-child .ocs-card__cta {
     padding-bottom: 28px;
   }
-  .ocs-card__hint {
-    margin: 0 0 16px;
-    color: var(--ocs-hint);
-    font-size: 11px;
-    font-weight: 600;
+  .ocs-root .ocs-card__hint {
+    margin: 0 0 16px !important;
+    color: #8a8a8a !important;
+    font-size: 11px !important;
+    font-weight: 600 !important;
     letter-spacing: 0.08em;
     text-transform: uppercase;
   }
-  .ocs-card__btn {
-    display: inline-flex;
+  .ocs-root .ocs-card__btn {
+    display: inline-flex !important;
     align-items: center;
     justify-content: center;
     min-width: 240px;
-    padding: 14px 28px;
-    border-radius: 12px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    background: #14080a;
+    padding: 14px 28px !important;
+    border-radius: 12px !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    background: #14080a !important;
     box-shadow:
       0 0 0 1px rgba(0, 0, 0, 0.35),
       0 8px 20px rgba(0, 0, 0, 0.35);
-    color: #fff;
-    font-size: 15px;
-    font-weight: 600;
-    line-height: 1.2;
-    text-decoration: none;
+    color: #fff !important;
+    font-size: 15px !important;
+    font-weight: 600 !important;
+    line-height: 1.2 !important;
+    text-decoration: none !important;
     transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
   }
-  .ocs-card__btn:hover {
-    background: #1c0c10;
-    border-color: rgba(255, 255, 255, 0.14);
+  .ocs-root .ocs-card__btn:hover {
+    background: #1c0c10 !important;
+    border-color: rgba(255, 255, 255, 0.14) !important;
   }
   .ocs-card__btn:active { transform: translateY(1px); }
 
-  /* Выдвижение: описание открывается, нижние карточки чуть отъезжают */
   .ocs-card:hover .ocs-card__reveal,
   .ocs-card:focus-visible .ocs-card__reveal,
   .ocs-card.is-open .ocs-card__reveal {
@@ -251,9 +271,7 @@
     margin-top: -8px;
   }
 
-  .ocs-card:focus-visible {
-    outline: none;
-  }
+  .ocs-card:focus-visible { outline: none; }
   .ocs-card:focus-visible .ocs-card__face {
     box-shadow:
       0 0 0 2px rgba(227, 27, 35, 0.7),
@@ -271,10 +289,10 @@
 
   @media (max-width: 640px) {
     .ocs-root { padding: 16px 12px 32px; }
-    .ocs-card__title { font-size: 15px; }
-    .ocs-card__head { padding: 16px 14px 16px 14px; min-height: 64px; gap: 10px; }
-    .ocs-card__text { padding: 0 16px 18px 52px; font-size: 13px; }
-    .ocs-card__btn { min-width: 0; width: 100%; max-width: 280px; }
+    .ocs-root .ocs-card__title { font-size: 15px !important; }
+    .ocs-card__head { padding: 16px 14px; min-height: 64px; gap: 10px; }
+    .ocs-root .ocs-card__text { padding: 0 16px 18px 52px; font-size: 13px !important; }
+    .ocs-root .ocs-card__btn { min-width: 0; width: 100%; max-width: 280px; }
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -292,7 +310,7 @@
   <div class="ocs-glow" aria-hidden="true"></div>
   <div class="ocs-stack">
 
-    <article class="ocs-card" tabindex="0" aria-expanded="false">
+    <div class="ocs-card" tabindex="0" aria-expanded="false">
       <div class="ocs-card__face">
         <div class="ocs-card__head">
           <span class="ocs-card__icon" aria-hidden="true">
@@ -302,7 +320,7 @@
               <circle cx="14" cy="20.2" r="1.15" fill="#fff"/>
             </svg>
           </span>
-          <h3 class="ocs-card__title">Хищение денежных средств</h3>
+          <div class="ocs-card__title">Хищение денежных средств</div>
           <span class="ocs-card__help" tabindex="0">?
             <span class="ocs-card__tip">Подозрительные платежи, подмена реквизитов или доступ к ДБО и казначейству.</span>
             <span hidden>Подозрительные платежи, подмена реквизитов или доступ к ДБО и казначейству.</span>
@@ -314,9 +332,9 @@
           </div>
         </div>
       </div>
-    </article>
+    </div>
 
-    <article class="ocs-card" tabindex="0" aria-expanded="false">
+    <div class="ocs-card" tabindex="0" aria-expanded="false">
       <div class="ocs-card__face">
         <div class="ocs-card__head">
           <span class="ocs-card__icon" aria-hidden="true">
@@ -326,7 +344,7 @@
               <circle cx="14" cy="20.2" r="1.15" fill="#fff"/>
             </svg>
           </span>
-          <h3 class="ocs-card__title">Компрометация серверной инфраструктуры</h3>
+          <div class="ocs-card__title">Компрометация серверной инфраструктуры</div>
           <span class="ocs-card__help" tabindex="0">?
             <span class="ocs-card__tip">Взлом серверов, гипервизоров, контроллеров домена или облачных консолей.</span>
             <span hidden>Взлом серверов, гипервизоров, контроллеров домена или облачных консолей.</span>
@@ -338,9 +356,9 @@
           </div>
         </div>
       </div>
-    </article>
+    </div>
 
-    <article class="ocs-card" tabindex="0" aria-expanded="false">
+    <div class="ocs-card" tabindex="0" aria-expanded="false">
       <div class="ocs-card__face">
         <div class="ocs-card__head">
           <span class="ocs-card__icon" aria-hidden="true">
@@ -350,7 +368,7 @@
               <circle cx="14" cy="20.2" r="1.15" fill="#fff"/>
             </svg>
           </span>
-          <h3 class="ocs-card__title">Компрометация критических бизнес-систем</h3>
+          <div class="ocs-card__title">Компрометация критических бизнес-систем</div>
           <span class="ocs-card__help" tabindex="0">?
             <span class="ocs-card__tip">Инцидент в ERP, CRM, АСУТП или других системах, без которых останавливается операционка.</span>
             <span hidden>Инцидент в ERP, CRM, АСУТП или других системах, без которых останавливается операционка.</span>
@@ -362,9 +380,9 @@
           </div>
         </div>
       </div>
-    </article>
+    </div>
 
-    <article class="ocs-card" tabindex="0" aria-expanded="false">
+    <div class="ocs-card" tabindex="0" aria-expanded="false">
       <div class="ocs-card__face">
         <div class="ocs-card__head">
           <span class="ocs-card__icon" aria-hidden="true">
@@ -374,7 +392,7 @@
               <circle cx="14" cy="20.2" r="1.15" fill="#fff"/>
             </svg>
           </span>
-          <h3 class="ocs-card__title">Массовая компрометация конфиденциальной информации</h3>
+          <div class="ocs-card__title">Массовая компрометация конфиденциальной информации</div>
           <span class="ocs-card__help" tabindex="0">?
             <span class="ocs-card__tip">Утечка персональных данных, коммерческой тайны или клиентской базы.</span>
             <span hidden>Утечка персональных данных, коммерческой тайны или клиентской базы.</span>
@@ -387,11 +405,10 @@
         </div>
         <div class="ocs-card__cta">
           <p class="ocs-card__hint">Не уверены какое событие выбрать?</p>
-          <!-- Замените href на попап Тильды, например #popup:form -->
           <a class="ocs-card__btn" href="#popup:request">Оставить заявку</a>
         </div>
       </div>
-    </article>
+    </div>
 
   </div>
 </div>
@@ -402,62 +419,59 @@
   if (window.__ocsOverlapCardsInit) return;
   window.__ocsOverlapCardsInit = true;
 
-  function ready(fn) {
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', fn);
-    } else {
-      fn();
-    }
+  function rootOf(el) {
+    return el && el.closest ? el.closest('[data-ocs-root]') : null;
   }
 
-  ready(function () {
-    var roots = document.querySelectorAll('[data-ocs-root]');
-    var coarse = window.matchMedia('(hover: none)').matches;
+  function cardsIn(root) {
+    return root ? root.querySelectorAll('.ocs-card') : [];
+  }
 
-    Array.prototype.forEach.call(roots, function (root) {
-      var cards = root.querySelectorAll('.ocs-card');
-
-      function closeAll(except) {
-        Array.prototype.forEach.call(cards, function (card) {
-          if (card !== except) {
-            card.classList.remove('is-open');
-            card.setAttribute('aria-expanded', 'false');
-          }
-        });
+  function setOpen(card, open) {
+    var root = rootOf(card);
+    card.classList.toggle('is-open', open);
+    card.setAttribute('aria-expanded', open ? 'true' : 'false');
+    if (!open || !root) return;
+    Array.prototype.forEach.call(cardsIn(root), function (other) {
+      if (other !== card) {
+        other.classList.remove('is-open');
+        other.setAttribute('aria-expanded', 'false');
       }
-
-      function setOpen(card, open) {
-        card.classList.toggle('is-open', open);
-        card.setAttribute('aria-expanded', open ? 'true' : 'false');
-        if (open) closeAll(card);
-      }
-
-      Array.prototype.forEach.call(cards, function (card) {
-        /* мышь: выдвижение даже если (hover: none), как в части VM/iframe */
-        card.addEventListener('pointerenter', function (e) {
-          if (e.pointerType !== 'mouse') return;
-          setOpen(card, true);
-        });
-        card.addEventListener('pointerleave', function (e) {
-          if (e.pointerType !== 'mouse') return;
-          setOpen(card, false);
-        });
-
-        card.addEventListener('click', function (e) {
-          if (e.target.closest('.ocs-card__btn')) return;
-          if (e.target.closest('.ocs-card__help')) return;
-          if (!coarse && !window.matchMedia('(pointer: coarse)').matches) return;
-          setOpen(card, !card.classList.contains('is-open'));
-        });
-
-        card.addEventListener('keydown', function (e) {
-          if (e.target.closest('.ocs-card__help')) return;
-          if (e.key !== 'Enter' && e.key !== ' ') return;
-          e.preventDefault();
-          setOpen(card, !card.classList.contains('is-open'));
-        });
-      });
     });
-  });
+  }
+
+  document.addEventListener('pointerenter', function (e) {
+    var card = e.target.closest && e.target.closest('.ocs-card');
+    if (!card || !rootOf(card)) return;
+    if (e.pointerType !== 'mouse') return;
+    setOpen(card, true);
+  }, true);
+
+  document.addEventListener('pointerleave', function (e) {
+    var card = e.target.closest && e.target.closest('.ocs-card');
+    if (!card || !rootOf(card)) return;
+    if (e.pointerType !== 'mouse') return;
+    if (e.relatedTarget && card.contains(e.relatedTarget)) return;
+    setOpen(card, false);
+  }, true);
+
+  document.addEventListener('click', function (e) {
+    var card = e.target.closest && e.target.closest('.ocs-card');
+    if (!card || !rootOf(card)) return;
+    if (e.target.closest('.ocs-card__btn')) return;
+    if (e.target.closest('.ocs-card__help')) return;
+    var coarse = window.matchMedia('(hover: none), (pointer: coarse)').matches;
+    if (!coarse) return;
+    setOpen(card, !card.classList.contains('is-open'));
+  }, true);
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    var card = e.target.closest && e.target.closest('.ocs-card');
+    if (!card || !rootOf(card)) return;
+    if (e.target.closest('.ocs-card__help')) return;
+    e.preventDefault();
+    setOpen(card, !card.classList.contains('is-open'));
+  }, true);
 })();
 </script>
