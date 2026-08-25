@@ -426,23 +426,35 @@
         });
       }
 
+      function setOpen(card, open) {
+        card.classList.toggle('is-open', open);
+        card.setAttribute('aria-expanded', open ? 'true' : 'false');
+        if (open) closeAll(card);
+      }
+
       Array.prototype.forEach.call(cards, function (card) {
+        /* мышь: выдвижение даже если (hover: none), как в части VM/iframe */
+        card.addEventListener('pointerenter', function (e) {
+          if (e.pointerType !== 'mouse') return;
+          setOpen(card, true);
+        });
+        card.addEventListener('pointerleave', function (e) {
+          if (e.pointerType !== 'mouse') return;
+          setOpen(card, false);
+        });
+
         card.addEventListener('click', function (e) {
           if (e.target.closest('.ocs-card__btn')) return;
           if (e.target.closest('.ocs-card__help')) return;
           if (!coarse && !window.matchMedia('(pointer: coarse)').matches) return;
-          var open = card.classList.toggle('is-open');
-          card.setAttribute('aria-expanded', open ? 'true' : 'false');
-          if (open) closeAll(card);
+          setOpen(card, !card.classList.contains('is-open'));
         });
 
         card.addEventListener('keydown', function (e) {
           if (e.target.closest('.ocs-card__help')) return;
           if (e.key !== 'Enter' && e.key !== ' ') return;
           e.preventDefault();
-          var open = card.classList.toggle('is-open');
-          card.setAttribute('aria-expanded', open ? 'true' : 'false');
-          if (open) closeAll(card);
+          setOpen(card, !card.classList.contains('is-open'));
         });
       });
     });
