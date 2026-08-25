@@ -1,0 +1,451 @@
+<!-- ============================================================
+     Стек карточек с нахлёстом и раскрытием по ховеру
+     (Tilda: HTML-элемент зеро-блока или блок T123)
+
+     Как подключить:
+     1. Зеро-блок: тёмный фон (#050203 или чёрный).
+     2. Вставить весь этот файл в HTML-элемент.
+     3. Ссылку кнопки «Оставить заявку» заменить на попап Тильды,
+        например href="#popup:form" (id попапа из настроек).
+     4. Тексты карточек, подсказки и описания — в разметке ниже.
+
+     Поведение:
+     - 4 карточки стоят стопкой, каждая перекрывает нижний край
+       предыдущей (нахлёст --ocs-overlap).
+     - По ховеру карточка выдвигается вниз: появляется описание.
+     - Карточки ниже плавно съезжают, сохраняя нахлёст.
+     - На тач-экранах раскрытие по тапу (одна открытая карточка).
+     - Нижняя карточка всегда показывает CTA-блок.
+============================================================ -->
+
+<style>
+  .ocs-root {
+    --ocs-overlap: 20px;
+    --ocs-radius: 18px;
+    --ocs-card: #2a1216;
+    --ocs-card-2: #1c0b0e;
+    --ocs-ink: #ffffff;
+    --ocs-muted: rgba(255, 255, 255, 0.48);
+    --ocs-hint: #8a8a8a;
+    --ocs-warn: #e31b23;
+    --ocs-ease: cubic-bezier(0.22, 1, 0.36, 1);
+    --ocs-time: 0.48s;
+    box-sizing: border-box;
+    position: relative;
+    isolation: isolate;
+    width: 100%;
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 28px 16px 40px;
+    font-family: Inter, "Helvetica Neue", Arial, sans-serif;
+    color: var(--ocs-ink);
+    -webkit-font-smoothing: antialiased;
+  }
+  .ocs-root *,
+  .ocs-root *::before,
+  .ocs-root *::after { box-sizing: border-box; }
+
+  .ocs-glow {
+    position: absolute;
+    z-index: 0;
+    left: 50%;
+    top: 18%;
+    width: 140%;
+    height: 70%;
+    transform: translateX(-50%);
+    pointer-events: none;
+    background:
+      radial-gradient(ellipse at 50% 40%, rgba(90, 12, 18, 0.55) 0%, rgba(90, 12, 18, 0.18) 42%, transparent 70%);
+  }
+
+  .ocs-stack {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .ocs-card {
+    position: relative;
+    width: 100%;
+    margin-top: calc(var(--ocs-overlap) * -1);
+    border: 0;
+    padding: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    appearance: none;
+    -webkit-tap-highlight-color: transparent;
+    transition: margin-top var(--ocs-time) var(--ocs-ease);
+  }
+  .ocs-card:first-child { margin-top: 0; }
+  .ocs-card:nth-child(1) { z-index: 1; }
+  .ocs-card:nth-child(2) { z-index: 2; }
+  .ocs-card:nth-child(3) { z-index: 3; }
+  .ocs-card:nth-child(4) { z-index: 4; }
+
+  .ocs-card__face {
+    position: relative;
+    border-radius: var(--ocs-radius);
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.055) 0%, rgba(255, 255, 255, 0) 22%),
+      linear-gradient(180deg, #3a171c 0%, #241014 55%, #1a0b0e 100%);
+    box-shadow:
+      0 10px 28px rgba(0, 0, 0, 0.38),
+      inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  }
+
+  .ocs-card__head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 20px 20px 18px 18px;
+    min-height: 72px;
+  }
+
+  .ocs-card__icon {
+    flex: 0 0 auto;
+    display: flex;
+    width: 28px;
+    height: 28px;
+  }
+  .ocs-card__icon svg { width: 100%; height: 100%; display: block; }
+
+  .ocs-card__title {
+    flex: 1 1 auto;
+    margin: 0;
+    font-size: 17px;
+    font-weight: 700;
+    line-height: 1.25;
+    letter-spacing: -0.01em;
+    color: var(--ocs-ink);
+  }
+
+  .ocs-card__help {
+    position: relative;
+    flex: 0 0 auto;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 1.5px solid rgba(255, 255, 255, 0.28);
+    color: rgba(255, 255, 255, 0.55);
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 17px;
+    text-align: center;
+    cursor: help;
+  }
+  .ocs-card__help span[hidden] { display: none; }
+
+  .ocs-card__tip {
+    position: absolute;
+    right: 0;
+    bottom: calc(100% + 10px);
+    z-index: 8;
+    width: max-content;
+    max-width: 260px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: #1a0c0f;
+    color: rgba(255, 255, 255, 0.86);
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1.4;
+    letter-spacing: 0;
+    text-align: left;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(4px);
+    transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s;
+    pointer-events: none;
+  }
+  .ocs-card__help:hover .ocs-card__tip,
+  .ocs-card__help:focus-visible .ocs-card__tip {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+  }
+
+  .ocs-card__reveal {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows var(--ocs-time) var(--ocs-ease);
+  }
+  .ocs-card__reveal-inner {
+    overflow: hidden;
+    min-height: 0;
+  }
+  .ocs-card__text {
+    margin: 0;
+    padding: 0 22px 22px 58px;
+    max-width: 52ch;
+    color: rgba(255, 255, 255, 0.58);
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 1.45;
+    opacity: 0;
+    transform: translateY(-10px);
+    transition:
+      opacity 0.32s ease,
+      transform var(--ocs-time) var(--ocs-ease);
+  }
+
+  .ocs-card__cta {
+    padding: 4px 24px calc(22px + var(--ocs-overlap)) 24px;
+    text-align: center;
+  }
+  .ocs-card:last-child .ocs-card__cta {
+    padding-bottom: 28px;
+  }
+  .ocs-card__hint {
+    margin: 0 0 16px;
+    color: var(--ocs-hint);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .ocs-card__btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 240px;
+    padding: 14px 28px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: #14080a;
+    box-shadow:
+      0 0 0 1px rgba(0, 0, 0, 0.35),
+      0 8px 20px rgba(0, 0, 0, 0.35);
+    color: #fff;
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 1.2;
+    text-decoration: none;
+    transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+  }
+  .ocs-card__btn:hover {
+    background: #1c0c10;
+    border-color: rgba(255, 255, 255, 0.14);
+  }
+  .ocs-card__btn:active { transform: translateY(1px); }
+
+  /* Выдвижение: описание открывается, нижние карточки чуть отъезжают */
+  .ocs-card:hover .ocs-card__reveal,
+  .ocs-card:focus-visible .ocs-card__reveal,
+  .ocs-card.is-open .ocs-card__reveal {
+    grid-template-rows: 1fr;
+  }
+  .ocs-card:hover .ocs-card__text,
+  .ocs-card:focus-visible .ocs-card__text,
+  .ocs-card.is-open .ocs-card__text {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  .ocs-card:hover ~ .ocs-card,
+  .ocs-card:focus-visible ~ .ocs-card,
+  .ocs-card.is-open ~ .ocs-card {
+    margin-top: -8px;
+  }
+
+  .ocs-card:focus-visible {
+    outline: none;
+  }
+  .ocs-card:focus-visible .ocs-card__face {
+    box-shadow:
+      0 0 0 2px rgba(227, 27, 35, 0.7),
+      0 10px 28px rgba(0, 0, 0, 0.38);
+  }
+
+  @media (hover: none) {
+    .ocs-card:hover .ocs-card__reveal { grid-template-rows: 0fr; }
+    .ocs-card:hover .ocs-card__text { opacity: 0; transform: translateY(-10px); }
+    .ocs-card:hover ~ .ocs-card { margin-top: calc(var(--ocs-overlap) * -1); }
+    .ocs-card.is-open .ocs-card__reveal { grid-template-rows: 1fr; }
+    .ocs-card.is-open .ocs-card__text { opacity: 1; transform: translateY(0); }
+    .ocs-card.is-open ~ .ocs-card { margin-top: -8px; }
+  }
+
+  @media (max-width: 640px) {
+    .ocs-root { padding: 16px 12px 32px; }
+    .ocs-card__title { font-size: 15px; }
+    .ocs-card__head { padding: 16px 14px 16px 14px; min-height: 64px; gap: 10px; }
+    .ocs-card__text { padding: 0 16px 18px 52px; font-size: 13px; }
+    .ocs-card__btn { min-width: 0; width: 100%; max-width: 280px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .ocs-card,
+    .ocs-card__reveal,
+    .ocs-card__text,
+    .ocs-card__btn,
+    .ocs-card__tip {
+      transition: none !important;
+    }
+  }
+</style>
+
+<div class="ocs-root" data-ocs-root>
+  <div class="ocs-glow" aria-hidden="true"></div>
+  <div class="ocs-stack">
+
+    <article class="ocs-card" tabindex="0" aria-expanded="false">
+      <div class="ocs-card__face">
+        <div class="ocs-card__head">
+          <span class="ocs-card__icon" aria-hidden="true">
+            <svg viewBox="0 0 28 28" fill="none">
+              <path d="M14 3.2 25.4 23.6H2.6L14 3.2Z" fill="#E31B23"/>
+              <path d="M14 11.2v6.1" stroke="#fff" stroke-width="2.1" stroke-linecap="round"/>
+              <circle cx="14" cy="20.2" r="1.15" fill="#fff"/>
+            </svg>
+          </span>
+          <h3 class="ocs-card__title">Хищение денежных средств</h3>
+          <span class="ocs-card__help" tabindex="0">?
+            <span class="ocs-card__tip">Подозрительные платежи, подмена реквизитов или доступ к ДБО и казначейству.</span>
+            <span hidden>Подозрительные платежи, подмена реквизитов или доступ к ДБО и казначейству.</span>
+          </span>
+        </div>
+        <div class="ocs-card__reveal">
+          <div class="ocs-card__reveal-inner">
+            <p class="ocs-card__text">Несанкционированные списания и доступ к платёжным системам компании, что может привести к прямой финансовой потере.</p>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <article class="ocs-card" tabindex="0" aria-expanded="false">
+      <div class="ocs-card__face">
+        <div class="ocs-card__head">
+          <span class="ocs-card__icon" aria-hidden="true">
+            <svg viewBox="0 0 28 28" fill="none">
+              <path d="M14 3.2 25.4 23.6H2.6L14 3.2Z" fill="#E31B23"/>
+              <path d="M14 11.2v6.1" stroke="#fff" stroke-width="2.1" stroke-linecap="round"/>
+              <circle cx="14" cy="20.2" r="1.15" fill="#fff"/>
+            </svg>
+          </span>
+          <h3 class="ocs-card__title">Компрометация серверной инфраструктуры</h3>
+          <span class="ocs-card__help" tabindex="0">?
+            <span class="ocs-card__tip">Взлом серверов, гипервизоров, контроллеров домена или облачных консолей.</span>
+            <span hidden>Взлом серверов, гипервизоров, контроллеров домена или облачных консолей.</span>
+          </span>
+        </div>
+        <div class="ocs-card__reveal">
+          <div class="ocs-card__reveal-inner">
+            <p class="ocs-card__text">Получение контроля над серверами компании, что может привести к остановке работы систем и потере данных.</p>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <article class="ocs-card" tabindex="0" aria-expanded="false">
+      <div class="ocs-card__face">
+        <div class="ocs-card__head">
+          <span class="ocs-card__icon" aria-hidden="true">
+            <svg viewBox="0 0 28 28" fill="none">
+              <path d="M14 3.2 25.4 23.6H2.6L14 3.2Z" fill="#E31B23"/>
+              <path d="M14 11.2v6.1" stroke="#fff" stroke-width="2.1" stroke-linecap="round"/>
+              <circle cx="14" cy="20.2" r="1.15" fill="#fff"/>
+            </svg>
+          </span>
+          <h3 class="ocs-card__title">Компрометация критических бизнес-систем</h3>
+          <span class="ocs-card__help" tabindex="0">?
+            <span class="ocs-card__tip">Инцидент в ERP, CRM, АСУТП или других системах, без которых останавливается операционка.</span>
+            <span hidden>Инцидент в ERP, CRM, АСУТП или других системах, без которых останавливается операционка.</span>
+          </span>
+        </div>
+        <div class="ocs-card__reveal">
+          <div class="ocs-card__reveal-inner">
+            <p class="ocs-card__text">Взлом ERP, CRM и других систем, от которых зависит операционная деятельность, что может остановить бизнес-процессы.</p>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <article class="ocs-card" tabindex="0" aria-expanded="false">
+      <div class="ocs-card__face">
+        <div class="ocs-card__head">
+          <span class="ocs-card__icon" aria-hidden="true">
+            <svg viewBox="0 0 28 28" fill="none">
+              <path d="M14 3.2 25.4 23.6H2.6L14 3.2Z" fill="#E31B23"/>
+              <path d="M14 11.2v6.1" stroke="#fff" stroke-width="2.1" stroke-linecap="round"/>
+              <circle cx="14" cy="20.2" r="1.15" fill="#fff"/>
+            </svg>
+          </span>
+          <h3 class="ocs-card__title">Массовая компрометация конфиденциальной информации</h3>
+          <span class="ocs-card__help" tabindex="0">?
+            <span class="ocs-card__tip">Утечка персональных данных, коммерческой тайны или клиентской базы.</span>
+            <span hidden>Утечка персональных данных, коммерческой тайны или клиентской базы.</span>
+          </span>
+        </div>
+        <div class="ocs-card__reveal">
+          <div class="ocs-card__reveal-inner">
+            <p class="ocs-card__text">Утечка персональных данных, коммерческой тайны или клиентской базы, что влечёт репутационный ущерб и регуляторные риски.</p>
+          </div>
+        </div>
+        <div class="ocs-card__cta">
+          <p class="ocs-card__hint">Не уверены какое событие выбрать?</p>
+          <!-- Замените href на попап Тильды, например #popup:form -->
+          <a class="ocs-card__btn" href="#popup:request">Оставить заявку</a>
+        </div>
+      </div>
+    </article>
+
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  if (window.__ocsOverlapCardsInit) return;
+  window.__ocsOverlapCardsInit = true;
+
+  function ready(fn) {
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', fn);
+    } else {
+      fn();
+    }
+  }
+
+  ready(function () {
+    var roots = document.querySelectorAll('[data-ocs-root]');
+    var coarse = window.matchMedia('(hover: none)').matches;
+
+    Array.prototype.forEach.call(roots, function (root) {
+      var cards = root.querySelectorAll('.ocs-card');
+
+      function closeAll(except) {
+        Array.prototype.forEach.call(cards, function (card) {
+          if (card !== except) {
+            card.classList.remove('is-open');
+            card.setAttribute('aria-expanded', 'false');
+          }
+        });
+      }
+
+      Array.prototype.forEach.call(cards, function (card) {
+        card.addEventListener('click', function (e) {
+          if (e.target.closest('.ocs-card__btn')) return;
+          if (e.target.closest('.ocs-card__help')) return;
+          if (!coarse && !window.matchMedia('(pointer: coarse)').matches) return;
+          var open = card.classList.toggle('is-open');
+          card.setAttribute('aria-expanded', open ? 'true' : 'false');
+          if (open) closeAll(card);
+        });
+
+        card.addEventListener('keydown', function (e) {
+          if (e.target.closest('.ocs-card__help')) return;
+          if (e.key !== 'Enter' && e.key !== ' ') return;
+          e.preventDefault();
+          var open = card.classList.toggle('is-open');
+          card.setAttribute('aria-expanded', open ? 'true' : 'false');
+          if (open) closeAll(card);
+        });
+      });
+    });
+  });
+})();
+</script>

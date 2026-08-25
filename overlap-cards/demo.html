@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Карточки с нахлёстом — Tilda demo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
+  <style>
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; }
+    body {
+      font-family: Inter, "Helvetica Neue", Arial, sans-serif;
+      background: #050203;
+      color: #fff;
+    }
+    .page {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 48px 16px 72px;
+      background:
+        radial-gradient(ellipse 70% 55% at 50% 42%, rgba(72, 8, 14, 0.55) 0%, rgba(8, 1, 2, 0.2) 48%, #050203 72%);
+    }
+    .page-head {
+      width: 100%;
+      max-width: 640px;
+      margin: 0 auto 8px;
+      padding: 0 16px;
+    }
+    h1 {
+      margin: 0 0 8px;
+      font-size: 20px;
+      font-weight: 600;
+    }
+    .note {
+      margin: 0 0 12px;
+      max-width: 640px;
+      color: #8a8082;
+      font-size: 14px;
+      line-height: 1.45;
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="page-head">
+      <h1>Стек карточек с нахлёстом</h1>
+      <p class="note">
+        Наведите на карточку — она выдвигается, и становится видно описание.
+        На телефоне карточка открывается по нажатию.
+        Код для Тильды: <code>tilda-embed.html</code>.
+      </p>
+    </div>
+    <div id="embed-slot"></div>
+  </div>
+
+  <script>
+    fetch('tilda-embed.html')
+      .then(function (r) { return r.text(); })
+      .then(function (html) {
+        var slot = document.getElementById('embed-slot');
+        slot.innerHTML = html;
+        Array.prototype.forEach.call(slot.querySelectorAll('script'), function (old) {
+          var s = document.createElement('script');
+          s.textContent = old.textContent;
+          old.parentNode.replaceChild(s, old);
+        });
+      })
+      .catch(function (err) {
+        document.body.insertAdjacentHTML(
+          'beforeend',
+          '<p style="padding:20px;color:#c00">Не удалось загрузить tilda-embed.html: откройте demo.html через локальный сервер.</p>'
+        );
+        console.error(err);
+      });
+  </script>
+</body>
+</html>
