@@ -6,9 +6,9 @@
   Куда вставить:
   1) Блок T123 «Вставка HTML-кода» — предпочтительно,
      высота блока подстроится сама.
-  2) Или элемент HTML в зеро-блоке: ширина 100%, высота от 600px,
-     выравнивание сверху, контейнер Grid. После вставки — ОПУБЛИКОВАТЬ
-     (в редакторе HTML не рисуется).
+  2) Или элемент HTML в зеро-блоке: ширина 100%, высота 100%,
+     контейнер Grid. Стек сам встанет в центр фрейма.
+     После вставки — ОПУБЛИКОВАТЬ (в редакторе HTML не рисуется).
 
   Кнопку «Оставить заявку»: href="#popup:ВАШ_ПОПАП"
 -->
@@ -25,17 +25,21 @@
     top: 0 !important;
     left: 0 !important;
     width: 100% !important;
-    height: auto !important;
-    min-height: 560px !important;
-    display: block !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
   }
   .t396__elem:has(.ocs-root) .tn-atom,
   .t396__elem:has(.ocs-root) .tn-atom__html {
     position: relative !important;
-    display: block !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
     width: 100% !important;
-    height: auto !important;
-    min-height: 560px;
+    height: 100% !important;
+    min-height: 0;
   }
   .t-code:has(.ocs-root),
   .t123:has(.ocs-root) {
@@ -43,18 +47,21 @@
   }
 
   .ocs-root {
-    --ocs-overlap: 20px;
+    --ocs-overlap: 22px;
     --ocs-radius: 18px;
     --ocs-ease: cubic-bezier(0.22, 1, 0.36, 1);
     --ocs-time: 0.48s;
+    --ocs-w1: 72%;
+    --ocs-w2: 82%;
+    --ocs-w3: 91%;
+    --ocs-w4: 100%;
     box-sizing: border-box;
     position: relative;
     isolation: isolate;
     width: 100%;
-    max-width: 640px;
-    min-height: 520px;
+    max-width: 560px;
     margin: 0 auto;
-    padding: 28px 16px 40px;
+    padding: 8px 12px 16px;
     font-family: Inter, "Helvetica Neue", Arial, sans-serif;
     color: #ffffff;
     -webkit-font-smoothing: antialiased;
@@ -81,12 +88,13 @@
     z-index: 1;
     display: flex;
     flex-direction: column;
+    align-items: center;
     width: 100%;
   }
 
   .ocs-card {
     position: relative;
-    width: 100%;
+    width: var(--ocs-w4);
     margin-top: calc(var(--ocs-overlap) * -1);
     border: 0;
     padding: 0;
@@ -97,13 +105,13 @@
     cursor: pointer;
     appearance: none;
     -webkit-tap-highlight-color: transparent;
-    transition: margin-top var(--ocs-time) var(--ocs-ease);
+    transition: margin-top var(--ocs-time) var(--ocs-ease), width var(--ocs-time) var(--ocs-ease);
   }
   .ocs-card:first-child { margin-top: 0; }
-  .ocs-card:nth-child(1) { z-index: 1; }
-  .ocs-card:nth-child(2) { z-index: 2; }
-  .ocs-card:nth-child(3) { z-index: 3; }
-  .ocs-card:nth-child(4) { z-index: 4; }
+  .ocs-card:nth-child(1) { z-index: 1; width: var(--ocs-w1); }
+  .ocs-card:nth-child(2) { z-index: 2; width: var(--ocs-w2); }
+  .ocs-card:nth-child(3) { z-index: 3; width: var(--ocs-w3); }
+  .ocs-card:nth-child(4) { z-index: 4; width: var(--ocs-w4); }
 
   .ocs-card__face {
     position: relative;
@@ -288,7 +296,12 @@
   }
 
   @media (max-width: 640px) {
-    .ocs-root { padding: 16px 12px 32px; }
+    .ocs-root {
+      padding: 16px 12px 32px;
+      --ocs-w1: 86%;
+      --ocs-w2: 91%;
+      --ocs-w3: 96%;
+    }
     .ocs-root .ocs-card__title { font-size: 15px !important; }
     .ocs-card__head { padding: 16px 14px; min-height: 64px; gap: 10px; }
     .ocs-root .ocs-card__text { padding: 0 16px 18px 52px; font-size: 13px !important; }
