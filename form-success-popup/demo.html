@@ -9,7 +9,14 @@
     html, body { margin: 0; }
     body {
       font-family: Arial, sans-serif;
-      background: #f1f4f9;
+      background:
+        repeating-linear-gradient(
+          -18deg,
+          #5b3dff 0 48px,
+          #ff5a3c 48px 96px,
+          #19c37d 96px 144px,
+          #f1f4f9 144px 192px
+        );
       color: #111;
     }
     .page {
@@ -224,7 +231,7 @@
     })();
   </script>
   <script>
-    fetch('tilda-embed.html')
+    fetch('tilda-embed.html?v=' + Date.now())
       .then(function (r) { return r.text(); })
       .then(function (html) {
         var slot = document.getElementById('embed-slot');

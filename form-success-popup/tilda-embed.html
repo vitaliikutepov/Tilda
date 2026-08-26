@@ -34,11 +34,25 @@
     z-index: 100005 !important;
     margin: 0 !important;
     padding: 0 !important;
-    background-color: rgba(221, 227, 235, 0.6) !important;
-    -webkit-backdrop-filter: blur(60px);
-    backdrop-filter: blur(60px);
+    background: transparent !important;
     overflow: hidden !important;
     box-sizing: border-box;
+  }
+
+  /* оверлей вешаем на body: у зеро-блока Тильды overflow/filter
+     глушат backdrop-filter, если блюр живёт внутри #rec */
+  #pts-success-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 100004;
+    background-color: rgba(221, 227, 235, 0.6);
+    -webkit-backdrop-filter: blur(60px);
+    backdrop-filter: blur(60px);
+    cursor: pointer;
+  }
+  #pts-success-backdrop.is-on {
+    display: block;
   }
 
   #rec3331835203.pts-success-open,
@@ -169,6 +183,28 @@
     return !!(rec && rec.classList.contains('pts-success-open'));
   }
 
+  function ensureBackdrop() {
+    var el = document.getElementById('pts-success-backdrop');
+    if (el) return el;
+    el = document.createElement('div');
+    el.id = 'pts-success-backdrop';
+    el.setAttribute('aria-hidden', 'true');
+    document.body.appendChild(el);
+    el.addEventListener('click', function () {
+      closePopup();
+    });
+    return el;
+  }
+
+  function showBackdrop() {
+    ensureBackdrop().classList.add('is-on');
+  }
+
+  function hideBackdrop() {
+    var el = document.getElementById('pts-success-backdrop');
+    if (el) el.classList.remove('is-on');
+  }
+
   function lockScroll() {
     if (locked) return;
     locked = true;
@@ -239,6 +275,7 @@
     if (!rec) return;
     rec.classList.add('pts-success-open');
     document.body.classList.add('t-body_success-popup-showed');
+    showBackdrop();
     hideTildaSuccess();
     lockScroll();
     recenter();
@@ -268,6 +305,7 @@
     rec.classList.remove('pts-success-open');
     rec.style.display = 'none';
     rec.style.overflow = 'hidden';
+    hideBackdrop();
     unlockScroll();
     resetForm();
   }
