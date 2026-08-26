@@ -1,28 +1,37 @@
 <!-- ============================================================
      Кастомный попап успешной отправки формы (Tilda Zero Block)
 
-     Страница: https://positech.id/webinars/secure-applications-ai-era
-
      Как подключить:
-     1. Зеро-блок попапа — #rec3331835203
-        (карточка — первая группа .tn-group, кнопки Close → #closeallpopup)
-     2. Зеро-блок с формой — #rec3315174201
-     3. Виджет Nolim «успех → зеро-блок» можно оставить: сниппет
-        перехватывает показ и чинит фон / центр / скролл / клик по фону.
-        Если Nolim нет — сниппет сам показывает попап по tildaform:aftersuccess.
-     4. Весь этот файл вставить в HTML-элемент Тильды (T123)
-        после блока формы или в настройки страницы.
+     1. На странице должен быть виджет Nolim «показать зеро-блок
+        после успешной отправки» — из него читаются ID формы,
+        ID попапа и ссылка закрытия. В этом сниппете ID
+        прописывать не нужно.
+     2. Весь этот файл вставить в HTML-элемент Тильды (T123).
 
      Поведение:
      - фон оверлея #DDE3EB / 60% + backdrop-blur 60px;
      - карточка всегда по центру вьюпорта (и после повторной отправки);
      - скролл страницы блокируется, пока попап открыт;
-     - клик по фону и кнопки #closeallpopup закрывают попап.
+     - клик по фону и кнопки закрытия из Nolim закрывают попап;
+     - закрытый попап не перехватывает клики (важно на мобилках).
 ============================================================ -->
 
 <style>
-  #rec3331835203 {
-    display: none;
+  /* закрытый попап не должен накрывать страницу: на iOS
+     position:fixed внутри display:none всё ещё ловит тапы */
+  .pts-success-popup:not(.pts-success-open) {
+    display: none !important;
+    pointer-events: none !important;
+    visibility: hidden !important;
+    z-index: -1 !important;
+  }
+
+  .pts-success-popup.pts-success-open {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
     position: fixed !important;
     inset: 0 !important;
     left: 0 !important;
@@ -31,16 +40,15 @@
     bottom: 0 !important;
     width: 100% !important;
     height: 100% !important;
-    z-index: 100005 !important;
     margin: 0 !important;
     padding: 0 !important;
     background: transparent !important;
     overflow: hidden !important;
+    z-index: 100005 !important;
     box-sizing: border-box;
   }
 
-  /* оверлей вешаем на body: у зеро-блока Тильды overflow/filter
-     глушат backdrop-filter, если блюр живёт внутри #rec */
+  /* оверлей на body: overflow зеро-блока глушит backdrop-filter */
   #pts-success-backdrop {
     display: none;
     position: fixed;
@@ -50,21 +58,13 @@
     -webkit-backdrop-filter: blur(60px);
     backdrop-filter: blur(60px);
     cursor: pointer;
+    touch-action: none;
   }
   #pts-success-backdrop.is-on {
     display: block;
   }
 
-  #rec3331835203.pts-success-open,
-  #rec3331835203[style*="display: block"],
-  #rec3331835203[style*="display:block"] {
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    overflow: hidden !important;
-  }
-
-  #rec3331835203 .t396 {
+  .pts-success-popup.pts-success-open .t396 {
     width: 100% !important;
     height: 100% !important;
     display: flex !important;
@@ -73,7 +73,7 @@
     pointer-events: none;
   }
 
-  #rec3331835203 .t396__artboard {
+  .pts-success-popup.pts-success-open .t396__artboard {
     position: relative !important;
     width: 100% !important;
     top: auto !important;
@@ -82,9 +82,8 @@
     pointer-events: none;
   }
 
-  /* фильтр растягиваем на весь экран — это кликабельный фон */
-  #rec3331835203 .t396__filter,
-  #rec3331835203 .t396__carrier {
+  .pts-success-popup.pts-success-open .t396__filter,
+  .pts-success-popup.pts-success-open .t396__carrier {
     position: fixed !important;
     inset: 0 !important;
     width: 100% !important;
@@ -97,13 +96,13 @@
     background: transparent !important;
   }
 
-  #rec3331835203 .tn-group {
+  .pts-success-popup.pts-success-open .tn-group {
     pointer-events: auto;
     z-index: 2 !important;
   }
 
-  /* карточка: сбрасываем top/left Тильды, центрируем относительно арта */
-  #rec3331835203 .tn-group[data-group-id="1775812703037000001"] {
+  /* карточка — первый tn-group арта, без привязки к group-id */
+  .pts-success-popup.pts-success-open .t396__artboard > .tn-group {
     position: absolute !important;
     top: 50% !important;
     left: 50% !important;
@@ -121,7 +120,6 @@
   html.pts-success-lock body.t-body_success-popup-showed {
     overflow: hidden !important;
     overscroll-behavior: none !important;
-    touch-action: none;
   }
 
   body.pts-success-lock {
@@ -143,39 +141,77 @@
   if (window.__ptsSuccessPopupInit) return;
   window.__ptsSuccessPopupInit = true;
 
-  /* ==================== НАСТРОЙКИ ==================== */
-
-  var POPUP_ID = 'rec3331835203';
-  var FORM_ID = 'rec3315174201';
-  var CARD_GROUP = '1775812703037000001';
-  var CLOSE_HREF = '#closeallpopup';
-
-  /* =================================================== */
-
+  var popupId = null;
+  var formId = null;
+  var closeHref = '#closeallpopup';
   var popup = null;
   var scrollY = 0;
   var locked = false;
   var downOnCard = false;
   var reopenTimer = null;
-
-  function $(sel, root) {
-    return (root || document).querySelector(sel);
-  }
+  var allowOpen = false;
+  var watched = false;
 
   function $$(sel, root) {
     return Array.prototype.slice.call((root || document).querySelectorAll(sel));
   }
 
+  function normId(v) {
+    if (!v) return '';
+    return String(v).replace(/^#/, '').replace(/^\s+|\s+$/g, '');
+  }
+
+  function parseSettingsJson(raw) {
+    if (!raw) return null;
+    try { return JSON.parse(raw); } catch (e) { return null; }
+  }
+
+  function settingsFromText(text) {
+    if (!text || text.indexOf('zeroBlockId') === -1) return null;
+    var m = text.match(/settings(\{[\s\S]*?\})settingsend/);
+    if (!m) m = text.match(/(\{[\s\S]*"zeroBlockId"[\s\S]*?\})/);
+    if (!m) return null;
+    var cfg = parseSettingsJson(m[1]);
+    if (!cfg || !cfg.zeroBlockId || !cfg.formBlockId) return null;
+    return cfg;
+  }
+
+  function readNolimSettings() {
+    var it = document.createNodeIterator(document.body, NodeFilter.SHOW_COMMENT);
+    var node;
+    while ((node = it.nextNode())) {
+      var cfg = settingsFromText(node.nodeValue || '');
+      if (cfg) return cfg;
+    }
+    var blocks = document.querySelectorAll('.t123, .t-rec[data-record-type="131"]');
+    for (var i = 0; i < blocks.length; i++) {
+      var cfg2 = settingsFromText(blocks[i].innerHTML || '');
+      if (cfg2) return cfg2;
+    }
+    return null;
+  }
+
+  function applyNolim(cfg) {
+    popupId = normId(cfg.zeroBlockId);
+    formId = normId(cfg.formBlockId);
+    closeHref = cfg.closeBtnLink || '#closeallpopup';
+  }
+
   function popupEl() {
-    if (!popup || !popup.isConnected) popup = document.getElementById(POPUP_ID);
+    if (!popupId) return null;
+    if (!popup || !popup.isConnected) popup = document.getElementById(popupId);
     return popup;
   }
 
   function cardEl() {
     var rec = popupEl();
     if (!rec) return null;
-    return rec.querySelector('.tn-group[data-group-id="' + CARD_GROUP + '"]') ||
-      rec.querySelector('.t396__artboard > .tn-group');
+    var board = rec.querySelector('.t396__artboard') || rec;
+    var kids = board.children;
+    for (var i = 0; i < kids.length; i++) {
+      if (kids[i].classList && kids[i].classList.contains('tn-group')) return kids[i];
+    }
+    return rec.querySelector('.tn-group');
   }
 
   function isOpen() {
@@ -212,7 +248,6 @@
     document.documentElement.classList.add('pts-success-lock');
     document.body.classList.add('pts-success-lock');
     document.body.style.top = '-' + scrollY + 'px';
-    document.body.classList.remove('nolimPopUp');
     document.body.classList.add('t-body_scroll-locked');
   }
 
@@ -238,9 +273,10 @@
   }
 
   function resetForm() {
-    var rec = document.getElementById(FORM_ID);
+    if (!formId) return;
+    var rec = document.getElementById(formId);
     if (!rec) return;
-    var form = rec.querySelector('form') || rec.querySelector('#form' + FORM_ID.replace('rec', ''));
+    var form = rec.querySelector('form') || rec.querySelector('#form' + formId.replace('rec', ''));
     if (!form) return;
     form.classList.remove('js-send-form-success');
     var box = form.querySelector('.js-successbox');
@@ -263,6 +299,8 @@
     rec.style.setProperty('left', '0px', 'important');
     rec.style.setProperty('right', '0px', 'important');
     rec.style.setProperty('bottom', '0px', 'important');
+    rec.style.setProperty('visibility', 'visible', 'important');
+    rec.style.setProperty('pointer-events', 'auto', 'important');
     card.style.setProperty('position', 'absolute', 'important');
     card.style.setProperty('top', '50%', 'important');
     card.style.setProperty('left', '50%', 'important');
@@ -273,6 +311,8 @@
   function openPopup() {
     var rec = popupEl();
     if (!rec) return;
+    allowOpen = true;
+    rec.classList.add('pts-success-popup');
     rec.classList.add('pts-success-open');
     document.body.classList.add('t-body_success-popup-showed');
     showBackdrop();
@@ -281,9 +321,8 @@
     recenter();
 
     if (typeof window.t396_doResize === 'function') {
-      try { window.t396_doResize(POPUP_ID.replace('rec', '')); } catch (e) {}
+      try { window.t396_doResize(popupId.replace('rec', '')); } catch (e) {}
     }
-    /* Тильда пересчитывает координаты после resize — возвращаем центр */
     requestAnimationFrame(function () {
       recenter();
       lockScroll();
@@ -301,10 +340,17 @@
 
   function closePopup() {
     var rec = popupEl();
-    if (!rec) return;
+    allowOpen = false;
+    if (!rec) {
+      hideBackdrop();
+      unlockScroll();
+      return;
+    }
     rec.classList.remove('pts-success-open');
     rec.style.display = 'none';
     rec.style.overflow = 'hidden';
+    rec.style.visibility = 'hidden';
+    rec.style.pointerEvents = 'none';
     hideBackdrop();
     unlockScroll();
     resetForm();
@@ -313,7 +359,7 @@
   function onOverlayClick(e) {
     var rec = popupEl();
     if (!rec || !isOpen()) return;
-    var closeBtn = e.target.closest && e.target.closest('a[href="' + CLOSE_HREF + '"]');
+    var closeBtn = e.target.closest && e.target.closest('a[href="' + closeHref + '"]');
     if (closeBtn) {
       e.preventDefault();
       e.stopPropagation();
@@ -330,6 +376,7 @@
     var rec = popupEl();
     if (!rec || rec.getAttribute('data-pts-success-bound') === '1') return;
     rec.setAttribute('data-pts-success-bound', '1');
+    rec.classList.add('pts-success-popup');
 
     rec.addEventListener('pointerdown', function (e) {
       var card = cardEl();
@@ -339,7 +386,7 @@
     rec.addEventListener('click', onOverlayClick, true);
 
     rec.addEventListener('click', function (e) {
-      if (e.target.closest && e.target.closest('a[href="' + CLOSE_HREF + '"]')) {
+      if (e.target.closest && e.target.closest('a[href="' + closeHref + '"]')) {
         e.preventDefault();
         e.stopPropagation();
         closePopup();
@@ -351,20 +398,23 @@
     if (!form || form.getAttribute('data-pts-success-bound') === '1') return;
     form.setAttribute('data-pts-success-bound', '1');
     form.addEventListener('tildaform:aftersuccess', function () {
+      allowOpen = true;
       clearTimeout(reopenTimer);
       reopenTimer = setTimeout(openPopup, 30);
     });
   }
 
   function scanForms() {
-    var rec = document.getElementById(FORM_ID);
+    if (!formId) return;
+    var rec = document.getElementById(formId);
     if (!rec) return;
     $$('form, .js-form-proccess', rec).forEach(bindForm);
   }
 
   function watchNolimShow() {
     var rec = popupEl();
-    if (!rec || typeof MutationObserver === 'undefined') return;
+    if (!rec || watched || typeof MutationObserver === 'undefined') return;
+    watched = true;
     var obs = new MutationObserver(function () {
       var style = rec.getAttribute('style') || '';
       var isNone = /display:\s*none/i.test(style);
@@ -373,7 +423,8 @@
         closePopup();
         return;
       }
-      if (isBlock && !isNone && !rec.classList.contains('pts-success-open')) {
+      /* открываем только после успеха формы, не по t396 display:block */
+      if (allowOpen && isBlock && !isNone && !rec.classList.contains('pts-success-open')) {
         openPopup();
         return;
       }
@@ -387,33 +438,39 @@
   }
 
   function init() {
-    popup = document.getElementById(POPUP_ID);
-    if (!popup) return;
+    var rec = popupEl();
+    if (!rec) return false;
+    rec.classList.add('pts-success-popup');
     bindPopup();
     scanForms();
     watchNolimShow();
-
-    setInterval(scanForms, 1000);
-
-    window.addEventListener('resize', function () {
-      if (isOpen()) recenter();
-    });
-
-    document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape' && isOpen()) closePopup();
-    });
+    return true;
   }
 
   function waitAndInit() {
     var started = Date.now();
     (function poll() {
-      if (document.getElementById(POPUP_ID) || Date.now() - started > 4000) {
-        init();
-        return;
+      if (!popupId || !formId) {
+        var cfg = readNolimSettings();
+        if (cfg) applyNolim(cfg);
       }
-      if (Date.now() - started < 20000) setTimeout(poll, 100);
+      if (popupId && formId && init()) return;
+      if (Date.now() - started > 20000) return;
+      setTimeout(poll, 100);
     })();
   }
+
+  setInterval(function () {
+    if (formId) scanForms();
+  }, 1000);
+
+  window.addEventListener('resize', function () {
+    if (isOpen()) recenter();
+  });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && isOpen()) closePopup();
+  });
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', waitAndInit);
