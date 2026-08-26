@@ -366,12 +366,19 @@
     var rec = popupEl();
     if (!rec || typeof MutationObserver === 'undefined') return;
     var obs = new MutationObserver(function () {
-      var shown = rec.classList.contains('pts-success-open') ||
-        /display:\s*block/i.test(rec.getAttribute('style') || '');
-      if (shown && !rec.classList.contains('pts-success-open')) {
-        openPopup();
+      var style = rec.getAttribute('style') || '';
+      var isNone = /display:\s*none/i.test(style);
+      var isBlock = /display:\s*block/i.test(style);
+      if (isNone && rec.classList.contains('pts-success-open')) {
+        closePopup();
+        return;
       }
-      if (rec.classList.contains('pts-success-open')) {
+      if (isBlock && !isNone && !rec.classList.contains('pts-success-open')) {
+        openPopup();
+        return;
+      }
+      if (rec.classList.contains('pts-success-open') && !isNone) {
+        showBackdrop();
         lockScroll();
         recenter();
       }
