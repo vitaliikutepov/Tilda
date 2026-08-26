@@ -27,6 +27,7 @@
   }
 
   .pts-success-popup.pts-success-open {
+    --zoom: 1 !important;
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
@@ -40,12 +41,16 @@
     bottom: 0 !important;
     width: 100% !important;
     height: 100% !important;
+    height: 100dvh !important;
+    max-width: 100vw !important;
+    max-height: 100dvh !important;
     margin: 0 !important;
     padding: 0 !important;
     background: transparent !important;
     overflow: hidden !important;
     z-index: 100005 !important;
     box-sizing: border-box;
+    transform: none !important;
   }
 
   /* оверлей на body: overflow зеро-блока глушит backdrop-filter */
@@ -64,9 +69,17 @@
     display: block;
   }
 
-  .pts-success-popup.pts-success-open .t396 {
+  .pts-success-popup.pts-success-open .t396,
+  .pts-success-popup.pts-success-open .t396__artboard {
+    --zoom: 1 !important;
+    transform: none !important;
     width: 100% !important;
     height: 100% !important;
+    min-height: 100% !important;
+    max-height: 100% !important;
+  }
+
+  .pts-success-popup.pts-success-open .t396 {
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
@@ -75,7 +88,6 @@
 
   .pts-success-popup.pts-success-open .t396__artboard {
     position: relative !important;
-    width: 100% !important;
     top: auto !important;
     left: auto !important;
     margin: 0 !important;
@@ -103,13 +115,14 @@
 
   /* карточка — первый tn-group арта, без привязки к group-id */
   .pts-success-popup.pts-success-open .t396__artboard > .tn-group {
-    position: absolute !important;
+    position: fixed !important;
     top: 50% !important;
     left: 50% !important;
     right: auto !important;
     bottom: auto !important;
     transform: translate(-50%, -50%) !important;
     margin: 0 !important;
+    max-width: calc(100vw - 24px);
   }
 
   html.pts-success-lock,
@@ -122,12 +135,8 @@
     overscroll-behavior: none !important;
   }
 
-  body.pts-success-lock {
-    position: fixed !important;
-    width: 100% !important;
-    left: 0 !important;
-    right: 0 !important;
-  }
+  /* body не делаем position:fixed: на iOS это containing block
+     для вложенного position:fixed — попап уезжает за экран */
 
   html.pts-success-lock .t-form-success-popup {
     display: none !important;
@@ -149,6 +158,7 @@
   var locked = false;
   var downOnCard = false;
   var reopenTimer = null;
+  var pinTimer = null;
   var allowOpen = false;
   var watched = false;
 
@@ -247,7 +257,6 @@
     scrollY = window.scrollY || window.pageYOffset || 0;
     document.documentElement.classList.add('pts-success-lock');
     document.body.classList.add('pts-success-lock');
-    document.body.style.top = '-' + scrollY + 'px';
     document.body.classList.add('t-body_scroll-locked');
   }
 
@@ -259,8 +268,14 @@
     document.body.classList.remove('t-body_scroll-locked');
     document.body.classList.remove('t-body_success-popup-showed');
     document.body.classList.remove('nolimPopUp');
-    document.body.style.top = '';
     window.scrollTo(0, scrollY);
+  }
+
+  function onTouchMove(e) {
+    if (!isOpen()) return;
+    var card = cardEl();
+    if (card && card.contains(e.target)) return;
+    if (e.cancelable) e.preventDefault();
   }
 
   function hideTildaSuccess() {
@@ -287,30 +302,102 @@
     if (closeBtn && typeof closeBtn.click === 'function') closeBtn.click();
   }
 
+  function viewportBox() {
+    var iw = window.innerWidth || document.documentElement.clientWidth || 0;
+    var ih = window.innerHeight || document.documentElement.clientHeight || 0;
+    var box = { top: 0, left: 0, width: iw, height: ih };
+    var vv = window.visualViewport;
+    /* visualViewport только если это реально окно (клавиатура),
+       а не высота всего документа — иначе карточка уезжает вниз */
+    if (vv && vv.height > 80 && vv.width > 80 && vv.height <= ih + 2 && vv.width <= iw + 2) {
+      box.top = Math.round(vv.offsetTop || 0);
+      box.left = Math.round(vv.offsetLeft || 0);
+      box.width = Math.round(vv.width);
+      box.height = Math.round(vv.height);
+    }
+    return box;
+  }
+
+  function mountPopup(rec) {
+    if (!rec) return;
+    if (rec.parentNode !== document.body) {
+      document.body.appendChild(rec);
+    }
+  }
+
   function recenter() {
     var rec = popupEl();
     var card = cardEl();
     if (!rec || !card) return;
+    mountPopup(rec);
+    rec.style.setProperty('--zoom', '1');
     rec.style.setProperty('display', 'flex', 'important');
     rec.style.setProperty('overflow', 'hidden', 'important');
     rec.style.setProperty('position', 'fixed', 'important');
-    rec.style.setProperty('inset', '0px', 'important');
-    rec.style.setProperty('top', '0px', 'important');
-    rec.style.setProperty('left', '0px', 'important');
-    rec.style.setProperty('right', '0px', 'important');
-    rec.style.setProperty('bottom', '0px', 'important');
+    rec.style.setProperty('transform', 'none', 'important');
     rec.style.setProperty('visibility', 'visible', 'important');
     rec.style.setProperty('pointer-events', 'auto', 'important');
-    card.style.setProperty('position', 'absolute', 'important');
+    rec.style.setProperty('z-index', '100005', 'important');
+    rec.style.setProperty('margin', '0px', 'important');
+    rec.style.removeProperty('inset');
+    var box = viewportBox();
+    rec.style.setProperty('top', box.top + 'px', 'important');
+    rec.style.setProperty('left', box.left + 'px', 'important');
+    rec.style.setProperty('right', 'auto', 'important');
+    rec.style.setProperty('bottom', 'auto', 'important');
+    rec.style.setProperty('width', box.width + 'px', 'important');
+    rec.style.setProperty('height', box.height + 'px', 'important');
+    var board = rec.querySelector('.t396__artboard');
+    if (board) {
+      board.style.setProperty('--zoom', '1');
+      board.style.setProperty('transform', 'none', 'important');
+      board.style.setProperty('width', box.width + 'px', 'important');
+      board.style.setProperty('height', box.height + 'px', 'important');
+    }
+    card.style.setProperty('position', 'fixed', 'important');
     card.style.setProperty('top', '50%', 'important');
     card.style.setProperty('left', '50%', 'important');
+    card.style.setProperty('right', 'auto', 'important');
+    card.style.setProperty('bottom', 'auto', 'important');
     card.style.setProperty('transform', 'translate(-50%, -50%)', 'important');
     card.style.setProperty('margin', '0px', 'important');
+  }
+
+  function stopPin() {
+    if (pinTimer) {
+      clearInterval(pinTimer);
+      pinTimer = null;
+    }
+  }
+
+  function startPin() {
+    stopPin();
+    var n = 0;
+    pinTimer = setInterval(function () {
+      if (!isOpen() || ++n > 25) {
+        stopPin();
+        return;
+      }
+      recenter();
+      lockScroll();
+    }, 80);
+  }
+
+  function requestOpen() {
+    allowOpen = true;
+    clearTimeout(reopenTimer);
+    reopenTimer = setTimeout(openPopup, 30);
   }
 
   function openPopup() {
     var rec = popupEl();
     if (!rec) return;
+    if (document.activeElement && document.activeElement.blur) {
+      try { document.activeElement.blur(); } catch (e) {}
+    }
+    /* выносим на body: transform/--zoom Тильды и body{position:fixed}
+       ломают position:fixed на iOS — попап оказывается за экраном */
+    mountPopup(rec);
     allowOpen = true;
     rec.classList.add('pts-success-popup');
     rec.classList.add('pts-success-open');
@@ -319,8 +406,9 @@
     hideTildaSuccess();
     lockScroll();
     recenter();
+    startPin();
 
-    if (typeof window.t396_doResize === 'function') {
+    if (typeof window.t396_doResize === 'function' && popupId) {
       try { window.t396_doResize(popupId.replace('rec', '')); } catch (e) {}
     }
     requestAnimationFrame(function () {
@@ -332,15 +420,12 @@
       lockScroll();
       hideTildaSuccess();
     }, 50);
-    setTimeout(function () {
-      recenter();
-      lockScroll();
-    }, 200);
   }
 
   function closePopup() {
     var rec = popupEl();
     allowOpen = false;
+    stopPin();
     if (!rec) {
       hideBackdrop();
       unlockScroll();
@@ -397,10 +482,28 @@
   function bindForm(form) {
     if (!form || form.getAttribute('data-pts-success-bound') === '1') return;
     form.setAttribute('data-pts-success-bound', '1');
-    form.addEventListener('tildaform:aftersuccess', function () {
+    form.addEventListener('submit', function () {
       allowOpen = true;
-      clearTimeout(reopenTimer);
-      reopenTimer = setTimeout(openPopup, 30);
+    }, true);
+    form.addEventListener('tildaform:aftersuccess', function () {
+      requestOpen();
+    });
+    if (window.jQuery && window.jQuery.fn) {
+      window.jQuery(form).off('tildaform:aftersuccess.ptsSuccess');
+      window.jQuery(form).on('tildaform:aftersuccess.ptsSuccess', function () {
+        requestOpen();
+      });
+    }
+  }
+
+  function hookNolimSuccess() {
+    if (!formId) return;
+    var key = 'NolimSuccessFunction' + formId.replace(/^rec/, '');
+    var arr = window[key];
+    if (!arr || arr.__ptsHooked) return;
+    arr.__ptsHooked = true;
+    arr.push(function () {
+      requestOpen();
     });
   }
 
@@ -411,6 +514,23 @@
     $$('form, .js-form-proccess', rec).forEach(bindForm);
   }
 
+  function formLooksSent() {
+    if (!formId) return false;
+    var rec = document.getElementById(formId);
+    if (!rec) return false;
+    return !!(rec.querySelector('.js-send-form-success') ||
+      rec.querySelector('.js-successbox[style*="display: block"]') ||
+      rec.querySelector('.js-successbox[style*="display:block"]'));
+  }
+
+  function nolimWantsOpen() {
+    var rec = popupEl();
+    var style = rec ? (rec.getAttribute('style') || '') : '';
+    if (document.body.classList.contains('nolimPopUp')) return true;
+    if (/display:\s*block/i.test(style) && (allowOpen || formLooksSent())) return true;
+    return false;
+  }
+
   function watchNolimShow() {
     var rec = popupEl();
     if (!rec || watched || typeof MutationObserver === 'undefined') return;
@@ -418,23 +538,16 @@
     var obs = new MutationObserver(function () {
       var style = rec.getAttribute('style') || '';
       var isNone = /display:\s*none/i.test(style);
-      var isBlock = /display:\s*block/i.test(style);
       if (isNone && rec.classList.contains('pts-success-open')) {
         closePopup();
         return;
       }
-      /* открываем только после успеха формы, не по t396 display:block */
-      if (allowOpen && isBlock && !isNone && !rec.classList.contains('pts-success-open')) {
+      if (nolimWantsOpen() && !rec.classList.contains('pts-success-open')) {
         openPopup();
-        return;
-      }
-      if (rec.classList.contains('pts-success-open') && !isNone) {
-        showBackdrop();
-        lockScroll();
-        recenter();
       }
     });
     obs.observe(rec, { attributes: true, attributeFilter: ['style', 'class'] });
+    obs.observe(document.body, { attributes: true, attributeFilter: ['class'] });
   }
 
   function init() {
@@ -443,6 +556,7 @@
     rec.classList.add('pts-success-popup');
     bindPopup();
     scanForms();
+    hookNolimSuccess();
     watchNolimShow();
     return true;
   }
@@ -462,11 +576,32 @@
 
   setInterval(function () {
     if (formId) scanForms();
+    hookNolimSuccess();
+    if (nolimWantsOpen() && !isOpen()) openPopup();
   }, 1000);
+
+  document.addEventListener('tildaform:aftersuccess', function (e) {
+    if (!formId) return;
+    var rec = document.getElementById(formId);
+    if (!rec) return;
+    var t = e.target;
+    if (t && rec.contains(t.nodeType === 1 ? t : (t.parentElement || document.body))) {
+      requestOpen();
+    }
+  }, true);
 
   window.addEventListener('resize', function () {
     if (isOpen()) recenter();
   });
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', function () {
+      if (isOpen()) recenter();
+    });
+    window.visualViewport.addEventListener('scroll', function () {
+      if (isOpen()) recenter();
+    });
+  }
+  document.addEventListener('touchmove', onTouchMove, { passive: false });
 
   document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape' && isOpen()) closePopup();
