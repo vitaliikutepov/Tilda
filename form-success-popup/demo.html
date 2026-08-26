@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Form success popup — Tilda demo</title>
+  <style>
+    * { box-sizing: border-box; }
+    html, body { margin: 0; }
+    body {
+      font-family: Arial, sans-serif;
+      background: #f1f4f9;
+      color: #111;
+    }
+    .page {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 48px 20px 160px;
+    }
+    h1 { font-size: 28px; font-weight: 600; margin: 0 0 8px; }
+    .note {
+      color: #5b6470;
+      font-size: 14px;
+      line-height: 1.5;
+      margin: 0 0 32px;
+    }
+    .hero {
+      height: 70vh;
+      background: linear-gradient(180deg, #c5d0de, #e7ecf3);
+      border-radius: 16px;
+      margin-bottom: 32px;
+      display: flex;
+      align-items: flex-end;
+      padding: 24px;
+      color: #243040;
+      font-size: 14px;
+    }
+    form {
+      background: #fff;
+      border-radius: 16px;
+      padding: 28px;
+      box-shadow: 0 8px 24px rgba(36, 48, 64, 0.08);
+    }
+    label {
+      display: block;
+      font-size: 13px;
+      margin: 0 0 6px;
+      color: #5b6470;
+    }
+    input[type="text"],
+    input[type="email"] {
+      width: 100%;
+      height: 48px;
+      border: 1px solid #c1c3c7;
+      border-radius: 8px;
+      padding: 0 14px;
+      font-size: 16px;
+      margin-bottom: 16px;
+      background: #f1f4f9;
+    }
+    button[type="submit"] {
+      width: 100%;
+      height: 52px;
+      border: 0;
+      border-radius: 8px;
+      background: #111;
+      color: #fff;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .filler {
+      margin-top: 48px;
+      color: #97a1b0;
+      font-size: 14px;
+      line-height: 1.7;
+    }
+
+    /* --- mock Tilda zero-block popup --- */
+    #rec3331835203 { display: none; }
+    #rec3331835203 .t396 { position: relative; }
+    #rec3331835203 .t396__artboard {
+      position: relative;
+      width: 100%;
+      height: 553px;
+    }
+    #rec3331835203 .t396__filter,
+    #rec3331835203 .t396__carrier {
+      position: absolute;
+      inset: 0;
+    }
+    #rec3331835203 .tn-group[data-group-id="1775812703037000001"] {
+      position: absolute;
+      top: 0;
+      left: calc(50% - 395px);
+      width: 790px;
+      height: 553px;
+      background: #fff;
+      border-radius: 16px;
+      padding: 10px;
+      box-shadow: 0 12px 40px rgba(20, 30, 40, 0.12);
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+    }
+    .popup-close-x {
+      width: 40px;
+      height: 40px;
+      border-radius: 8px;
+      background: rgba(151, 161, 176, 0.12);
+      color: #111;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      line-height: 1;
+    }
+    .popup-copy {
+      width: 100%;
+      padding: 80px 40px 24px;
+      text-align: center;
+    }
+    .popup-copy h2 {
+      margin: 0 0 16px;
+      font-size: 40px;
+      font-weight: 500;
+    }
+    .popup-copy p {
+      margin: 0;
+      font-size: 18px;
+      color: #5b6470;
+      line-height: 1.45;
+    }
+    .popup-close-btn {
+      display: inline-block;
+      margin: 28px auto 0;
+      padding: 16px 28px;
+      background: #111;
+      color: #fff;
+      text-decoration: none;
+      border-radius: 8px;
+      font-size: 16px;
+    }
+    @media (max-width: 767px) {
+      #rec3331835203 .t396__artboard { height: 336px; }
+      #rec3331835203 .tn-group[data-group-id="1775812703037000001"] {
+        top: 0;
+        left: 20px;
+        width: calc(100% - 40px);
+        height: 336px;
+      }
+      .popup-copy { padding: 48px 16px 16px; }
+      .popup-copy h2 { font-size: 26px; }
+      .popup-copy p { font-size: 14px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <h1>Попап успеха формы</h1>
+    <p class="note">
+      Демо сниппета <code>tilda-embed.html</code>. Отправьте форму — должен открыться
+      попап по центру, фон <code>#DDE3EB</code> 60% + blur 60px, страница не скроллится.
+      Клик по серому фону закрывает. Повторная отправка снова центрирует попап.
+    </p>
+
+    <div class="hero">Длинный блок сверху — чтобы было что скроллить до формы</div>
+
+    <div id="rec3315174201" class="r t-rec" data-record-type="396">
+      <form id="form3315174201" class="js-form-proccess" action="#" method="post">
+        <label for="name">Name</label>
+        <input id="name" name="name" type="text" value="Test User" />
+        <label for="email">Email</label>
+        <input id="email" name="email" type="email" value="test@example.com" />
+        <div class="t-form__inputsbox">
+          <button type="submit">Send</button>
+        </div>
+        <div class="js-successbox" style="display:none">Tilda default success</div>
+      </form>
+    </div>
+
+    <div class="filler">
+      <p>Ниже ещё контент страницы. Пока попап открыт, этот текст не должен скроллиться.</p>
+      <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer posuere, nisl in tincidunt luctus, sapien sapien tincidunt nisi, vitae porttitor nisl nisl in nisl.</p>
+      <p>Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium.</p>
+      <p>Ut enim ad minima veniam, quis nostrum exercitationem ullam corporis suscipit laboriosam.</p>
+      <p>Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit.</p>
+      <p>Quis autem vel eum iure reprehenderit qui in ea voluptate velit esse quam nihil molestiae.</p>
+    </div>
+  </div>
+
+  <div id="rec3331835203" class="r t-rec" data-record-type="396">
+    <div class="t396">
+      <div class="t396__artboard" data-artboard-recid="3331835203">
+        <div class="t396__carrier"></div>
+        <div class="t396__filter"></div>
+        <div class="tn-group" data-group-id="1775812703037000001">
+          <a class="popup-close-x" href="#closeallpopup" aria-label="Close">×</a>
+          <div class="popup-copy">
+            <h2>Almost there</h2>
+            <p>Send your details to info@positech.id to confirm your seat. We reply within one business day.</p>
+            <a class="popup-close-btn" href="#closeallpopup">Close</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="embed-slot"></div>
+  <script>
+    (function () {
+      var form = document.getElementById('form3315174201');
+      form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        /* имитация Nolim: fadeIn + overflow auto + «разблокировать» скролл */
+        var rec = document.getElementById('rec3331835203');
+        rec.style.display = 'block';
+        rec.style.overflow = 'auto';
+        document.body.classList.add('nolimPopUp');
+        document.body.classList.remove('t-body_scroll-locked');
+        form.dispatchEvent(new Event('tildaform:aftersuccess'));
+      });
+    })();
+  </script>
+  <script>
+    fetch('tilda-embed.html')
+      .then(function (r) { return r.text(); })
+      .then(function (html) {
+        var slot = document.getElementById('embed-slot');
+        var doc = new DOMParser().parseFromString(html, 'text/html');
+        Array.prototype.forEach.call(doc.querySelectorAll('style, script'), function (node) {
+          var clone = document.createElement(node.tagName.toLowerCase());
+          clone.textContent = node.textContent;
+          slot.appendChild(clone);
+        });
+      })
+      .catch(function (err) {
+        document.body.insertAdjacentHTML(
+          'beforeend',
+          '<p style="padding:20px;color:#c00">Не удалось загрузить tilda-embed.html: откройте demo.html через локальный сервер.</p>'
+        );
+        console.error(err);
+      });
+  </script>
+</body>
+</html>
