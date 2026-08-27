@@ -15,17 +15,19 @@
      - стек — flex-автолейаут: открытие верхней сдвигает нижние вниз;
      - ≥1366px — раскрытие по ховеру;
      - <1366px — аккордеон по тапу (одна открытая карточка);
-     - на мобилке ширина как в заготовке: 20px поля, карточки в колонке;
+     - на мобилке позиция и ширина как в заготовке (top 213, 280×320);
+     - четвёртая карточка выше (309px) с фейдом, CTA накладывается на неё;
+     - оверлап 14px; ховер 0.8s ease-in-out;
      - стиль: rgba(255,0,0,.1) + stroke 1px rgba(255,0,0,.1)
        + backdrop-blur 150px, радиус 16 / 12.
 ============================================================ -->
 
 <style>
   #rec3354439901 {
-    --ocs-overlap: 24px;
+    --ocs-overlap: 14px;
     --ocs-radius: 16px;
-    --ocs-ease: cubic-bezier(0.22, 1, 0.36, 1);
-    --ocs-time: 0.45s;
+    --ocs-ease: ease-in-out;
+    --ocs-time: 0.8s;
     --ocs-red: rgba(255, 0, 0, 0.1);
     overflow-x: hidden !important;
   }
@@ -102,17 +104,24 @@
   @media screen and (max-width: 1365px) {
     #rec3354439901 .ocs-stack {
       top: 346px;
-      left: 20px;
-      width: calc(100% - 40px);
+      left: calc(50% - 512px + 20px);
+      width: 984px;
       max-width: none;
       align-items: stretch;
+    }
+  }
+  @media screen and (max-width: 1023px) {
+    #rec3354439901 .ocs-stack {
+      left: calc(50% - 384px + 20px);
+      width: 728px;
     }
   }
   @media screen and (max-width: 767px) {
     #rec3354439901 .ocs-stack {
       top: 213px;
-      left: 20px;
-      width: calc(100% - 40px);
+      left: calc(50% - 160px + 20px);
+      width: 280px;
+      max-width: 280px;
     }
   }
 
@@ -137,7 +146,14 @@
   #rec3354439901 .ocs-card:nth-child(1) { width: 580px; z-index: 1; }
   #rec3354439901 .ocs-card:nth-child(2) { width: 620px; z-index: 2; }
   #rec3354439901 .ocs-card:nth-child(3) { width: 660px; z-index: 3; }
-  #rec3354439901 .ocs-card:nth-child(4) { width: 700px; z-index: 4; }
+  #rec3354439901 .ocs-card:nth-child(4),
+  #rec3354439901 .ocs-card--fade {
+    width: 700px;
+    z-index: 4;
+    min-height: 309px;
+    -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 calc(100% - 170px), transparent 100%);
+    mask-image: linear-gradient(to bottom, #000 0%, #000 calc(100% - 170px), transparent 100%);
+  }
   @media screen and (max-width: 1365px) {
     #rec3354439901 .ocs-card,
     #rec3354439901 .ocs-card:nth-child(1),
@@ -155,7 +171,6 @@
   #rec3354439901 .ocs-stack .warningcard-2,
   #rec3354439901 .ocs-stack .warningcard-3,
   #rec3354439901 .ocs-stack .warningcard-4,
-  #rec3354439901 .ocs-stack .ocs-cta,
   #rec3354439901 .ocs-stack .tn-group,
   #rec3354439901 .ocs-stack .tn-molecule {
     position: relative !important;
@@ -173,11 +188,31 @@
     box-sizing: border-box !important;
   }
   #rec3354439901 .ocs-stack .ocs-cta {
-    padding: 16px 0 0 !important;
+    position: absolute !important;
+    left: 50% !important;
+    right: auto !important;
+    bottom: 0 !important;
+    top: auto !important;
+    transform: translateX(-50%) !important;
+    width: 276px !important;
+    max-width: 100% !important;
+    padding: 0 !important;
     background: none !important;
     border: 0 !important;
     flex-shrink: 0;
     overflow: visible !important;
+    z-index: 8 !important;
+    pointer-events: auto;
+  }
+  @media screen and (max-width: 1365px) {
+    #rec3354439901 .ocs-stack .ocs-cta {
+      width: 80% !important;
+    }
+  }
+  @media screen and (max-width: 767px) {
+    #rec3354439901 .ocs-stack .ocs-cta {
+      width: 100% !important;
+    }
   }
 
   #rec3354439901 .ocs-card .tn-molecule {
@@ -202,7 +237,7 @@
     max-height: 0 !important;
     overflow: hidden !important;
     opacity: 0;
-    transition: max-height var(--ocs-time) var(--ocs-ease), opacity 0.25s ease;
+    transition: max-height var(--ocs-time) var(--ocs-ease), opacity var(--ocs-time) var(--ocs-ease);
   }
   #rec3354439901 .ocs-reveal-inner {
     overflow: hidden !important;
@@ -227,7 +262,7 @@
     display: block !important;
   }
   #rec3354439901 .ocs-card.is-open + .ocs-card {
-    margin-top: -8px;
+    margin-top: -4px;
   }
 
   @media screen and (min-width: 1366px) {
@@ -247,7 +282,7 @@
       display: block !important;
     }
     #rec3354439901 .ocs-card:hover + .ocs-card {
-      margin-top: -8px;
+      margin-top: -4px;
     }
   }
 
@@ -365,6 +400,7 @@
     headers.forEach(function (header, i) {
       var card = document.createElement('div');
       card.className = 'ocs-card';
+      if (i === 3) card.classList.add('ocs-card--fade');
       card.setAttribute('tabindex', '0');
       card.setAttribute('aria-expanded', 'false');
 
