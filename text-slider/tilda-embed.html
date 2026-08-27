@@ -1,0 +1,533 @@
+<!-- ============================================================
+     Текстовый слайдер для Tilda Zero Block
+     Страница: https://form.ptsecurity.com/h1bg-special
+     Блок: #rec3351087301
+
+     Как подключить:
+     1. В зеро-блоке уже должны быть:
+        - стрелки  .main-slider-left  /  .main-slider-right
+        - текст    .slider-text-2
+        - пагинация: группы .cslide4-1 … .cslide4-4
+          и шейпы  .slide4-1 … .slide4-4
+        Активный пункт — короткая полоска, остальные — точки 4px.
+     2. Вставьте весь этот файл в HTML-элемент Тильды
+        (в блок слайдера или в настройки страницы).
+     3. Тексты меняются в массиве SLIDE_TEXTS ниже.
+
+     Поведение:
+     - автосмена каждые 5 секунд;
+     - у активного пункта пагинации серый трек + белый прогресс;
+     - остальные пункты — белые точки;
+     - клик по стрелке / точке и свайп сбрасывают таймер;
+     - наведение на блок ставит автоплей на паузу.
+============================================================ -->
+
+<style>
+  .main-slider-left,
+  .main-slider-right,
+  .cslide4-1,
+  .cslide4-2,
+  .cslide4-3,
+  .cslide4-4 {
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    pointer-events: auto !important;
+    z-index: 10;
+  }
+
+  .slider-text-2 .tn-atom {
+    transition: opacity 0.35s ease;
+  }
+
+  /* ряд точек: не даём Тильде держать абсолютные left,
+     иначе ширина активного пункта не сдвинет остальные */
+  .pts-text-pager {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+    justify-content: center !important;
+    column-gap: 6px !important;
+    row-gap: 0 !important;
+    gap: 6px !important;
+  }
+
+  .cslide4-1,
+  .cslide4-2,
+  .cslide4-3,
+  .cslide4-4 {
+    position: relative !important;
+    top: auto !important;
+    left: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+    width: 4px !important;
+    min-width: 4px !important;
+    max-width: 4px !important;
+    flex: 0 0 4px !important;
+    height: 4px !important;
+    overflow: visible !important;
+    border-radius: 55px !important;
+    background: transparent !important;
+    transition: width 0.3s ease, min-width 0.3s ease, max-width 0.3s ease, flex-basis 0.3s ease;
+  }
+
+  .cslide4-1.is-on,
+  .cslide4-2.is-on,
+  .cslide4-3.is-on,
+  .cslide4-4.is-on {
+    width: 24px !important;
+    min-width: 24px !important;
+    max-width: 24px !important;
+    flex: 0 0 24px !important;
+  }
+
+  /* увеличенная зона клика у точек */
+  .cslide4-1::after,
+  .cslide4-2::after,
+  .cslide4-3::after,
+  .cslide4-4::after {
+    content: "";
+    position: absolute;
+    inset: -12px -8px;
+  }
+
+  .cslide4-1 .tn-molecule,
+  .cslide4-2 .tn-molecule,
+  .cslide4-3 .tn-molecule,
+  .cslide4-4 .tn-molecule {
+    position: relative !important;
+    width: 100% !important;
+    height: 4px !important;
+    overflow: hidden !important;
+    border-radius: 55px !important;
+    background-color: #676767 !important;
+    left: auto !important;
+    top: auto !important;
+  }
+
+  .slide4-1,
+  .slide4-2,
+  .slide4-3,
+  .slide4-4 {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    left: 0 !important;
+    top: 0 !important;
+    overflow: hidden !important;
+    border-radius: 55px !important;
+  }
+
+  .slide4-1 .tn-atom,
+  .slide4-2 .tn-atom,
+  .slide4-3 .tn-atom,
+  .slide4-4 .tn-atom {
+    position: relative !important;
+    width: 100% !important;
+    height: 100% !important;
+    overflow: hidden !important;
+    border-radius: 55px !important;
+    background-color: transparent !important;
+    background-image: none !important;
+  }
+
+  .pt-pag-fill {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    height: 100%;
+    width: 0;
+    border-radius: 55px;
+    background-color: #ffffff;
+    pointer-events: none;
+    z-index: 2;
+  }
+
+  /* неактивный: белая точка */
+  .cslide4-1:not(.is-on) .pt-pag-fill,
+  .cslide4-2:not(.is-on) .pt-pag-fill,
+  .cslide4-3:not(.is-on) .pt-pag-fill,
+  .cslide4-4:not(.is-on) .pt-pag-fill {
+    width: 100% !important;
+    animation: none !important;
+  }
+
+  /* активный: заливка слева направо */
+  .cslide4-1.is-on .slide4-1.pt-pag-run .pt-pag-fill,
+  .cslide4-2.is-on .slide4-2.pt-pag-run .pt-pag-fill,
+  .cslide4-3.is-on .slide4-3.pt-pag-run .pt-pag-fill,
+  .cslide4-4.is-on .slide4-4.pt-pag-run .pt-pag-fill {
+    animation: pts-text-fill var(--pt-autoplay, 5s) linear forwards;
+  }
+
+  .cslide4-1.is-on .slide4-1.pt-pag-run.pt-pag-paused .pt-pag-fill,
+  .cslide4-2.is-on .slide4-2.pt-pag-run.pt-pag-paused .pt-pag-fill,
+  .cslide4-3.is-on .slide4-3.pt-pag-run.pt-pag-paused .pt-pag-fill,
+  .cslide4-4.is-on .slide4-4.pt-pag-run.pt-pag-paused .pt-pag-fill {
+    animation-play-state: paused;
+  }
+
+  @keyframes pts-text-fill {
+    from { width: 0; }
+    to   { width: 100%; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .slider-text-2 .tn-atom {
+      transition: none;
+    }
+    .cslide4-1,
+    .cslide4-2,
+    .cslide4-3,
+    .cslide4-4 {
+      transition: none;
+    }
+  }
+</style>
+
+<script>
+(function () {
+  'use strict';
+
+  if (window.__ptsTextSliderInit) return;
+  window.__ptsTextSliderInit = true;
+
+  /* ==================== НАСТРОЙКИ ==================== */
+
+  var SLIDE_TEXTS = [
+    'Без рисков и остановки реальных бизнес-процессов',
+    'Бесплатно для участников сообщества',
+    '2 недели испытаний',
+    'Оплата исследователям за счет Positive Technologies'
+  ];
+
+  var AUTOPLAY_MS = 5000;
+  var TEXT_FADE_MS = 350;
+  var SWIPE_PX = 48;
+
+  /* =================================================== */
+
+  var active = 0;
+  var pagItems = [];
+  var textEl = null;
+  var textAtom = null;
+  var hostEl = null;
+  var autoplayPaused = false;
+  var progressGen = 0;
+  var textTimer = null;
+  var safetyTimer = null;
+  var lastAdvance = 0;
+  var fillEndedWhilePaused = false;
+  var reducedMotion = false;
+
+  function q(sel, root) {
+    return (root || document).querySelector(sel);
+  }
+
+  function prefersReducedMotion() {
+    return window.matchMedia &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  }
+
+  function ensurePagFill(bar) {
+    if (!bar) return null;
+    var atom = q('.tn-atom', bar) || bar;
+    var fill = q('.pt-pag-fill', atom);
+    if (!fill) {
+      fill = document.createElement('span');
+      fill.className = 'pt-pag-fill';
+      atom.appendChild(fill);
+    }
+    if (!fill._ptPagBound) {
+      fill._ptPagBound = true;
+      fill.addEventListener('animationend', onPagFillEnd);
+    }
+    return fill;
+  }
+
+  function resetFillEl(fill) {
+    if (!fill) return;
+    fill.style.animation = 'none';
+    fill.style.width = '0px';
+    void fill.offsetWidth;
+  }
+
+  function syncPagination() {
+    for (var i = 0; i < pagItems.length; i++) {
+      var item = pagItems[i];
+      if (!item || !item.wrap) continue;
+      var on = i === active;
+      item.wrap.classList.toggle('is-on', on);
+      item.wrap.setAttribute('aria-current', on ? 'true' : 'false');
+      if (!item.bar) continue;
+      if (!on) {
+        item.bar.classList.remove('pt-pag-run', 'pt-pag-paused');
+        var idle = item.fill || q('.pt-pag-fill', item.bar);
+        if (idle) {
+          idle.style.animation = 'none';
+          idle.style.width = '';
+        }
+      }
+    }
+  }
+
+  function clearSafety() {
+    if (safetyTimer) {
+      clearTimeout(safetyTimer);
+      safetyTimer = null;
+    }
+  }
+
+  function armSafety() {
+    clearSafety();
+    if (autoplayPaused) return;
+    safetyTimer = setTimeout(function () {
+      safetyTimer = null;
+      if (autoplayPaused) return;
+      if (Date.now() - lastAdvance < 80) return;
+      go(active + 1);
+    }, AUTOPLAY_MS + 180);
+  }
+
+  function restartActiveProgress() {
+    progressGen += 1;
+    var gen = progressGen;
+    var item = pagItems[active];
+    if (!item || !item.bar) return;
+    var fill = item.fill || ensurePagFill(item.bar);
+    item.bar.classList.remove('pt-pag-run', 'pt-pag-paused');
+    resetFillEl(fill);
+    if (fill) {
+      fill.setAttribute('data-pt-gen', String(gen));
+      fill.style.animation = '';
+      fill.style.width = '';
+      void fill.offsetWidth;
+    }
+    if (autoplayPaused) {
+      clearSafety();
+      return;
+    }
+    item.bar.classList.add('pt-pag-run');
+    armSafety();
+  }
+
+  function stopAutoplay() {
+    autoplayPaused = true;
+    clearSafety();
+    var item = pagItems[active];
+    if (item && item.bar && item.bar.classList.contains('pt-pag-run')) {
+      item.bar.classList.add('pt-pag-paused');
+    }
+  }
+
+  function startAutoplay() {
+    var wasPaused = autoplayPaused;
+    autoplayPaused = false;
+    var item = pagItems[active];
+    if (!item || !item.bar) return;
+    if (wasPaused && fillEndedWhilePaused) {
+      fillEndedWhilePaused = false;
+      go(active + 1);
+      return;
+    }
+    if (wasPaused && item.bar.classList.contains('pt-pag-run')) {
+      item.bar.classList.remove('pt-pag-paused');
+      armSafety();
+      return;
+    }
+    restartActiveProgress();
+  }
+
+  function onPagFillEnd(e) {
+    if (!e) return;
+    var name = e.animationName || '';
+    if (name && name !== 'pts-text-fill' && name.indexOf('pts-text-fill') === -1) return;
+    var fill = e.target;
+    if (!fill || fill.getAttribute('data-pt-gen') !== String(progressGen)) return;
+    if (autoplayPaused) {
+      fillEndedWhilePaused = true;
+      return;
+    }
+    if (Date.now() - lastAdvance < 80) return;
+    go(active + 1);
+  }
+
+  function setText(immediate) {
+    if (!textAtom) return;
+    var str = SLIDE_TEXTS[active] || '';
+    if (textTimer) {
+      clearTimeout(textTimer);
+      textTimer = null;
+    }
+    if (immediate || reducedMotion) {
+      textAtom.textContent = str;
+      textAtom.style.opacity = '';
+      return;
+    }
+    textAtom.style.opacity = '0';
+    textTimer = setTimeout(function () {
+      textAtom.textContent = str;
+      textAtom.style.opacity = '';
+      textTimer = null;
+    }, TEXT_FADE_MS);
+  }
+
+  function applyActive(immediate) {
+    setText(immediate);
+    syncPagination();
+  }
+
+  function go(index, immediate) {
+    var n = SLIDE_TEXTS.length;
+    if (!n) return;
+    lastAdvance = Date.now();
+    fillEndedWhilePaused = false;
+    clearSafety();
+    active = ((index % n) + n) % n;
+    applyActive(immediate);
+    startAutoplay();
+  }
+
+  function bindClick(el, fn) {
+    if (!el) return;
+    el.addEventListener('click', function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      fn();
+      var ae = document.activeElement;
+      if (ae && ae.blur) ae.blur();
+    }, true);
+  }
+
+  function bindSwipe(el) {
+    if (!el) return;
+    var x0 = 0;
+    var y0 = 0;
+    var axis = '';
+
+    el.addEventListener('touchstart', function (e) {
+      if (!e.changedTouches || !e.changedTouches[0]) return;
+      var t = e.changedTouches[0];
+      x0 = t.clientX;
+      y0 = t.clientY;
+      axis = '';
+    }, { passive: true });
+
+    el.addEventListener('touchmove', function (e) {
+      if (axis === 'v') return;
+      if (!e.changedTouches || !e.changedTouches[0]) return;
+      var t = e.changedTouches[0];
+      var dx = t.clientX - x0;
+      var dy = t.clientY - y0;
+      if (!axis) {
+        if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
+        axis = Math.abs(dx) > Math.abs(dy) ? 'h' : 'v';
+      }
+      if (axis === 'h' && e.cancelable) e.preventDefault();
+    }, { passive: false });
+
+    el.addEventListener('touchend', function (e) {
+      if (axis !== 'h') return;
+      if (!e.changedTouches || !e.changedTouches[0]) return;
+      var dx = e.changedTouches[0].clientX - x0;
+      axis = '';
+      if (Math.abs(dx) < SWIPE_PX) return;
+      if (dx < 0) go(active + 1);
+      else go(active - 1);
+    });
+
+    el.addEventListener('touchcancel', function () {
+      axis = '';
+    });
+  }
+
+  function findHost() {
+    var text = q('.slider-text-2') || q('.slider-text');
+    if (!text) return q('#rec3351087301') || document.body;
+    var rec = text.closest ? text.closest('.r.t-rec, .t-rec, .pts-text-slider') : null;
+    return rec || text.parentElement || text;
+  }
+
+  function init() {
+    reducedMotion = prefersReducedMotion();
+    textEl = q('.slider-text-2') || q('.slider-text');
+    if (!textEl) return;
+    textAtom = q('.tn-atom', textEl) || textEl;
+    hostEl = findHost();
+
+    pagItems = [];
+    var count = Math.min(SLIDE_TEXTS.length, 4);
+    for (var n = 1; n <= count; n++) {
+      var wrap = q('.cslide4-' + n);
+      var bar = q('.slide4-' + n);
+      var fill = ensurePagFill(bar);
+      pagItems.push({ wrap: wrap, bar: bar, fill: fill });
+      if (!wrap) continue;
+      wrap.setAttribute('role', 'button');
+      wrap.setAttribute('aria-label', 'Слайд ' + n);
+      (function (idx) {
+        bindClick(wrap, function () { go(idx); });
+      })(n - 1);
+    }
+
+    if (pagItems[0] && pagItems[0].wrap && pagItems[0].wrap.parentElement) {
+      pagItems[0].wrap.parentElement.classList.add('pts-text-pager');
+    }
+
+    document.documentElement.style.setProperty('--pt-autoplay', (AUTOPLAY_MS / 1000) + 's');
+
+    bindClick(q('.main-slider-left') || q('.slider-left'), function () {
+      go(active - 1);
+    });
+    bindClick(q('.main-slider-right') || q('.slider-right'), function () {
+      go(active + 1);
+    });
+    bindSwipe(hostEl);
+
+    if (hostEl) {
+      hostEl.addEventListener('mouseenter', stopAutoplay);
+      hostEl.addEventListener('mouseleave', function () {
+        startAutoplay();
+      });
+    }
+
+    document.addEventListener('visibilitychange', function () {
+      if (document.hidden) stopAutoplay();
+      else startAutoplay();
+    });
+
+    if (window.matchMedia) {
+      var mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+      var onMq = function () {
+        reducedMotion = mq.matches;
+      };
+      if (mq.addEventListener) mq.addEventListener('change', onMq);
+      else if (mq.addListener) mq.addListener(onMq);
+    }
+
+    go(0, true);
+  }
+
+  function waitAndInit() {
+    var started = Date.now();
+    (function poll() {
+      var text = q('.slider-text-2') || q('.slider-text');
+      var first = q('.cslide4-1');
+      if ((text && first) || Date.now() - started > 2500) {
+        if (text) init();
+        return;
+      }
+      if (Date.now() - started < 20000) setTimeout(poll, 100);
+    })();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', waitAndInit);
+  } else {
+    waitAndInit();
+  }
+})();
+</script>
