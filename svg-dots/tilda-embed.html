@@ -1,0 +1,214 @@
+<!-- ============================================================
+     Моргание точек SVG (.svg-dots) для Tilda Zero Block
+
+     Как подключить:
+     1. В зеро-блоке картинке/HTML с SVG задайте класс  svg-dots
+        (поле «CSS класс» у элемента).
+     2. Весь этот файл вставьте в HTML-элемент Тильды
+        (в тот же блок или в настройки страницы).
+
+     Если SVG стоит как <img>, скрипт подгрузит файл и встроит
+     его инлайном — иначе до отдельных точек не достучаться.
+     Уже инлайновый <svg> тоже подойдёт.
+
+     Поведение:
+     - часть точек остаётся статичной;
+     - часть медленно дышит;
+     - часть коротко вспыхивает в случайные моменты.
+============================================================ -->
+
+<style>
+  .svg-dots svg {
+    display: block;
+    width: 100%;
+    height: auto;
+    max-width: 100%;
+    overflow: visible;
+    pointer-events: none;
+  }
+
+  /* исходная группа в макете с opacity="0.1" — снимаем,
+     чтобы моргала каждая точка, а не весь слой целиком */
+  .svg-dots svg g[opacity] {
+    opacity: 1 !important;
+  }
+
+  .svg-dots svg rect,
+  .svg-dots svg circle,
+  .svg-dots svg ellipse {
+    opacity: var(--svg-dot-base, 0.12);
+    transform-box: fill-box;
+    transform-origin: center;
+  }
+
+  .svg-dots svg .svg-dots--breathe {
+    animation: svg-dots-breathe var(--svg-dot-dur, 6s) ease-in-out var(--svg-dot-delay, 0s) infinite;
+  }
+
+  .svg-dots svg .svg-dots--blink {
+    animation: svg-dots-blink var(--svg-dot-dur, 5s) ease-in-out var(--svg-dot-delay, 0s) infinite;
+  }
+
+  @keyframes svg-dots-breathe {
+    0%, 100% { opacity: var(--svg-dot-base, 0.12); }
+    50%      { opacity: var(--svg-dot-peak, 0.45); }
+  }
+
+  /* большую часть цикла точка тихая, вспышка короткая */
+  @keyframes svg-dots-blink {
+    0%, 72%, 100% { opacity: var(--svg-dot-base, 0.12); }
+    80%           { opacity: var(--svg-dot-peak, 1); }
+    88%           { opacity: var(--svg-dot-base, 0.12); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .svg-dots svg .svg-dots--breathe,
+    .svg-dots svg .svg-dots--blink {
+      animation: none !important;
+    }
+  }
+</style>
+
+<script>
+(function () {
+  'use strict';
+
+  if (window.__svgDotsInit) return;
+  window.__svgDotsInit = true;
+
+  var BASE = 0.12;
+  var SELECTOR = '.svg-dots';
+  var DOTS = 'rect, circle, ellipse';
+
+  function qa(sel, root) {
+    return Array.prototype.slice.call((root || document).querySelectorAll(sel));
+  }
+
+  function rand(min, max) {
+    return min + Math.random() * (max - min);
+  }
+
+  function reducedMotion() {
+    return window.matchMedia &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  }
+
+  function svgSrc(img) {
+    return img.getAttribute('data-original') ||
+      img.getAttribute('data-src') ||
+      img.currentSrc ||
+      img.src ||
+      '';
+  }
+
+  function isSvgUrl(url) {
+    if (!url) return false;
+    var clean = url.split('?')[0].split('#')[0].toLowerCase();
+    return /\.svg$/.test(clean) || clean.indexOf('image/svg') !== -1;
+  }
+
+  function copyLayout(from, to) {
+    var cls = from.getAttribute('class');
+    if (cls) to.setAttribute('class', cls);
+    to.classList.add('svg-dots__svg');
+    var style = from.getAttribute('style');
+    if (style) to.setAttribute('style', style);
+    to.style.display = 'block';
+    to.style.width = '100%';
+    to.style.height = 'auto';
+    to.style.maxWidth = '100%';
+    to.removeAttribute('width');
+    to.removeAttribute('height');
+    if (!to.getAttribute('preserveAspectRatio')) {
+      to.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+    }
+  }
+
+  function animateDots(svg) {
+    if (!svg || svg.getAttribute('data-svg-dots') === '1') return;
+    svg.setAttribute('data-svg-dots', '1');
+
+    var group = svg.querySelector('g[opacity]');
+    if (group) group.removeAttribute('opacity');
+
+    if (reducedMotion()) return;
+
+    qa(DOTS, svg).forEach(function (dot) {
+      var roll = Math.random();
+      if (roll < 0.52) return;
+
+      dot.style.setProperty('--svg-dot-base', String(BASE));
+      dot.style.setProperty('--svg-dot-peak', rand(0.4, 1).toFixed(2));
+      dot.style.setProperty('--svg-dot-dur', rand(3.2, 8.5).toFixed(2) + 's');
+      dot.style.setProperty('--svg-dot-delay', rand(0, 10).toFixed(2) + 's');
+      dot.classList.add(roll < 0.82 ? 'svg-dots--breathe' : 'svg-dots--blink');
+    });
+  }
+
+  function inlineFromText(img, text) {
+    var doc = new DOMParser().parseFromString(text, 'image/svg+xml');
+    var svg = doc.documentElement;
+    if (!svg || svg.nodeName.toLowerCase() !== 'svg') return;
+    if (doc.querySelector('parsererror')) return;
+    var node = document.importNode(svg, true);
+    copyLayout(img, node);
+    if (img.parentNode) img.parentNode.replaceChild(node, img);
+    animateDots(node);
+  }
+
+  function processHost(host) {
+    if (!host) return;
+    var inline = host.tagName && host.tagName.toLowerCase() === 'svg'
+      ? host
+      : host.querySelector('svg');
+    if (inline) {
+      animateDots(inline);
+      return;
+    }
+
+    var img = host.querySelector('img');
+    if (!img || img.getAttribute('data-svg-dots-fetch') === '1') return;
+    var src = svgSrc(img);
+    if (!isSvgUrl(src)) return;
+
+    img.setAttribute('data-svg-dots-fetch', '1');
+    fetch(src, { mode: 'cors' })
+      .then(function (res) {
+        if (!res.ok) throw new Error('svg ' + res.status);
+        return res.text();
+      })
+      .then(function (text) { inlineFromText(img, text); })
+      .catch(function () {
+        img.removeAttribute('data-svg-dots-fetch');
+      });
+  }
+
+  function scan() {
+    qa(SELECTOR).forEach(processHost);
+  }
+
+  function waitAndScan() {
+    var started = Date.now();
+    (function poll() {
+      scan();
+      var ready = qa(SELECTOR).some(function (el) {
+        return el.querySelector('svg') || el.querySelector('img');
+      });
+      if (ready || Date.now() - started > 2500) return;
+      if (Date.now() - started < 20000) setTimeout(poll, 120);
+    })();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', waitAndScan);
+  } else {
+    waitAndScan();
+  }
+
+  var resizeTimer = null;
+  window.addEventListener('resize', function () {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(scan, 300);
+  });
+})();
+</script>

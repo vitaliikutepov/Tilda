@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SVG dots blink — Tilda demo</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #1a1028;
+      color: #f4eefe;
+    }
+    .page {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 40px 20px 80px;
+    }
+    h1 {
+      font-size: 20px;
+      font-weight: 600;
+      margin: 0 0 8px;
+    }
+    .note {
+      color: #c9b8e4;
+      font-size: 14px;
+      margin: 0 0 28px;
+      max-width: 720px;
+      line-height: 1.45;
+    }
+    .stage {
+      position: relative;
+      border-radius: 28px;
+      overflow: hidden;
+      background-image: linear-gradient(0.181turn, #8742EE 0%, #A970FF 100%);
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
+    }
+    .tn-elem.svg-dots {
+      display: block;
+      width: 100%;
+    }
+    .tn-atom {
+      position: relative;
+      width: 100%;
+    }
+    .tn-atom__img {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <h1>Моргание точек SVG</h1>
+    <p class="note">
+      Демо сниппета <code>tilda-embed.html</code>.
+      Класс <code>svg-dots</code> на элементе с SVG — как в зеро-блоке Тильды.
+      Картинка подменяется инлайновым SVG, точки моргают случайно и медленно.
+    </p>
+
+    <div class="stage">
+      <div class="tn-elem svg-dots">
+        <div class="tn-atom">
+          <img class="tn-atom__img t-img" alt=""
+            src="https://static.tildacdn.com/tild6562-3964-4135-b062-323031376465/Group_2136139868.svg"
+            data-original="https://static.tildacdn.com/tild6562-3964-4135-b062-323031376465/Group_2136139868.svg" />
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="embed-slot"></div>
+  <script>
+    fetch('tilda-embed.html')
+      .then(function (r) { return r.text(); })
+      .then(function (html) {
+        var slot = document.getElementById('embed-slot');
+        var doc = new DOMParser().parseFromString(html, 'text/html');
+        Array.prototype.forEach.call(doc.querySelectorAll('style, script'), function (node) {
+          var clone = document.createElement(node.tagName.toLowerCase());
+          clone.textContent = node.textContent;
+          slot.appendChild(clone);
+        });
+      })
+      .catch(function (err) {
+        document.body.insertAdjacentHTML(
+          'beforeend',
+          '<p style="padding:20px;color:#f88">Не удалось загрузить tilda-embed.html: откройте demo.html через локальный сервер.</p>'
+        );
+        console.error(err);
+      });
+  </script>
+</body>
+</html>
