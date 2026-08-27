@@ -22,6 +22,7 @@
      Поведение:
      - автосмена каждые 5 секунд;
      - текст fill + autoheight: фейд 0.5с, без hug (стрелки по бокам);
+     - высота текста едет 0.5с, пагинация скользит вместе с ней;
      - у активного пункта пагинации серый трек + белый прогресс;
      - остальные пункты — белые точки;
      - клик по стрелке / точке и свайп сбрасывают таймер;
@@ -53,8 +54,8 @@
     width: 100% !important;
     flex: 1 1 auto !important;
     box-sizing: border-box;
-    height: auto !important;
     max-width: 864px;
+    transition: height 0.5s cubic-bezier(.25, .1, .25, 1);
   }
   .pts-text-slider-v2 .slider-text-3 .tn-atom {
     display: block;
@@ -65,6 +66,53 @@
     white-space: normal !important;
     transition: opacity 0.5s ease !important;
     box-sizing: border-box;
+  }
+
+  /* колонка слайдера: пагинация в потоке, а не с абсолютным top.
+     Иначе при autoheight текста точки прыгают на новый top. */
+  .pts-text-slider-v2.text-slider-2,
+  .pts-text-slider-v2 .text-slider-2 {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+  .pts-text-slider-v2 .text-slider-2 > .tn-molecule,
+  .pts-text-slider-v2.text-slider-2 > .tn-molecule {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+  .pts-text-slider-v2 .pts-text-row-wrap,
+  .pts-text-slider-v2 .pts-text-row-wrap > .tn-molecule {
+    position: relative !important;
+    top: auto !important;
+    left: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+    width: 100% !important;
+    height: auto !important;
+    flex: 0 0 auto !important;
+    transform: none !important;
+  }
+  .pts-text-slider-v2 .pts-text-pager-wrap {
+    position: relative !important;
+    top: auto !important;
+    left: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+    align-self: center !important;
+    flex: 0 0 auto !important;
+    width: auto !important;
+    height: auto !important;
+    transform: none !important;
+  }
+  .pts-text-slider-v2 .pts-text-pager-wrap > .tn-molecule {
+    position: relative !important;
+    height: auto !important;
   }
 
   @media screen and (max-width: 1919px) {
@@ -250,7 +298,10 @@
   var textEl = null;
   var textAtom = null;
   var hostEl = null;
+  var rowWrapEl = null;
+  var pagerWrapEl = null;
   var textTimers = [];
+  var heightMeasurer = null;
   var autoplayPaused = false;
   var autoplayStart = null;
   var autoplayTimer = null;
@@ -323,6 +374,20 @@
       }
       parent.appendChild(clone);
     }
+    parent.classList.add('pts-text-pager');
+    var el = first.parentElement;
+    while (el && el !== root) {
+      var cls = String(el.className || '');
+      if ((/\btn-group\b|\bt396__group\b|\bpag-row\b/.test(cls)) &&
+          !/\bcslide4-/.test(cls)) {
+        pagerWrapEl = el;
+        break;
+      }
+      el = el.parentElement;
+    }
+    if (!pagerWrapEl) pagerWrapEl = parent;
+    pagerWrapEl.classList.add('pts-text-pager-wrap');
+    pinFlowEl(pagerWrapEl);
   }
 
   function syncPagination() {
@@ -384,6 +449,127 @@
     rafId = requestAnimationFrame(loop);
   }
 
+  function pinFlowEl(el) {
+    if (!el) return;
+    el.style.setProperty('position', 'relative', 'important');
+    el.style.setProperty('top', 'auto', 'important');
+    el.style.setProperty('left', 'auto', 'important');
+    el.style.setProperty('right', 'auto', 'important');
+    el.style.setProperty('bottom', 'auto', 'important');
+    el.style.setProperty('height', 'auto', 'important');
+    el.style.setProperty('transform', 'none', 'important');
+  }
+
+  function pinSliderFlow() {
+    if (textEl) {
+      var rowWrap = textEl.closest
+        ? textEl.closest('.tn-group, .t396__group, .pts-text-row')
+        : textEl.parentElement;
+      if (rowWrap && rowWrap !== hostEl) {
+        rowWrapEl = rowWrap;
+        rowWrapEl.classList.add('pts-text-row-wrap');
+        pinFlowEl(rowWrapEl);
+      }
+    }
+    if (pagerWrapEl) pinFlowEl(pagerWrapEl);
+    var col = (hostEl && hostEl.querySelector)
+      ? (hostEl.matches && hostEl.matches('.text-slider-2')
+        ? hostEl
+        : hostEl.querySelector('.text-slider-2'))
+      : null;
+    if (col) {
+      col.style.setProperty('height', 'auto', 'important');
+      col.style.setProperty('overflow', 'visible', 'important');
+      var mol = null;
+      var kids = col.children || [];
+      for (var i = 0; i < kids.length; i++) {
+        if (/\btn-molecule\b/.test(kids[i].className || '')) {
+          mol = kids[i];
+          break;
+        }
+      }
+      if (mol) {
+        mol.style.setProperty('height', 'auto', 'important');
+        mol.style.setProperty('overflow', 'visible', 'important');
+      }
+    }
+  }
+
+  function boxWidthPx() {
+    if (!textEl) return textMaxWidth();
+    var w = textEl.clientWidth || textEl.offsetWidth || 0;
+    var cap = textMaxWidth();
+    if (isPhoneLayout()) cap = Math.min(cap, 280);
+    if (w > 40) return Math.min(w, cap);
+    return cap;
+  }
+
+  function measureHeight(str) {
+    if (!textAtom) return 0;
+    if (!heightMeasurer) {
+      heightMeasurer = document.createElement('div');
+      heightMeasurer.setAttribute('aria-hidden', 'true');
+      heightMeasurer.style.cssText =
+        'position:absolute;left:0;top:0;visibility:hidden;pointer-events:none;z-index:-1;';
+      var mount = (textEl && textEl.parentNode) || hostEl || document.body;
+      mount.appendChild(heightMeasurer);
+    }
+    var cs = getComputedStyle(textAtom);
+    var w = boxWidthPx();
+    heightMeasurer.style.boxSizing = 'border-box';
+    heightMeasurer.style.width = w + 'px';
+    heightMeasurer.style.maxWidth = w + 'px';
+    heightMeasurer.style.padding = cs.padding;
+    heightMeasurer.style.font = cs.font;
+    heightMeasurer.style.fontSize = cs.fontSize;
+    heightMeasurer.style.fontFamily = cs.fontFamily;
+    heightMeasurer.style.fontWeight = cs.fontWeight;
+    heightMeasurer.style.lineHeight = cs.lineHeight;
+    heightMeasurer.style.letterSpacing = cs.letterSpacing;
+    heightMeasurer.style.whiteSpace = 'normal';
+    heightMeasurer.style.overflowWrap = 'break-word';
+    heightMeasurer.style.wordBreak = cs.wordBreak || 'normal';
+    heightMeasurer.style.textAlign = cs.textAlign || 'center';
+    heightMeasurer.textContent = str;
+    return Math.max(1, Math.ceil(heightMeasurer.scrollHeight));
+  }
+
+  function rowHeightForText(textH) {
+    var h = Math.max(0, Math.round(textH || 0));
+    if (isPhoneLayout()) return h;
+    var left = hostEl && q('.main-slider-left-2', hostEl);
+    if (left && getComputedStyle(left).display !== 'none') {
+      h = Math.max(h, left.offsetHeight || 0);
+    }
+    return h;
+  }
+
+  function syncPagerTop(textH, animate) {
+    if (!pagerWrapEl) return;
+    var pos = getComputedStyle(pagerWrapEl).position;
+    if (pos !== 'absolute' && pos !== 'fixed') return;
+    var gap = isPhoneLayout() ? 16 : 20;
+    var top = rowHeightForText(textH) + gap;
+    pagerWrapEl.style.setProperty(
+      'transition',
+      animate ? 'top 0.5s cubic-bezier(.25,.1,.25,1)' : 'none',
+      'important'
+    );
+    pagerWrapEl.style.setProperty('top', top + 'px', 'important');
+  }
+
+  function lockHeight(h, animate) {
+    if (!textEl) return;
+    var px = Math.max(0, Math.round(h)) + 'px';
+    textEl.style.setProperty(
+      'transition',
+      animate ? 'height 0.5s cubic-bezier(.25,.1,.25,1)' : 'none',
+      'important'
+    );
+    textEl.style.setProperty('height', px, 'important');
+    syncPagerTop(h, animate);
+  }
+
   function fitTextBox() {
     if (!textEl) return;
     var maxW = isPhoneLayout() ? 'min(280px, 100%)' : (textMaxWidth() + 'px');
@@ -394,7 +580,6 @@
     textEl.style.setProperty('flex-shrink', '1', 'important');
     textEl.style.setProperty('flex-basis', 'auto', 'important');
     textEl.style.setProperty('min-width', '0px', 'important');
-    textEl.style.setProperty('height', 'auto', 'important');
     textEl.style.setProperty('overflow', 'hidden', 'important');
     if (textAtom) {
       textAtom.style.setProperty('white-space', 'normal', 'important');
@@ -416,18 +601,32 @@
     textTimers = [];
 
     textAtom.style.setProperty('transition', 'opacity 0.5s ease', 'important');
+    pinSliderFlow();
     fitTextBox();
+
+    var fromH = textEl.offsetHeight || measureHeight(textAtom.textContent || str);
+    var toH = measureHeight(str);
 
     if (immediate) {
       textAtom.textContent = str;
+      fitTextBox();
+      lockHeight(toH, false);
       setAtomOpacity(TEXT_OPACITY);
       return;
     }
 
+    lockHeight(fromH, false);
     setAtomOpacity('0');
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () {
+        lockHeight(toH, true);
+      });
+    });
+
     textTimers.push(setTimeout(function () {
       textAtom.textContent = str;
       fitTextBox();
+      lockHeight(toH, false);
     }, 500));
     textTimers.push(setTimeout(function () {
       setAtomOpacity(TEXT_OPACITY);
@@ -525,9 +724,11 @@
     textEl = q('.slider-text-3', hostEl);
     if (!textEl) return;
     textAtom = q('.tn-atom', textEl) || textEl;
+    pinSliderFlow();
     if (isPhoneLayout()) showSliderGroup();
 
     ensurePagerCount(hostEl, SLIDE_TEXTS.length);
+    pinSliderFlow();
 
     pagItems = [];
     var count = SLIDE_TEXTS.length;
@@ -571,6 +772,10 @@
         var bp = breakpointId();
         if (bp === currentBp) return;
         currentBp = bp;
+        if (heightMeasurer && heightMeasurer.parentNode) {
+          heightMeasurer.parentNode.removeChild(heightMeasurer);
+          heightMeasurer = null;
+        }
         if (isPhoneLayout()) showSliderGroup();
         setText(true);
       }, 250);
