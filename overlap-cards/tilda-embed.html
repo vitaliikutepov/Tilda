@@ -73,7 +73,18 @@
     overflow: hidden;
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
-    transition: transform var(--ocs-time) var(--ocs-ease);
+    z-index: 3;
+    /* z-index в transition: пока текст гаснет, открытая карточка остаётся
+       выше соседних — иначе их blur-стекло съедает фейд. */
+    transition: transform var(--ocs-time) var(--ocs-ease), z-index var(--ocs-time) var(--ocs-ease);
+  }
+  #rec3354439901 .ocs-card.is-open {
+    z-index: 30 !important;
+  }
+  @media screen and (min-width: 1366px) {
+    #rec3354439901 .ocs-card:hover {
+      z-index: 30 !important;
+    }
   }
 
   /* Четвёртая карточка: заливка, обводка и blur — на ::before с маской.
