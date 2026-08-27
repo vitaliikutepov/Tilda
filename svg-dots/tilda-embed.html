@@ -12,7 +12,7 @@
      Уже инлайновый <svg> тоже подойдёт.
 
      Цвет (fill) не меняется — как в исходном SVG.
-     Анимируется только прозрачность вокруг исходной.
+     Анимируется только прозрачность: часть точек почти гаснет.
 ============================================================ -->
 
 <style>
@@ -107,14 +107,22 @@
   function twinkle(dot, rest) {
     if (!dot.animate) return;
     var hi = Math.min(1, rest * 2.2);
-    var dur = rand(3400, 7200);
-    var delay = rand(0, 4800);
+    var lo = rand(0, 0.025);
+    var delay = rand(0, 5200);
     var roll = Math.random();
 
-    if (roll < 0.55) {
+    if (roll < 0.42) {
+      dot.animate(
+        [{ opacity: rest }, { opacity: lo }, { opacity: rest }],
+        { duration: rand(4200, 9000), delay: delay, iterations: Infinity, easing: 'ease-in-out' }
+      );
+      return;
+    }
+
+    if (roll < 0.72) {
       dot.animate(
         [{ opacity: rest }, { opacity: hi }, { opacity: rest }],
-        { duration: dur, delay: delay, iterations: Infinity, easing: 'ease-in-out' }
+        { duration: rand(3400, 7200), delay: delay, iterations: Infinity, easing: 'ease-in-out' }
       );
       return;
     }
@@ -122,12 +130,12 @@
     dot.animate(
       [
         { opacity: rest, offset: 0 },
-        { opacity: rest, offset: 0.68 },
-        { opacity: hi, offset: 0.78 },
+        { opacity: rest, offset: 0.62 },
+        { opacity: lo, offset: 0.74 },
         { opacity: rest, offset: 0.86 },
         { opacity: rest, offset: 1 }
       ],
-      { duration: dur, delay: delay, iterations: Infinity, easing: 'ease-in-out' }
+      { duration: rand(3800, 8000), delay: delay, iterations: Infinity, easing: 'ease-in-out' }
     );
   }
 
