@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Text slider — Tilda demo</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #111;
+      color: #fff;
+    }
+    .page {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 40px 20px 80px;
+    }
+    h1 {
+      font-size: 20px;
+      font-weight: 600;
+      margin: 0 0 8px;
+    }
+    .note {
+      color: #a0a0a0;
+      font-size: 14px;
+      margin: 0 0 28px;
+      max-width: 720px;
+      line-height: 1.45;
+    }
+    code {
+      font-size: 13px;
+      color: #ddd;
+    }
+
+    /* --- UI как зеро-блок rec3351087301 --- */
+    .pts-text-slider {
+      background: #000;
+      min-height: 140px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      row-gap: 8px;
+      padding: 32px 24px 28px;
+    }
+
+    .pts-text-row {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      justify-content: center;
+      column-gap: 8px;
+      width: 100%;
+      max-width: 929px;
+    }
+
+    .main-slider-left,
+    .main-slider-right {
+      flex: 0 0 60px;
+      width: 60px;
+      height: 60px;
+      border: 0;
+      padding: 0;
+      background: transparent;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .main-slider-left .tn-atom,
+    .main-slider-right .tn-atom {
+      width: 20px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .main-slider-left svg,
+    .main-slider-right svg {
+      width: 16px;
+      height: 16px;
+      display: block;
+    }
+
+    .slider-text-2 {
+      display: table;
+      flex: 0 0 auto;
+      min-width: 0;
+      text-align: center;
+      overflow: hidden;
+    }
+    .slider-text-2 .tn-atom {
+      color: #fff;
+      font-size: 20px;
+      line-height: 1.5;
+      font-weight: 400;
+      opacity: 0.8;
+    }
+
+    .pag-row {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      justify-content: center;
+      column-gap: 6px;
+      height: 4px;
+    }
+
+    .cslide4-1,
+    .cslide4-2,
+    .cslide4-3,
+    .cslide4-4 {
+      height: 4px;
+    }
+    .cslide4-1 .tn-molecule,
+    .cslide4-2 .tn-molecule,
+    .cslide4-3 .tn-molecule,
+    .cslide4-4 .tn-molecule {
+      width: 100%;
+      height: 4px;
+      border-radius: 55px;
+      background-color: #676767;
+      overflow: hidden;
+    }
+    .slide4-1,
+    .slide4-2,
+    .slide4-3,
+    .slide4-4 {
+      width: 100%;
+      height: 100%;
+    }
+    .slide4-1 .tn-atom,
+    .slide4-2 .tn-atom,
+    .slide4-3 .tn-atom,
+    .slide4-4 .tn-atom {
+      width: 100%;
+      height: 100%;
+      background-color: #fff;
+    }
+
+    @media (max-width: 767px) {
+      .pts-text-slider { min-height: 120px; padding: 20px 12px; overflow: hidden; }
+      .pts-text-row {
+        max-width: 280px;
+        width: 100%;
+        column-gap: 0;
+      }
+      /* как в Тильде на 320: стрелки скрыты, текст fill 280 */
+      .main-slider-left,
+      .main-slider-right { display: none; }
+      .slider-text-2 {
+        display: table;
+        width: 100%;
+        max-width: 280px;
+      }
+      .slider-text-2 .tn-atom {
+        font-size: 14px;
+        line-height: 1.4;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <h1>Текстовый слайдер для Тильды</h1>
+    <p class="note">
+      Демо логики сниппета <code>tilda-embed.html</code> под блок
+      <code>#rec3351087301</code> на
+      <a href="https://form.ptsecurity.com/h1bg-special" style="color:#ccc">form.ptsecurity.com/h1bg-special</a>.
+      Автопроигрывание 5 с. Текст hug со скольжением стрелок, длинные строки
+      переносятся (max-width: 280 / 616 / 1002 / 864). Активный пункт пагинации —
+      прогрессбар, остальные — точки.
+    </p>
+  </div>
+
+  <div class="pts-text-slider">
+    <div class="pts-text-row">
+      <button class="tn-elem main-slider-left" type="button" aria-label="Назад">
+        <div class="tn-atom">
+          <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path d="M10.5 3.5L6 8l4.5 4.5" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+      </button>
+
+      <div class="tn-elem slider-text-2">
+        <div class="tn-atom">Без рисков и остановки реальных бизнес-процессов</div>
+      </div>
+
+      <button class="tn-elem main-slider-right" type="button" aria-label="Вперёд">
+        <div class="tn-atom">
+          <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path d="M5.5 3.5L10 8l-4.5 4.5" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+      </button>
+    </div>
+
+    <div class="pag-row">
+      <div class="tn-group cslide4-1">
+        <div class="tn-molecule">
+          <div class="tn-elem slide4-1"><div class="tn-atom"></div></div>
+        </div>
+      </div>
+      <div class="tn-group cslide4-2">
+        <div class="tn-molecule">
+          <div class="tn-elem slide4-2"><div class="tn-atom"></div></div>
+        </div>
+      </div>
+      <div class="tn-group cslide4-3">
+        <div class="tn-molecule">
+          <div class="tn-elem slide4-3"><div class="tn-atom"></div></div>
+        </div>
+      </div>
+      <div class="tn-group cslide4-4">
+        <div class="tn-molecule">
+          <div class="tn-elem slide4-4"><div class="tn-atom"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="embed-slot"></div>
+  <script>
+    fetch('tilda-embed.html')
+      .then(function (r) { return r.text(); })
+      .then(function (html) {
+        var slot = document.getElementById('embed-slot');
+        var doc = new DOMParser().parseFromString(html, 'text/html');
+        Array.prototype.forEach.call(doc.querySelectorAll('style, script'), function (node) {
+          var clone = document.createElement(node.tagName.toLowerCase());
+          clone.textContent = node.textContent;
+          slot.appendChild(clone);
+        });
+      })
+      .catch(function (err) {
+        document.body.insertAdjacentHTML(
+          'beforeend',
+          '<p style="padding:20px;color:#c00">Не удалось загрузить tilda-embed.html: откройте demo.html через локальный сервер.</p>'
+        );
+        console.error(err);
+      });
+  </script>
+</body>
+</html>

@@ -1,0 +1,736 @@
+<!-- ============================================================
+     Текстовый слайдер для Tilda Zero Block
+     Страница: https://form.ptsecurity.com/h1bg-special
+     Блок: #rec3351087301
+
+     Как подключить:
+     1. В зеро-блоке уже должны быть:
+        - стрелки  .main-slider-left  /  .main-slider-right
+        - текст    .slider-text-2
+        - пагинация: группы .cslide4-1 … .cslide4-4
+          и шейпы  .slide4-1 … .slide4-4
+        Активный пункт — короткая полоска, остальные — точки 4px.
+     2. Вставьте весь этот файл в HTML-элемент Тильды
+        (в блок слайдера или в настройки страницы).
+     3. Тексты меняются в массиве SLIDE_TEXTS ниже.
+
+     Поведение:
+     - автосмена каждые 5 секунд;
+     - текст: фейд-аут 0.5с → ширина едет 0.5с (стрелки скользят)
+       → фейд-ин 0.5с; hug, с max-width по брейкпоинту;
+     - у активного пункта пагинации серый трек + белый прогресс;
+     - остальные пункты — белые точки;
+     - клик по стрелке / точке и свайп сбрасывают таймер;
+     - наведение на блок ставит автоплей на паузу.
+============================================================ -->
+
+<style>
+  .main-slider-left,
+  .main-slider-right,
+  .cslide4-1,
+  .cslide4-2,
+  .cslide4-3,
+  .cslide4-4 {
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    pointer-events: auto !important;
+    z-index: 10;
+  }
+
+  /* Текст: hug + скольжение стрелок, как в main-slider.
+     overflow + min-width:0 — иначе при удлинении flex прыгает.
+     display:block бьёт Tilda display:table: таблица игнорирует
+     max-width, если внутри nowrap (первая отрисовка на телефоне). */
+  .slider-text-2,
+  .slider-text {
+    display: block !important;
+    table-layout: fixed !important;
+    transition:
+      width 0.5s cubic-bezier(.25, .1, .25, 1),
+      max-width 0.5s cubic-bezier(.25, .1, .25, 1),
+      flex-basis 0.5s cubic-bezier(.25, .1, .25, 1);
+    white-space: nowrap;
+    text-align: center;
+    overflow: hidden !important;
+    min-width: 0 !important;
+    flex: 0 0 auto;
+    box-sizing: border-box;
+    max-width: 864px;
+  }
+  .slider-text-2.pts-text-wrap,
+  .slider-text.pts-text-wrap {
+    white-space: normal !important;
+  }
+  .slider-text-2 .tn-atom,
+  .slider-text .tn-atom {
+    display: block;
+    width: 100%;
+    overflow: hidden;
+    max-width: 100%;
+    transition: opacity 0.5s ease !important;
+    box-sizing: border-box;
+  }
+  .slider-text-2.pts-text-wrap .tn-atom,
+  .slider-text.pts-text-wrap .tn-atom {
+    white-space: normal !important;
+  }
+
+  @media screen and (max-width: 1919px) {
+    .slider-text-2,
+    .slider-text { max-width: 864px; }
+  }
+  @media screen and (max-width: 1365px) {
+    .slider-text-2,
+    .slider-text { max-width: 1002px; }
+  }
+  @media screen and (max-width: 1023px) {
+    .slider-text-2,
+    .slider-text { max-width: 616px; }
+  }
+  @media screen and (max-width: 767px) {
+    .slider-text-2,
+    .slider-text {
+      white-space: normal !important;
+      width: 100% !important;
+      max-width: min(280px, 100%) !important;
+      height: auto !important;
+      flex: 1 1 auto !important;
+      min-width: 0 !important;
+      overflow: hidden !important;
+    }
+    .slider-text-2 .tn-atom,
+    .slider-text .tn-atom {
+      white-space: normal !important;
+      max-width: 100% !important;
+      overflow: visible !important;
+    }
+
+    /* fadeinup у группы слайдера: на mobile Тильда может оставить opacity:0.
+       Только этот рекорд, чужие блоки с anim-hidden не трогаем. */
+    #rec3351087301 .t-animate {
+      opacity: 1 !important;
+      transform: none !important;
+      animation: none !important;
+    }
+  }
+
+  /* ряд точек: не даём Тильде держать абсолютные left,
+     иначе ширина активного пункта не сдвинет остальные */
+  .pts-text-pager {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+    justify-content: center !important;
+    column-gap: 6px !important;
+    row-gap: 0 !important;
+    gap: 6px !important;
+  }
+
+  .cslide4-1,
+  .cslide4-2,
+  .cslide4-3,
+  .cslide4-4 {
+    position: relative !important;
+    top: auto !important;
+    left: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+    display: block !important;
+    box-sizing: border-box !important;
+    width: 4px !important;
+    min-width: 4px !important;
+    max-width: 4px !important;
+    flex: 0 0 auto !important;
+    height: 4px !important;
+    overflow: visible !important;
+    border-radius: 55px !important;
+    background: transparent !important;
+    transition: none !important;
+  }
+
+  .cslide4-1.is-on,
+  .cslide4-2.is-on,
+  .cslide4-3.is-on,
+  .cslide4-4.is-on {
+    width: 24px !important;
+    min-width: 24px !important;
+    max-width: 24px !important;
+  }
+
+  /* увеличенная зона клика у точек */
+  .cslide4-1::after,
+  .cslide4-2::after,
+  .cslide4-3::after,
+  .cslide4-4::after {
+    content: "";
+    position: absolute;
+    inset: -14px -2px;
+  }
+
+  .cslide4-1 .tn-molecule,
+  .cslide4-2 .tn-molecule,
+  .cslide4-3 .tn-molecule,
+  .cslide4-4 .tn-molecule {
+    position: relative !important;
+    width: 100% !important;
+    height: 4px !important;
+    overflow: hidden !important;
+    border-radius: 55px !important;
+    background-color: #676767 !important;
+    left: auto !important;
+    top: auto !important;
+  }
+
+  .slide4-1,
+  .slide4-2,
+  .slide4-3,
+  .slide4-4 {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    left: 0 !important;
+    top: 0 !important;
+    overflow: hidden !important;
+    border-radius: 55px !important;
+  }
+
+  .slide4-1 .tn-atom,
+  .slide4-2 .tn-atom,
+  .slide4-3 .tn-atom,
+  .slide4-4 .tn-atom {
+    position: relative !important;
+    width: 100% !important;
+    height: 100% !important;
+    overflow: hidden !important;
+    border-radius: 55px !important;
+    background-color: transparent !important;
+    background-image: none !important;
+  }
+
+  /* заливка через scaleX от левого края: не зависит от анимации
+     ширины родителя (4px → 24px), иначе точка «наливается» и потом
+     прыгает в бар */
+  .pt-pag-fill {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    height: 100%;
+    width: 100%;
+    border-radius: 55px;
+    background-color: #ffffff;
+    pointer-events: none;
+    z-index: 2;
+    transform: scaleX(0);
+    transform-origin: left center;
+    will-change: transform;
+  }
+
+  /* неактивный: белая точка */
+  .cslide4-1:not(.is-on) .pt-pag-fill,
+  .cslide4-2:not(.is-on) .pt-pag-fill,
+  .cslide4-3:not(.is-on) .pt-pag-fill,
+  .cslide4-4:not(.is-on) .pt-pag-fill {
+    transform: scaleX(1) !important;
+  }
+</style>
+
+<script>
+(function () {
+  'use strict';
+
+  if (window.__ptsTextSliderInit) return;
+  window.__ptsTextSliderInit = true;
+
+  /* ==================== НАСТРОЙКИ ==================== */
+
+  var SLIDE_TEXTS = [
+    'Без рисков и остановки реальных бизнес-процессов',
+    'Бесплатно для участников сообщества',
+    '2 недели испытаний',
+    'Оплата исследователям за счет Positive Technologies'
+  ];
+
+  var AUTOPLAY_MS = 5000;
+  var SWIPE_PX = 48;
+  var TEXT_OPACITY = '0.8';
+
+  /* max-width текста: hug, пока не упрётся в потолок вьюпорта */
+  var TEXT_MAX = {
+    320: 280,
+    768: 616,
+    1024: 1002,
+    1366: 864,
+    1920: 864
+  };
+
+  /* =================================================== */
+
+  var active = 0;
+  var pagItems = [];
+  var textEl = null;
+  var textAtom = null;
+  var hostEl = null;
+  var measurer = null;
+  var textTimers = [];
+  var autoplayPaused = false;
+  var autoplayStart = null;
+  var autoplayTimer = null;
+  var lastFrame = null;
+  var rafId = 0;
+  var lastGoAt = 0;
+  var currentBp = null;
+
+  function q(sel, root) {
+    return (root || document).querySelector(sel);
+  }
+
+  function breakpointId() {
+    var w = window.innerWidth;
+    if (w >= 1920) return 1920;
+    if (w >= 1366) return 1366;
+    if (w >= 1024) return 1024;
+    if (w >= 768) return 768;
+    return 320;
+  }
+
+  function isPhoneLayout() {
+    return !!(window.matchMedia &&
+      window.matchMedia('(max-width: 767px)').matches);
+  }
+
+  function visibleBoxWidth(el) {
+    if (!el) return 0;
+    var cs = window.getComputedStyle(el);
+    if (cs.display === 'none' || cs.visibility === 'hidden') return 0;
+    return el.offsetWidth || 0;
+  }
+
+  function textMaxWidth() {
+    var cap = TEXT_MAX[breakpointId()] || 864;
+    if (!textEl) return cap;
+    var row = textEl.parentElement;
+    if (row) {
+      var rowW = row.clientWidth;
+      if (rowW > 40) {
+        var left = q('.main-slider-left', row) || q('.slider-left', row);
+        var right = q('.main-slider-right', row) || q('.slider-right', row);
+        var arrows = visibleBoxWidth(left) + visibleBoxWidth(right);
+        var gaps = 16;
+        var avail = rowW - arrows - gaps;
+        if (avail > 40) cap = Math.min(cap, avail);
+      }
+    }
+    return cap;
+  }
+
+  function ensurePagFill(bar) {
+    if (!bar) return null;
+    var atom = q('.tn-atom', bar) || bar;
+    var fill = q('.pt-pag-fill', atom);
+    if (!fill) {
+      fill = document.createElement('span');
+      fill.className = 'pt-pag-fill';
+      atom.appendChild(fill);
+    }
+    return fill;
+  }
+
+  function syncPagination() {
+    for (var i = 0; i < pagItems.length; i++) {
+      var item = pagItems[i];
+      if (!item || !item.wrap) continue;
+      var on = i === active;
+      if (on && item.fill) {
+        item.fill.style.transform = 'scaleX(0)';
+      }
+      item.wrap.classList.toggle('is-on', on);
+      item.wrap.setAttribute('aria-current', on ? 'true' : 'false');
+      if (!on && item.fill) {
+        item.fill.style.transform = '';
+      }
+    }
+  }
+
+  function setFillProgress(p) {
+    var item = pagItems[active];
+    if (!item || !item.fill) return;
+    p = Math.max(0, Math.min(1, p));
+    item.fill.style.transform = 'scaleX(' + p + ')';
+  }
+
+  function stopAutoplay() {
+    autoplayPaused = true;
+    clearTimeout(autoplayTimer);
+  }
+
+  function remainingMs() {
+    if (autoplayStart == null) return AUTOPLAY_MS;
+    var elapsed = performance.now() - autoplayStart;
+    return Math.max(16, AUTOPLAY_MS - elapsed);
+  }
+
+  function armAutoplay() {
+    clearTimeout(autoplayTimer);
+    if (autoplayPaused || document.hidden) return;
+    autoplayTimer = setTimeout(function () {
+      go(active + 1, false, true);
+    }, remainingMs());
+  }
+
+  function startAutoplay() {
+    autoplayPaused = false;
+    armAutoplay();
+  }
+
+  function loop(now) {
+    if (autoplayStart === null) autoplayStart = now;
+    if (lastFrame === null) lastFrame = now;
+    if (autoplayPaused) autoplayStart += now - lastFrame;
+    lastFrame = now;
+    var p = (now - autoplayStart) / AUTOPLAY_MS;
+    if (p < 0) p = 0;
+    if (p > 1) p = 1;
+    setFillProgress(p);
+    rafId = requestAnimationFrame(loop);
+  }
+
+  function ensureMeasurer() {
+    if (!textAtom) return null;
+    if (!measurer) {
+      measurer = document.createElement('span');
+      measurer.setAttribute('aria-hidden', 'true');
+      measurer.style.cssText =
+        'position:absolute;left:0;top:0;visibility:hidden;pointer-events:none;' +
+        'display:inline-block;white-space:nowrap;max-width:none;';
+      var mount = (textEl && textEl.parentNode) ||
+        (hostEl && hostEl.appendChild ? hostEl : null) ||
+        document.body;
+      mount.appendChild(measurer);
+    }
+    var cs = getComputedStyle(textAtom);
+    measurer.style.font = cs.font;
+    measurer.style.letterSpacing = cs.letterSpacing;
+    measurer.style.textTransform = cs.textTransform;
+    measurer.style.fontSize = cs.fontSize;
+    measurer.style.fontFamily = cs.fontFamily;
+    measurer.style.fontWeight = cs.fontWeight;
+    measurer.style.lineHeight = cs.lineHeight;
+    return measurer;
+  }
+
+  function measureText(str) {
+    var el = ensureMeasurer();
+    var maxW = textMaxWidth();
+    if (!el) return { w: maxW, wrap: false };
+    el.style.whiteSpace = 'nowrap';
+    el.style.maxWidth = 'none';
+    el.textContent = str;
+    var natural = el.scrollWidth || 0;
+    if (natural <= maxW) return { w: natural, wrap: false };
+    return { w: maxW, wrap: true };
+  }
+
+  function applyWrap(wrap) {
+    if (!textEl) return;
+    if (isPhoneLayout()) wrap = true;
+    textEl.classList.toggle('pts-text-wrap', !!wrap);
+    var ws = wrap ? 'normal' : 'nowrap';
+    textEl.style.setProperty('white-space', ws, 'important');
+    if (textAtom) {
+      textAtom.style.setProperty('white-space', ws, 'important');
+      if (wrap) {
+        textAtom.style.removeProperty('overflow-wrap');
+        textAtom.style.removeProperty('word-break');
+      }
+    }
+  }
+
+  function lockTextBox(widthPx) {
+    if (!textEl) return;
+    if (isPhoneLayout()) {
+      fitPhoneText();
+      return;
+    }
+    var w = Math.max(0, Math.round(widthPx)) + 'px';
+    textEl.style.setProperty('min-width', '0px', 'important');
+    textEl.style.setProperty('overflow', 'hidden', 'important');
+    textEl.style.setProperty('flex-grow', '0', 'important');
+    textEl.style.setProperty('flex-shrink', '0', 'important');
+    textEl.style.setProperty('width', w, 'important');
+    textEl.style.setProperty('max-width', w, 'important');
+    textEl.style.setProperty('flex-basis', w, 'important');
+  }
+
+  function fitPhoneText() {
+    if (!textEl) return;
+    applyWrap(true);
+    textEl.style.setProperty('width', '100%', 'important');
+    textEl.style.setProperty('max-width', 'min(280px, 100%)', 'important');
+    textEl.style.setProperty('flex-grow', '1', 'important');
+    textEl.style.setProperty('flex-shrink', '1', 'important');
+    textEl.style.setProperty('flex-basis', 'auto', 'important');
+    textEl.style.setProperty('min-width', '0px', 'important');
+    textEl.style.setProperty('height', 'auto', 'important');
+    textEl.style.setProperty('overflow', 'hidden', 'important');
+    textEl.style.transition = 'none';
+    if (textAtom) {
+      textAtom.style.setProperty('white-space', 'normal', 'important');
+      textAtom.style.setProperty('max-width', '100%', 'important');
+      textAtom.style.setProperty('overflow', 'visible', 'important');
+    }
+  }
+
+  function setAtomOpacity(value) {
+    if (!textAtom) return;
+    textAtom.style.setProperty('opacity', value, 'important');
+  }
+
+  function setText(immediate) {
+    if (!textAtom || !textEl) return;
+    var str = SLIDE_TEXTS[active] || '';
+
+    textTimers.forEach(clearTimeout);
+    textTimers = [];
+
+    if (isPhoneLayout()) {
+      textAtom.style.setProperty('transition', 'opacity 0.5s ease', 'important');
+      if (immediate) {
+        textAtom.textContent = str;
+        fitPhoneText();
+        setAtomOpacity(TEXT_OPACITY);
+        return;
+      }
+      setAtomOpacity('0');
+      textTimers.push(setTimeout(function () {
+        textAtom.textContent = str;
+        fitPhoneText();
+      }, 500));
+      textTimers.push(setTimeout(function () {
+        setAtomOpacity(TEXT_OPACITY);
+      }, 1000));
+      return;
+    }
+
+    var info = measureText(str);
+
+    textAtom.style.setProperty('transition', 'opacity 0.5s ease', 'important');
+    textEl.style.transition =
+      'width 0.5s cubic-bezier(.25,.1,.25,1),' +
+      'max-width 0.5s cubic-bezier(.25,.1,.25,1),' +
+      'flex-basis 0.5s cubic-bezier(.25,.1,.25,1)';
+
+    if (immediate) {
+      applyWrap(info.wrap);
+      textAtom.textContent = str;
+      lockTextBox(info.w);
+      setAtomOpacity(TEXT_OPACITY);
+      return;
+    }
+
+    var fromW = textEl.offsetWidth || info.w;
+    lockTextBox(fromW);
+    setAtomOpacity('0');
+
+    textTimers.push(setTimeout(function () {
+      var toW = info.w;
+      if (toW > fromW + 0.5) {
+        lockTextBox(toW);
+        textTimers.push(setTimeout(function () {
+          applyWrap(info.wrap);
+          textAtom.textContent = str;
+        }, 480));
+      } else {
+        applyWrap(info.wrap);
+        textAtom.textContent = str;
+        requestAnimationFrame(function () {
+          requestAnimationFrame(function () {
+            lockTextBox(toW);
+          });
+        });
+      }
+    }, 500));
+
+    textTimers.push(setTimeout(function () {
+      setAtomOpacity(TEXT_OPACITY);
+    }, 1000));
+  }
+
+  function applyActive(immediate) {
+    setText(immediate);
+    syncPagination();
+  }
+
+  function go(index, immediate, fromAutoplay) {
+    var n = SLIDE_TEXTS.length;
+    if (!n) return;
+    var t = performance.now();
+    if (fromAutoplay && lastGoAt && t - lastGoAt < 400) return;
+    if (!immediate && !fromAutoplay && lastGoAt && t - lastGoAt < 40) return;
+    lastGoAt = t;
+    active = ((index % n) + n) % n;
+    autoplayStart = t;
+    lastFrame = null;
+    applyActive(immediate);
+    setFillProgress(0);
+    startAutoplay();
+  }
+
+  function bindClick(el, fn) {
+    if (!el) return;
+    el.addEventListener('click', function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      fn();
+      var ae = document.activeElement;
+      if (ae && ae.blur) ae.blur();
+    }, true);
+  }
+
+  function bindSwipe(el) {
+    if (!el) return;
+    var x0 = 0;
+    var y0 = 0;
+    var axis = '';
+
+    el.addEventListener('touchstart', function (e) {
+      if (!e.changedTouches || !e.changedTouches[0]) return;
+      var t = e.changedTouches[0];
+      x0 = t.clientX;
+      y0 = t.clientY;
+      axis = '';
+    }, { passive: true });
+
+    el.addEventListener('touchmove', function (e) {
+      if (axis === 'v') return;
+      if (!e.changedTouches || !e.changedTouches[0]) return;
+      var t = e.changedTouches[0];
+      var dx = t.clientX - x0;
+      var dy = t.clientY - y0;
+      if (!axis) {
+        if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
+        axis = Math.abs(dx) > Math.abs(dy) ? 'h' : 'v';
+      }
+      if (axis === 'h' && e.cancelable) e.preventDefault();
+    }, { passive: false });
+
+    el.addEventListener('touchend', function (e) {
+      if (axis !== 'h') return;
+      if (!e.changedTouches || !e.changedTouches[0]) return;
+      var dx = e.changedTouches[0].clientX - x0;
+      axis = '';
+      if (Math.abs(dx) < SWIPE_PX) return;
+      if (dx < 0) go(active + 1);
+      else go(active - 1);
+    });
+
+    el.addEventListener('touchcancel', function () {
+      axis = '';
+    });
+  }
+
+  function findHost() {
+    var text = q('.slider-text-2') || q('.slider-text');
+    if (!text) return q('#rec3351087301') || document.body;
+    var rec = text.closest ? text.closest('.r.t-rec, .t-rec, .pts-text-slider') : null;
+    return rec || text.parentElement || text;
+  }
+
+  function showSliderGroup() {
+    var rec = q('#rec3351087301') || hostEl;
+    if (!rec || !rec.querySelectorAll) return;
+    var nodes = rec.querySelectorAll('.t-animate');
+    for (var i = 0; i < nodes.length; i++) {
+      nodes[i].style.setProperty('opacity', '1', 'important');
+      nodes[i].style.setProperty('transform', 'none', 'important');
+      nodes[i].style.setProperty('animation', 'none', 'important');
+    }
+  }
+
+  function init() {
+    textEl = q('.slider-text-2') || q('.slider-text');
+    if (!textEl) return;
+    textAtom = q('.tn-atom', textEl) || textEl;
+    hostEl = findHost();
+    if (breakpointId() === 320) showSliderGroup();
+
+    pagItems = [];
+    var count = Math.min(SLIDE_TEXTS.length, 4);
+    for (var n = 1; n <= count; n++) {
+      var wrap = q('.cslide4-' + n);
+      var bar = q('.slide4-' + n);
+      var fill = ensurePagFill(bar);
+      pagItems.push({ wrap: wrap, bar: bar, fill: fill });
+      if (!wrap) continue;
+      wrap.setAttribute('role', 'button');
+      wrap.setAttribute('aria-label', 'Слайд ' + n);
+      (function (idx) {
+        bindClick(wrap, function () { go(idx); });
+      })(n - 1);
+    }
+
+    if (pagItems[0] && pagItems[0].wrap && pagItems[0].wrap.parentElement) {
+      pagItems[0].wrap.parentElement.classList.add('pts-text-pager');
+    }
+
+    bindClick(q('.main-slider-left') || q('.slider-left'), function () {
+      go(active - 1);
+    });
+    bindClick(q('.main-slider-right') || q('.slider-right'), function () {
+      go(active + 1);
+    });
+    bindSwipe(hostEl);
+
+    if (hostEl && window.matchMedia && window.matchMedia('(hover: hover)').matches) {
+      hostEl.addEventListener('mouseenter', stopAutoplay);
+      hostEl.addEventListener('mouseleave', startAutoplay);
+    }
+
+    document.addEventListener('visibilitychange', function () {
+      if (document.hidden) stopAutoplay();
+      else startAutoplay();
+    });
+
+    currentBp = breakpointId();
+    var resizeTimer = null;
+    window.addEventListener('resize', function () {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(function () {
+        var bp = breakpointId();
+        if (bp === currentBp) return;
+        currentBp = bp;
+        if (measurer && measurer.parentNode) {
+          measurer.parentNode.removeChild(measurer);
+          measurer = null;
+        }
+        setText(true);
+      }, 250);
+    });
+
+    go(0, true);
+    if (rafId) cancelAnimationFrame(rafId);
+    rafId = requestAnimationFrame(loop);
+  }
+
+  function waitAndInit() {
+    var started = Date.now();
+    (function poll() {
+      var text = q('.slider-text-2') || q('.slider-text');
+      var first = q('.cslide4-1');
+      if ((text && first) || Date.now() - started > 2500) {
+        if (text) init();
+        return;
+      }
+      if (Date.now() - started < 20000) setTimeout(poll, 100);
+    })();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', waitAndInit);
+  } else {
+    waitAndInit();
+  }
+})();
+</script>
