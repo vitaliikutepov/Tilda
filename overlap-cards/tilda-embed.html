@@ -11,15 +11,18 @@
      3. Опубликуйте. В редакторе Тильда HTML не рисует.
 
      Поведение:
-     - карточки остаются на местах заготовки Тильды
-       (без своего зума, стека и top/left/width);
-     - по умолчанию закрыты (описание скрыто);
-     - ≥1366px — раскрытие по ховеру, нижние карточки сдвигаются вниз;
-     - <1366px — аккордеон по тапу;
+     - карточки остаются на местах и с высотами заготовки Тильды,
+       перекрывают друг друга как в макете;
+     - доп. текст всегда занимает своё место, но прозрачный:
+       появляется и пропадает фейдом 0.8s;
+     - при открытии карточки нижние сдвигаются вниз ровно на столько,
+       чтобы доп. текст был виден полностью + 8px зазора;
+     - ≥1366px — ховер, <1366px — аккордеон по тапу;
      - CTA «Оставить заявку» не модифицируется;
      - стиль: rgba(255,0,0,.1) + stroke 1px rgba(255,0,0,.1)
        + backdrop-blur 150px, радиус 16 / 12;
-     - четвёртая карточка с фейдом заливки и обводки в открытом виде.
+     - четвёртая карточка: высота заготовки (309), фейд заливки и обводки
+       через ::before-слой — текст в маску не попадает.
 ============================================================ -->
 
 <style>
@@ -33,44 +36,30 @@
     #rec3354439901 { --ocs-radius: 12px; }
   }
 
-  /* Описания скрыты, пока карточка закрыта */
+  /* Доп. текст занимает своё место в карточке, но прозрачен, пока закрыто.
+     Появление и исчезновение — фейдом. */
   #rec3354439901 [data-elem-id="1787822252534000003"],
   #rec3354439901 [data-elem-id="1787822370860000008"],
   #rec3354439901 [data-elem-id="1787822403649000015"],
   #rec3354439901 [data-elem-id="1787822418398000022"],
   #rec3354439901 .ocs-body {
-    position: relative !important;
-    top: auto !important;
-    left: auto !important;
-    right: auto !important;
-    bottom: auto !important;
-    width: 100% !important;
-    max-width: 100% !important;
-    min-width: 0 !important;
-    min-height: 0 !important;
-    max-height: 0 !important;
-    height: 0 !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    overflow: hidden !important;
     opacity: 0 !important;
-    visibility: hidden !important;
     pointer-events: none !important;
-    display: block !important;
-    zoom: 1 !important;
-  }
-  #rec3354439901 .ocs-body .tn-atom {
-    display: block !important;
-    max-height: 0 !important;
-    height: 0 !important;
-    overflow: hidden !important;
-    opacity: 0 !important;
-    visibility: hidden !important;
-    margin: 0 !important;
-    padding: 0 !important;
+    transition: opacity var(--ocs-time) var(--ocs-ease) !important;
   }
 
-  /* Только внешний вид. top / left / width / zoom — как в заготовке Тильды */
+  #rec3354439901 .ocs-card.is-open .ocs-body {
+    opacity: 1 !important;
+    pointer-events: auto !important;
+  }
+  @media screen and (min-width: 1366px) {
+    #rec3354439901 .ocs-card:hover .ocs-body {
+      opacity: 1 !important;
+      pointer-events: auto !important;
+    }
+  }
+
+  /* Только внешний вид. top / left / width / height / zoom — как в заготовке */
   #rec3354439901 .warningcard-1,
   #rec3354439901 .warningcard-2,
   #rec3354439901 .warningcard-3,
@@ -84,8 +73,36 @@
     overflow: hidden;
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
-    height: auto !important;
     transition: transform var(--ocs-time) var(--ocs-ease);
+  }
+
+  /* Четвёртая карточка: заливка, обводка и blur — на ::before с маской.
+     Сам текст в маску не попадает и остаётся читаемым. */
+  #rec3354439901 .warningcard-4 {
+    min-height: 309px;
+    background: transparent;
+    border-color: transparent;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    overflow: visible;
+  }
+  #rec3354439901 .warningcard-4::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    box-sizing: border-box;
+    border-radius: var(--ocs-radius);
+    border: 1px solid var(--ocs-red);
+    background: var(--ocs-red);
+    -webkit-backdrop-filter: blur(150px);
+    backdrop-filter: blur(150px);
+    -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 calc(100% - 180px), transparent 100%);
+    mask-image: linear-gradient(to bottom, #000 0%, #000 calc(100% - 180px), transparent 100%);
+    pointer-events: none;
+    z-index: 0;
   }
 
   #rec3354439901 .warningcard-1 .tn-molecule,
@@ -96,10 +113,12 @@
     background-image: none !important;
     border: 0 !important;
     box-shadow: none !important;
-    overflow: visible !important;
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
-    height: auto !important;
+  }
+  #rec3354439901 .warningcard-4 > .tn-molecule {
+    position: relative;
+    z-index: 1;
   }
 
   #rec3354439901 .warningcard-1 .tn-atom,
@@ -111,62 +130,12 @@
     white-space: normal !important;
   }
 
-  #rec3354439901 .ocs-reveal {
-    display: block;
-    width: 100%;
-    max-height: 0 !important;
-    overflow: hidden !important;
-    opacity: 0;
-    transition: max-height var(--ocs-time) var(--ocs-ease), opacity var(--ocs-time) var(--ocs-ease);
-  }
-
-  #rec3354439901 .ocs-card.is-open .ocs-reveal,
-  #rec3354439901 .ocs-card.is-open .ocs-body,
-  #rec3354439901 .ocs-card.is-open .ocs-body .tn-atom {
-    max-height: 400px !important;
-    height: auto !important;
-    opacity: 1 !important;
-    visibility: visible !important;
-    overflow: visible !important;
-    pointer-events: auto !important;
-  }
-  #rec3354439901 .ocs-card.is-open .ocs-reveal { opacity: 1; }
-  #rec3354439901 .ocs-card.is-open .ocs-body {
-    display: block !important;
-  }
-
-  #rec3354439901 .warningcard-4.is-open {
-    -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 calc(100% - 180px), transparent 100%);
-    mask-image: linear-gradient(to bottom, #000 0%, #000 calc(100% - 180px), transparent 100%);
-  }
-
-  @media screen and (min-width: 1366px) {
-    #rec3354439901 .ocs-card:hover .ocs-reveal,
-    #rec3354439901 .ocs-card:hover .ocs-body,
-    #rec3354439901 .ocs-card:hover .ocs-body .tn-atom {
-      max-height: 400px !important;
-      height: auto !important;
-      opacity: 1 !important;
-      visibility: visible !important;
-      overflow: visible !important;
-      pointer-events: auto !important;
-    }
-    #rec3354439901 .ocs-card:hover .ocs-reveal { opacity: 1; }
-    #rec3354439901 .ocs-card:hover .ocs-body {
-      display: block !important;
-    }
-    #rec3354439901 .warningcard-4:hover {
-      -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 calc(100% - 180px), transparent 100%);
-      mask-image: linear-gradient(to bottom, #000 0%, #000 calc(100% - 180px), transparent 100%);
-    }
-  }
-
   @media (prefers-reduced-motion: reduce) {
     #rec3354439901 .warningcard-1,
     #rec3354439901 .warningcard-2,
     #rec3354439901 .warningcard-3,
     #rec3354439901 .warningcard-4,
-    #rec3354439901 .ocs-reveal {
+    #rec3354439901 .ocs-body {
       transition: none !important;
     }
   }
@@ -180,6 +149,7 @@
 
   var REC_ID = '3354439901';
   var HOVER_BP = 1366;
+  var GAP = 8; /* зазор под доп. текстом до следующей карточки */
   var CARD_SEL = ['.warningcard-1', '.warningcard-2', '.warningcard-3', '.warningcard-4'];
   var BODY_SEL = [
     '[data-elem-id="1787822252534000003"]',
@@ -213,30 +183,52 @@
   }
 
   function prepareBody(el) {
-    if (!el) return;
     el.classList.add('ocs-body');
     el.classList.remove('t-animate', 't396__elem--anim-hidden', 't-animate_paused');
-    el.style.position = 'relative';
-    el.style.top = 'auto';
-    el.style.left = 'auto';
-    el.style.width = '100%';
-    el.style.height = '';
-    el.style.minHeight = '0';
     el.style.opacity = '';
     el.style.visibility = '';
-    el.style.zoom = '1';
+    el.style.transform = '';
   }
 
+  /* Текущий translateY карточки в её локальных px (не зависит от zoom Тильды). */
+  function currentTy(el) {
+    var t = window.getComputedStyle(el).transform;
+    if (!t || t === 'none') return 0;
+    var m = t.match(/matrix\(([^)]+)\)/);
+    if (m) return parseFloat(m[1].split(',')[5]) || 0;
+    m = t.match(/matrix3d\(([^)]+)\)/);
+    if (m) return parseFloat(m[1].split(',')[13]) || 0;
+    return 0;
+  }
+
+  /* Сдвиг нижних карточек = сколько нужно, чтобы доп. текст открытой карточки
+     был виден полностью + GAP. Считается от фактической высоты текста. */
   function applyShifts(rec) {
-    var list = cards(rec);
+    var list = Array.prototype.slice.call(cards(rec));
     var hover = hoverMode();
-    var dy = 0;
-    Array.prototype.forEach.call(list, function (card) {
-      card.style.transform = dy ? 'translateY(' + dy + 'px)' : '';
+    var shifts = [];
+    var pending = 0;
+
+    list.forEach(function (card, i) {
+      shifts[i] = pending;
       var open = hover ? card.matches(':hover') : card.classList.contains('is-open');
       if (!open) return;
-      var reveal = card.querySelector('.ocs-reveal');
-      if (reveal) dy += reveal.scrollHeight;
+      var body = card.__ocsBody || card.querySelector('.ocs-body');
+      var next = list[i + 1];
+      if (!body || !next) return;
+
+      var rect = card.getBoundingClientRect();
+      var scale = card.offsetWidth ? rect.width / card.offsetWidth : 1;
+      if (!scale || !isFinite(scale)) scale = 1;
+
+      var bodyBottom = body.getBoundingClientRect().bottom - currentTy(card) * scale;
+      var nextTop = next.getBoundingClientRect().top - currentTy(next) * scale;
+      var need = (bodyBottom + GAP * scale - nextTop) / scale;
+      if (need > 0) pending += need;
+    });
+
+    list.forEach(function (card, i) {
+      card.style.transform = shifts[i] ? 'translateY(' + shifts[i] + 'px)' : '';
     });
   }
 
@@ -291,26 +283,17 @@
       header.setAttribute('tabindex', '0');
       header.setAttribute('aria-expanded', 'false');
 
-      if (header.querySelector('.ocs-reveal')) return;
-
       var body = q(BODY_SEL[i], rec) || nextTextSibling(header);
       if (body && body.closest(CTA_SEL)) body = null;
+      if (!body) return;
 
-      var reveal = document.createElement('div');
-      reveal.className = 'ocs-reveal';
-      var inner = document.createElement('div');
-      inner.className = 'ocs-reveal-inner';
-      reveal.appendChild(inner);
-
-      if (body && header.contains(body) && body.parentNode) {
-        body.parentNode.insertBefore(reveal, body);
-      } else {
-        header.appendChild(reveal);
+      /* На проде описание уже лежит внутри группы — ничего не переносится. */
+      if (!header.contains(body)) {
+        var mol = header.querySelector('.tn-molecule') || header;
+        mol.appendChild(body);
       }
-      if (body) {
-        prepareBody(body);
-        inner.appendChild(body);
-      }
+      prepareBody(body);
+      header.__ocsBody = body;
     });
 
     rec.setAttribute('data-ocs-ready', '1');
