@@ -270,6 +270,7 @@
   var autoplayStart = null;
   var lastFrame = null;
   var rafId = 0;
+  var lastGoAt = 0;
   var reducedMotion = false;
   var currentBp = null;
 
@@ -345,7 +346,7 @@
     var p = (now - autoplayStart) / AUTOPLAY_MS;
     if (p >= 1) {
       setFillProgress(1);
-      go(active + 1);
+      go(active + 1, false, true);
       p = 0;
     }
     setFillProgress(p);
@@ -458,11 +459,15 @@
     syncPagination();
   }
 
-  function go(index, immediate) {
+  function go(index, immediate, fromAutoplay) {
     var n = SLIDE_TEXTS.length;
     if (!n) return;
+    var t = performance.now();
+    if (fromAutoplay && lastGoAt && t - lastGoAt < 400) return;
+    if (!immediate && !fromAutoplay && lastGoAt && t - lastGoAt < 40) return;
+    lastGoAt = t;
     active = ((index % n) + n) % n;
-    autoplayStart = performance.now();
+    autoplayStart = t;
     lastFrame = null;
     applyActive(immediate);
     setFillProgress(0);
@@ -601,6 +606,7 @@
     });
 
     go(0, true);
+    if (rafId) cancelAnimationFrame(rafId);
     rafId = requestAnimationFrame(loop);
   }
 
