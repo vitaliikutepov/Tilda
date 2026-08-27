@@ -15,8 +15,8 @@
      - стек — flex-автолейаут: открытие верхней сдвигает нижние вниз;
      - ≥1366px — раскрытие по ховеру;
      - <1366px — аккордеон по тапу (одна открытая карточка);
-     - на мобилке позиция и ширина как в заготовке (top 213, 280×320);
-     - четвёртая карточка выше (309px) с фейдом, CTA накладывается на неё;
+     - на мобилке зум как у Тильды (280px сетки 320 → ~380px на телефоне);
+     - четвёртая карточка выше (309px), фейд заливки и обводки;
      - оверлап 14px; ховер 0.8s ease-in-out;
      - стиль: rgba(255,0,0,.1) + stroke 1px rgba(255,0,0,.1)
        + backdrop-blur 150px, радиус 16 / 12.
@@ -122,6 +122,7 @@
       left: calc(50% - 160px + 20px);
       width: 280px;
       max-width: 280px;
+      zoom: calc(100vw / 320);
     }
   }
 
@@ -152,18 +153,8 @@
     z-index: 4;
     min-height: 309px;
     flex-shrink: 0;
-  }
-  #rec3354439901 .ocs-card--fade::after {
-    content: "";
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    height: 170px;
-    background: linear-gradient(to bottom, rgba(0, 0, 0, 0) 0%, #000 92%);
-    pointer-events: none;
-    z-index: 3;
-    border-radius: 0 0 var(--ocs-radius) var(--ocs-radius);
+    -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 calc(100% - 180px), transparent 100%);
+    mask-image: linear-gradient(to bottom, #000 0%, #000 calc(100% - 180px), transparent 100%);
   }
   @media screen and (max-width: 1365px) {
     #rec3354439901 .ocs-card,
@@ -336,6 +327,31 @@
     return window.matchMedia('(min-width: ' + HOVER_BP + 'px)').matches;
   }
 
+  /* Тильда на 320+upscale=window ставит zoom=clientWidth/320 на прямых детей артборда
+     (.t396__group / .t396__elem). Стек — наш div, без зума 280px/213px остаются
+     экранными и карточки уже заготовки (~380px) и наезжают на текст. */
+  function tildaPhoneZoom(rec) {
+    if (!window.matchMedia('(max-width: 767px)').matches) return '';
+    var board = rec && q('.t396__artboard', rec);
+    var kids = board ? board.children : [];
+    var i;
+    for (i = 0; i < kids.length; i++) {
+      var el = kids[i];
+      if (el.classList.contains('ocs-stack')) continue;
+      if ((el.classList.contains('tn-group') || el.classList.contains('t396__elem')) && el.style.zoom) {
+        return el.style.zoom;
+      }
+    }
+    var w = window.tn_scale_initial_window_width || document.documentElement.clientWidth;
+    return (w / 320).toFixed(3);
+  }
+
+  function syncStackZoom(stack, rec) {
+    if (!stack) return;
+    var z = tildaPhoneZoom(rec);
+    stack.style.zoom = z || '';
+  }
+
   function nextTextSibling(header) {
     var el = header.nextElementSibling;
     while (el) {
@@ -440,13 +456,15 @@
 
     rec.classList.add('ocs-ready');
     bindStack(stack);
+    syncStackZoom(stack, rec);
     return stack;
   }
 
   function boot() {
     var rec = document.getElementById('rec' + REC_ID);
     if (!rec) return;
-    wrapOnce(rec);
+    var stack = wrapOnce(rec);
+    if (stack) syncStackZoom(stack, rec);
   }
 
   function start() {
@@ -459,10 +477,15 @@
         if (q('#rec' + REC_ID + ' .ocs-stack') || tries > 40) clearInterval(t);
       }, 100);
     }
+    setTimeout(function () {
+      var rec = document.getElementById('rec' + REC_ID);
+      if (rec) syncStackZoom(q('.ocs-stack', rec), rec);
+    }, 300);
     window.addEventListener('resize', function () {
+      var rec = document.getElementById('rec' + REC_ID);
+      if (!rec) return;
+      syncStackZoom(q('.ocs-stack', rec), rec);
       if (hoverMode()) {
-        var rec = document.getElementById('rec' + REC_ID);
-        if (!rec) return;
         Array.prototype.forEach.call(rec.querySelectorAll('.ocs-card.is-open'), function (c) {
           c.classList.remove('is-open');
           c.setAttribute('aria-expanded', 'false');
