@@ -114,19 +114,6 @@
       overflow: hidden !important;
       max-width: 100%;
     }
-
-    /* Появление блоков Тильды: opacity:0 до IO, на телефоне
-       сначала чёрный экран, потом резкий pop-in */
-    .t396__elem--anim-hidden {
-      opacity: 1 !important;
-      transform: none !important;
-      animation: none !important;
-    }
-    #rec3351087301 .t-animate {
-      opacity: 1 !important;
-      transform: none !important;
-      animation: none !important;
-    }
   }
 
   /* ряд точек: не даём Тильде держать абсолютные left,
@@ -299,10 +286,6 @@
 
   function q(sel, root) {
     return (root || document).querySelector(sel);
-  }
-
-  function qa(sel, root) {
-    return (root || document).querySelectorAll(sel);
   }
 
   function breakpointId() {
@@ -590,32 +573,11 @@
     return rec || text.parentElement || text;
   }
 
-  function revealTildaAnims() {
-    if (breakpointId() !== 320) return;
-    var nodes = qa('.t396__elem--anim-hidden');
-    var i;
-    for (i = 0; i < nodes.length; i++) {
-      nodes[i].classList.remove('t396__elem--anim-hidden');
-      nodes[i].style.opacity = '1';
-      nodes[i].style.transform = 'none';
-      nodes[i].style.animation = 'none';
-    }
-    var rec = q('#rec3351087301') || hostEl;
-    if (!rec) return;
-    nodes = qa('.t-animate', rec);
-    for (i = 0; i < nodes.length; i++) {
-      nodes[i].style.opacity = '1';
-      nodes[i].style.transform = 'none';
-      nodes[i].style.animation = 'none';
-    }
-  }
-
   function init() {
     textEl = q('.slider-text-2') || q('.slider-text');
     if (!textEl) return;
     textAtom = q('.tn-atom', textEl) || textEl;
     hostEl = findHost();
-    revealTildaAnims();
 
     pagItems = [];
     var count = Math.min(SLIDE_TEXTS.length, 4);
@@ -668,7 +630,6 @@
           measurer.parentNode.removeChild(measurer);
           measurer = null;
         }
-        revealTildaAnims();
         setText(true);
       }, 250);
     });
