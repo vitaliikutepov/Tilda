@@ -56,8 +56,6 @@
     flex: 0 0 auto;
     box-sizing: border-box;
     max-width: 864px;
-    -webkit-text-size-adjust: 100%;
-    text-size-adjust: 100%;
   }
   .slider-text-2.pts-text-wrap,
   .slider-text.pts-text-wrap {
@@ -71,8 +69,6 @@
     max-width: 100%;
     transition: opacity 0.5s ease !important;
     box-sizing: border-box;
-    -webkit-text-size-adjust: 100%;
-    text-size-adjust: 100%;
   }
   .slider-text-2.pts-text-wrap .tn-atom,
   .slider-text.pts-text-wrap .tn-atom {
@@ -101,18 +97,12 @@
       flex: 1 1 auto !important;
       min-width: 0 !important;
       overflow: hidden !important;
-      overflow-wrap: anywhere;
-      word-break: break-word;
     }
     .slider-text-2 .tn-atom,
     .slider-text .tn-atom {
       white-space: normal !important;
-      width: 100% !important;
       max-width: 100% !important;
-      height: auto !important;
       overflow: visible !important;
-      overflow-wrap: anywhere !important;
-      word-break: break-word !important;
     }
 
     /* fadeinup у группы слайдера: на mobile Тильда может оставить opacity:0.
@@ -287,6 +277,7 @@
   var textTimers = [];
   var autoplayPaused = false;
   var autoplayStart = null;
+  var autoplayTimer = null;
   var lastFrame = null;
   var rafId = 0;
   var lastGoAt = 0;
@@ -372,10 +363,26 @@
 
   function stopAutoplay() {
     autoplayPaused = true;
+    clearTimeout(autoplayTimer);
+  }
+
+  function remainingMs() {
+    if (autoplayStart == null) return AUTOPLAY_MS;
+    var elapsed = performance.now() - autoplayStart;
+    return Math.max(16, AUTOPLAY_MS - elapsed);
+  }
+
+  function armAutoplay() {
+    clearTimeout(autoplayTimer);
+    if (autoplayPaused || document.hidden) return;
+    autoplayTimer = setTimeout(function () {
+      go(active + 1, false, true);
+    }, remainingMs());
   }
 
   function startAutoplay() {
     autoplayPaused = false;
+    armAutoplay();
   }
 
   function loop(now) {
@@ -383,13 +390,9 @@
     if (lastFrame === null) lastFrame = now;
     if (autoplayPaused) autoplayStart += now - lastFrame;
     lastFrame = now;
-
     var p = (now - autoplayStart) / AUTOPLAY_MS;
-    if (p >= 1) {
-      setFillProgress(1);
-      go(active + 1, false, true);
-      p = 0;
-    }
+    if (p < 0) p = 0;
+    if (p > 1) p = 1;
     setFillProgress(p);
     rafId = requestAnimationFrame(loop);
   }
@@ -439,8 +442,8 @@
     if (textAtom) {
       textAtom.style.setProperty('white-space', ws, 'important');
       if (wrap) {
-        textAtom.style.setProperty('overflow-wrap', 'anywhere', 'important');
-        textAtom.style.setProperty('word-break', 'break-word', 'important');
+        textAtom.style.removeProperty('overflow-wrap');
+        textAtom.style.removeProperty('word-break');
       }
     }
   }
@@ -475,8 +478,6 @@
     textEl.style.transition = 'none';
     if (textAtom) {
       textAtom.style.setProperty('white-space', 'normal', 'important');
-      textAtom.style.setProperty('overflow-wrap', 'anywhere', 'important');
-      textAtom.style.setProperty('word-break', 'break-word', 'important');
       textAtom.style.setProperty('max-width', '100%', 'important');
       textAtom.style.setProperty('overflow', 'visible', 'important');
     }
@@ -682,11 +683,9 @@
     });
     bindSwipe(hostEl);
 
-    if (hostEl) {
+    if (hostEl && window.matchMedia && window.matchMedia('(hover: hover)').matches) {
       hostEl.addEventListener('mouseenter', stopAutoplay);
-      hostEl.addEventListener('mouseleave', function () {
-        if (autoplayPaused) startAutoplay();
-      });
+      hostEl.addEventListener('mouseleave', startAutoplay);
     }
 
     document.addEventListener('visibilitychange', function () {

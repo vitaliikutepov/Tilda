@@ -55,10 +55,6 @@
     box-sizing: border-box;
     height: auto !important;
     max-width: 864px;
-    overflow-wrap: anywhere;
-    word-break: break-word;
-    -webkit-text-size-adjust: 100%;
-    text-size-adjust: 100%;
   }
   .pts-text-slider-v2 .slider-text-3 .tn-atom {
     display: block;
@@ -67,12 +63,8 @@
     height: auto !important;
     overflow: visible !important;
     white-space: normal !important;
-    overflow-wrap: anywhere !important;
-    word-break: break-word !important;
     transition: opacity 0.5s ease !important;
     box-sizing: border-box;
-    -webkit-text-size-adjust: 100%;
-    text-size-adjust: 100%;
   }
 
   @media screen and (max-width: 1919px) {
@@ -261,6 +253,7 @@
   var textTimers = [];
   var autoplayPaused = false;
   var autoplayStart = null;
+  var autoplayTimer = null;
   var lastFrame = null;
   var rafId = 0;
   var lastGoAt = 0;
@@ -357,10 +350,26 @@
 
   function stopAutoplay() {
     autoplayPaused = true;
+    clearTimeout(autoplayTimer);
+  }
+
+  function remainingMs() {
+    if (autoplayStart == null) return AUTOPLAY_MS;
+    var elapsed = performance.now() - autoplayStart;
+    return Math.max(16, AUTOPLAY_MS - elapsed);
+  }
+
+  function armAutoplay() {
+    clearTimeout(autoplayTimer);
+    if (autoplayPaused || document.hidden) return;
+    autoplayTimer = setTimeout(function () {
+      go(active + 1, false, true);
+    }, remainingMs());
   }
 
   function startAutoplay() {
     autoplayPaused = false;
+    armAutoplay();
   }
 
   function loop(now) {
@@ -368,13 +377,9 @@
     if (lastFrame === null) lastFrame = now;
     if (autoplayPaused) autoplayStart += now - lastFrame;
     lastFrame = now;
-
     var p = (now - autoplayStart) / AUTOPLAY_MS;
-    if (p >= 1) {
-      setFillProgress(1);
-      go(active + 1, false, true);
-      p = 0;
-    }
+    if (p < 0) p = 0;
+    if (p > 1) p = 1;
     setFillProgress(p);
     rafId = requestAnimationFrame(loop);
   }
@@ -393,8 +398,6 @@
     textEl.style.setProperty('overflow', 'hidden', 'important');
     if (textAtom) {
       textAtom.style.setProperty('white-space', 'normal', 'important');
-      textAtom.style.setProperty('overflow-wrap', 'anywhere', 'important');
-      textAtom.style.setProperty('word-break', 'break-word', 'important');
       textAtom.style.setProperty('max-width', '100%', 'important');
       textAtom.style.setProperty('overflow', 'visible', 'important');
     }
@@ -549,10 +552,11 @@
     });
     bindSwipe(hostEl);
 
-    hostEl.addEventListener('mouseenter', stopAutoplay);
-    hostEl.addEventListener('mouseleave', function () {
-      if (autoplayPaused) startAutoplay();
-    });
+    var hoverEl = q('.text-slider-2', hostEl) || textEl;
+    if (hoverEl && window.matchMedia && window.matchMedia('(hover: hover)').matches) {
+      hoverEl.addEventListener('mouseenter', stopAutoplay);
+      hoverEl.addEventListener('mouseleave', startAutoplay);
+    }
 
     document.addEventListener('visibilitychange', function () {
       if (document.hidden) stopAutoplay();
