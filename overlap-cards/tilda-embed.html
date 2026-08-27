@@ -11,10 +11,11 @@
      3. Опубликуйте. В редакторе Тильда HTML не рисует.
 
      Поведение:
-     - карточки собираются в flex-стек (автолейаут): открытие верхней
-       сдвигает нижние вниз;
+     - по умолчанию все карточки закрыты (видна только шапка);
+     - стек — flex-автолейаут: открытие верхней сдвигает нижние вниз;
      - ≥1366px — раскрытие по ховеру;
      - <1366px — аккордеон по тапу (одна открытая карточка);
+     - на мобилке ширина как в заготовке: 20px поля, карточки в колонке;
      - стиль: rgba(255,0,0,.1) + stroke 1px rgba(255,0,0,.1)
        + backdrop-blur 150px, радиус 16 / 12.
 ============================================================ -->
@@ -26,6 +27,7 @@
     --ocs-ease: cubic-bezier(0.22, 1, 0.36, 1);
     --ocs-time: 0.45s;
     --ocs-red: rgba(255, 0, 0, 0.1);
+    overflow-x: hidden !important;
   }
   @media screen and (max-width: 767px) {
     #rec3354439901 { --ocs-radius: 12px; }
@@ -34,16 +36,57 @@
   #rec3354439901 .t396__artboard,
   #rec3354439901 .t396__filter,
   #rec3354439901 .t396__carrier {
-    overflow: visible !important;
+    overflow-x: hidden !important;
+    overflow-y: visible !important;
   }
 
-  /* Стек: позиция как у лесенки в заготовке */
+  /* Описания скрыты до ховера/тапа — и до, и после оборачивания JS.
+     В Тильде они position:absolute и иначе рисуются «поверх» закрытых карточек. */
+  #rec3354439901 [data-elem-id="1787822252534000003"],
+  #rec3354439901 [data-elem-id="1787822370860000008"],
+  #rec3354439901 [data-elem-id="1787822403649000015"],
+  #rec3354439901 [data-elem-id="1787822418398000022"],
+  #rec3354439901 .ocs-body {
+    position: relative !important;
+    top: auto !important;
+    left: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    max-height: 0 !important;
+    height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+    transform: none !important;
+    display: block !important;
+  }
+  #rec3354439901 .ocs-body .tn-atom {
+    display: block !important;
+    max-height: 0 !important;
+    height: 0 !important;
+    overflow: hidden !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Стек: на десктопе — лесенка 700px, ниже 1366 — колонка заготовки (поля 20px) */
   #rec3354439901 .ocs-stack {
     position: absolute;
     z-index: 6;
     top: 140px;
     left: calc(50% - 960px + 1060px);
     width: 700px;
+    max-width: 100%;
+    min-width: 0;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -59,29 +102,26 @@
   @media screen and (max-width: 1365px) {
     #rec3354439901 .ocs-stack {
       top: 346px;
-      left: calc(50% - 512px + 20px);
-      width: 984px;
-    }
-  }
-  @media screen and (max-width: 1023px) {
-    #rec3354439901 .ocs-stack {
-      left: calc(50% - 384px + 20px);
-      width: 728px;
+      left: 20px;
+      width: calc(100% - 40px);
+      max-width: none;
+      align-items: stretch;
     }
   }
   @media screen and (max-width: 767px) {
     #rec3354439901 .ocs-stack {
       top: 213px;
-      left: calc(50% - 160px + 20px);
-      width: 280px;
+      left: 20px;
+      width: calc(100% - 40px);
     }
   }
 
   #rec3354439901 .ocs-card {
     position: relative;
     z-index: 1;
-    width: auto;
+    width: 700px;
     max-width: 100%;
+    min-width: 0;
     margin: 0;
     box-sizing: border-box;
     border-radius: var(--ocs-radius);
@@ -94,102 +134,120 @@
     -webkit-tap-highlight-color: transparent;
     transition: margin-top var(--ocs-time) var(--ocs-ease);
   }
+  #rec3354439901 .ocs-card:nth-child(1) { width: 580px; z-index: 1; }
+  #rec3354439901 .ocs-card:nth-child(2) { width: 620px; z-index: 2; }
+  #rec3354439901 .ocs-card:nth-child(3) { width: 660px; z-index: 3; }
+  #rec3354439901 .ocs-card:nth-child(4) { width: 700px; z-index: 4; }
+  @media screen and (max-width: 1365px) {
+    #rec3354439901 .ocs-card,
+    #rec3354439901 .ocs-card:nth-child(1),
+    #rec3354439901 .ocs-card:nth-child(2),
+    #rec3354439901 .ocs-card:nth-child(3),
+    #rec3354439901 .ocs-card:nth-child(4) {
+      width: 100% !important;
+    }
+  }
   #rec3354439901 .ocs-card + .ocs-card {
     margin-top: calc(var(--ocs-overlap) * -1);
   }
-  #rec3354439901 .ocs-card:nth-child(1) { z-index: 1; }
-  #rec3354439901 .ocs-card:nth-child(2) { z-index: 2; }
-  #rec3354439901 .ocs-card:nth-child(3) { z-index: 3; }
-  #rec3354439901 .ocs-card:nth-child(4) { z-index: 4; }
 
   #rec3354439901 .ocs-stack .warningcard-1,
   #rec3354439901 .ocs-stack .warningcard-2,
   #rec3354439901 .ocs-stack .warningcard-3,
   #rec3354439901 .ocs-stack .warningcard-4,
-  #rec3354439901 .ocs-stack .ocs-cta {
+  #rec3354439901 .ocs-stack .ocs-cta,
+  #rec3354439901 .ocs-stack .tn-group,
+  #rec3354439901 .ocs-stack .tn-molecule {
     position: relative !important;
     top: auto !important;
     left: auto !important;
     bottom: auto !important;
     right: auto !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
     height: auto !important;
     margin: 0 !important;
     z-index: auto !important;
     transform: none !important;
+    box-sizing: border-box !important;
   }
   #rec3354439901 .ocs-stack .ocs-cta {
-    width: 100% !important;
-    padding: 4px 20px 20px !important;
-    box-sizing: border-box;
+    padding: 16px 0 0 !important;
+    background: none !important;
+    border: 0 !important;
+    flex-shrink: 0;
+    overflow: visible !important;
   }
 
   #rec3354439901 .ocs-card .tn-molecule {
-    position: relative !important;
-    width: 100% !important;
     height: auto !important;
     background: transparent !important;
     background-image: none !important;
     border: 0 !important;
     box-shadow: none !important;
-    overflow: visible !important;
+    overflow: hidden !important;
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
   }
 
-  #rec3354439901 .ocs-body {
-    position: relative !important;
-    top: auto !important;
-    left: auto !important;
-    width: 100% !important;
-    max-width: 100% !important;
-    height: auto !important;
-    flex-shrink: 0 !important;
-    margin: 0 !important;
-    transform: none !important;
-    opacity: 1 !important;
-    visibility: visible !important;
-  }
-
   #rec3354439901 .ocs-reveal {
-    display: grid;
-    grid-template-rows: 0fr;
-    transition: grid-template-rows var(--ocs-time) var(--ocs-ease);
+    display: block;
+    max-height: 0 !important;
+    overflow: hidden !important;
+    opacity: 0;
+    transition: max-height var(--ocs-time) var(--ocs-ease), opacity 0.25s ease;
   }
   #rec3354439901 .ocs-reveal-inner {
-    overflow: hidden;
-    min-height: 0;
+    overflow: hidden !important;
+    min-height: 0 !important;
+    min-width: 0 !important;
   }
-  #rec3354439901 .ocs-reveal .ocs-body {
+
+  /* Открытое состояние: описание снова в потоке карточки */
+  #rec3354439901 .ocs-card.is-open .ocs-reveal { opacity: 1; }
+  #rec3354439901 .ocs-card.is-open .ocs-reveal,
+  #rec3354439901 .ocs-card.is-open .ocs-body,
+  #rec3354439901 .ocs-card.is-open .ocs-body .tn-atom {
+    max-height: 400px !important;
+    height: auto !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    overflow: visible !important;
+    pointer-events: auto !important;
+  }
+  #rec3354439901 .ocs-card.is-open .ocs-body {
     padding: 0 20px 20px !important;
-    box-sizing: border-box;
+    display: block !important;
   }
-  @media screen and (max-width: 767px) {
-    #rec3354439901 .ocs-reveal .ocs-body {
-      padding: 0 16px 16px !important;
-    }
+  #rec3354439901 .ocs-card.is-open + .ocs-card {
+    margin-top: -8px;
   }
 
-  /* ≥1366: ховер */
   @media screen and (min-width: 1366px) {
+    #rec3354439901 .ocs-card:hover .ocs-reveal { opacity: 1; }
     #rec3354439901 .ocs-card:hover .ocs-reveal,
-    #rec3354439901 .ocs-card:focus-within .ocs-reveal,
-    #rec3354439901 .ocs-card.is-open .ocs-reveal {
-      grid-template-rows: 1fr;
+    #rec3354439901 .ocs-card:hover .ocs-body,
+    #rec3354439901 .ocs-card:hover .ocs-body .tn-atom {
+      max-height: 400px !important;
+      height: auto !important;
+      opacity: 1 !important;
+      visibility: visible !important;
+      overflow: visible !important;
+      pointer-events: auto !important;
     }
-    #rec3354439901 .ocs-card:hover + .ocs-card,
-    #rec3354439901 .ocs-card:focus-within + .ocs-card,
-    #rec3354439901 .ocs-card.is-open + .ocs-card {
+    #rec3354439901 .ocs-card:hover .ocs-body {
+      padding: 0 20px 20px !important;
+      display: block !important;
+    }
+    #rec3354439901 .ocs-card:hover + .ocs-card {
       margin-top: -8px;
     }
   }
 
-  /* <1366: аккордеон */
-  @media screen and (max-width: 1365px) {
-    #rec3354439901 .ocs-card.is-open .ocs-reveal {
-      grid-template-rows: 1fr;
-    }
-    #rec3354439901 .ocs-card.is-open + .ocs-card {
-      margin-top: -8px;
+  @media screen and (max-width: 767px) {
+    #rec3354439901 .ocs-card.is-open .ocs-body {
+      padding: 0 16px 16px !important;
     }
   }
 
@@ -210,6 +268,12 @@
   var REC_ID = '3354439901';
   var HOVER_BP = 1366;
   var CARD_SEL = ['.warningcard-1', '.warningcard-2', '.warningcard-3', '.warningcard-4'];
+  var BODY_SEL = [
+    '[data-elem-id="1787822252534000003"]',
+    '[data-elem-id="1787822370860000008"]',
+    '[data-elem-id="1787822403649000015"]',
+    '[data-elem-id="1787822418398000022"]'
+  ];
   var CTA_SEL = '[data-group-id="1787822608320000002"]';
 
   function q(sel, root) {
@@ -218,14 +282,6 @@
 
   function hoverMode() {
     return window.matchMedia('(min-width: ' + HOVER_BP + 'px)').matches;
-  }
-
-  function revealAnims(el) {
-    if (!el) return;
-    el.classList.remove('t-animate', 't396__elem--anim-hidden', 't-animate_paused');
-    el.style.opacity = '1';
-    el.style.visibility = 'visible';
-    el.style.transform = 'none';
   }
 
   function nextTextSibling(header) {
@@ -240,6 +296,22 @@
       el = el.nextElementSibling;
     }
     return null;
+  }
+
+  function prepareBody(el) {
+    if (!el) return;
+    el.classList.add('ocs-body');
+    el.classList.remove('t-animate', 't396__elem--anim-hidden', 't-animate_paused');
+    el.style.position = 'relative';
+    el.style.top = 'auto';
+    el.style.left = 'auto';
+    el.style.width = '100%';
+    el.style.height = '';
+    el.style.minHeight = '0';
+    el.style.maxHeight = '';
+    el.style.opacity = '';
+    el.style.visibility = '';
+    el.style.transform = 'none';
   }
 
   function setOpen(card, open, stack) {
@@ -290,7 +362,7 @@
       card.setAttribute('tabindex', '0');
       card.setAttribute('aria-expanded', 'false');
 
-      var body = nextTextSibling(header);
+      var body = q(BODY_SEL[i], rec) || nextTextSibling(header);
       stack.appendChild(card);
       card.appendChild(header);
 
@@ -302,19 +374,16 @@
       card.appendChild(reveal);
 
       if (body) {
-        body.classList.add('ocs-body');
-        revealAnims(body);
+        prepareBody(body);
         inner.appendChild(body);
       }
-
-      if (i === headers.length - 1) {
-        var cta = q(CTA_SEL, rec);
-        if (cta) {
-          cta.classList.add('ocs-cta');
-          card.appendChild(cta);
-        }
-      }
     });
+
+    var cta = q(CTA_SEL, rec);
+    if (cta) {
+      cta.classList.add('ocs-cta');
+      stack.appendChild(cta);
+    }
 
     rec.classList.add('ocs-ready');
     bindStack(stack);
@@ -329,15 +398,12 @@
 
   function start() {
     boot();
-    if (!document.getElementById('rec' + REC_ID)) {
+    if (!q('#rec' + REC_ID + ' .ocs-stack')) {
       var tries = 0;
       var t = setInterval(function () {
         tries += 1;
         boot();
-        if (document.getElementById('rec' + REC_ID) && q('#rec' + REC_ID + ' .ocs-stack')) {
-          clearInterval(t);
-        }
-        if (tries > 40) clearInterval(t);
+        if (q('#rec' + REC_ID + ' .ocs-stack') || tries > 40) clearInterval(t);
       }, 100);
     }
     window.addEventListener('resize', function () {

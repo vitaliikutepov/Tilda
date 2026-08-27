@@ -89,8 +89,20 @@
       font-weight: 600;
     }
     @media (max-width: 1365px) {
-      .heading { position: relative; top: auto; left: auto; width: auto; padding: 40px 20px 0; }
+      .heading {
+        position: absolute;
+        top: 40px;
+        left: 20px;
+        width: calc(100% - 40px);
+        padding: 0;
+      }
       .heading h1 { font-size: 28px; }
+    }
+    @media (max-width: 767px) {
+      #rec3354439901 .t396__artboard { min-height: 820px; }
+      .heading { top: 40px; }
+      .heading h1 { font-size: 22px; }
+      .heading p { font-size: 14px; }
     }
   </style>
 </head>
