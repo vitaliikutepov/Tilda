@@ -59,7 +59,8 @@
     }
   }
 
-  /* Только внешний вид. top / left / width / height / zoom — как в заготовке */
+  /* Только внешний вид. top / left / width / height / zoom — как в заготовке.
+     Стек слоёв фиксированный: Хищение сзади, Массовая спереди. Не менять при ховере/тапе. */
   #rec3354439901 .warningcard-1,
   #rec3354439901 .warningcard-2,
   #rec3354439901 .warningcard-3,
@@ -73,9 +74,14 @@
     overflow: hidden;
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
-    z-index: 3;
     transition: transform var(--ocs-time) var(--ocs-ease);
   }
+  #rec3354439901 .warningcard-1 { z-index: 1 !important; }
+  #rec3354439901 .warningcard-2 { z-index: 2 !important; }
+  #rec3354439901 .warningcard-3 { z-index: 3 !important; }
+  #rec3354439901 .warningcard-4 { z-index: 4 !important; }
+  /* CTA как в заготовке рисуется поверх фейда 4-й карточки */
+  #rec3354439901 [data-group-id="1787822608320000002"] { z-index: 5 !important; }
 
   /* Четвёртая карточка: заливка, обводка и blur — на ::before с маской.
      Сам текст в маску не попадает и остаётся читаемым. */
@@ -202,23 +208,6 @@
     return 0;
   }
 
-  /* Открытая карточка поднимается над соседними и опускается только после
-     окончания фейда — иначе их blur-стекло резко съедает гаснущий текст. */
-  function setElevation(card, on) {
-    if (on) {
-      if (card.__ocsZTimer) {
-        clearTimeout(card.__ocsZTimer);
-        card.__ocsZTimer = null;
-      }
-      card.style.zIndex = '30';
-    } else if (card.style.zIndex === '30' && !card.__ocsZTimer) {
-      card.__ocsZTimer = setTimeout(function () {
-        card.__ocsZTimer = null;
-        card.style.zIndex = '';
-      }, 850);
-    }
-  }
-
   /* Сдвиг нижних карточек = сколько нужно, чтобы доп. текст открытой карточки
      был виден полностью + GAP. Считается от фактической высоты текста. */
   function applyShifts(rec) {
@@ -230,7 +219,6 @@
     list.forEach(function (card, i) {
       shifts[i] = pending;
       var open = hover ? card.matches(':hover') : card.classList.contains('is-open');
-      setElevation(card, open);
       if (!open) return;
       var body = card.__ocsBody || card.querySelector('.ocs-body');
       var next = list[i + 1];
