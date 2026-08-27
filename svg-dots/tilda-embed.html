@@ -36,7 +36,7 @@
   .svg-dots svg rect,
   .svg-dots svg circle,
   .svg-dots svg ellipse {
-    opacity: var(--svg-dot-base, 0.12);
+    opacity: 0.16;
     transform-box: fill-box;
     transform-origin: center;
   }
@@ -49,16 +49,17 @@
     animation: svg-dots-blink var(--svg-dot-dur, 5s) ease-in-out var(--svg-dot-delay, 0s) infinite;
   }
 
+  /* числа в keyframes, не var() — Safari иначе не интерполирует opacity */
   @keyframes svg-dots-breathe {
-    0%, 100% { opacity: var(--svg-dot-base, 0.12); }
-    50%      { opacity: var(--svg-dot-peak, 0.45); }
+    0%, 100% { opacity: 0.16; }
+    50%      { opacity: 0.85; }
   }
 
   /* большую часть цикла точка тихая, вспышка короткая */
   @keyframes svg-dots-blink {
-    0%, 72%, 100% { opacity: var(--svg-dot-base, 0.12); }
-    80%           { opacity: var(--svg-dot-peak, 1); }
-    88%           { opacity: var(--svg-dot-base, 0.12); }
+    0%, 68%, 100% { opacity: 0.16; }
+    78%           { opacity: 1; }
+    86%           { opacity: 0.16; }
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -76,7 +77,6 @@
   if (window.__svgDotsInit) return;
   window.__svgDotsInit = true;
 
-  var BASE = 0.12;
   var SELECTOR = '.svg-dots';
   var DOTS = 'rect, circle, ellipse';
 
@@ -135,13 +135,11 @@
 
     qa(DOTS, svg).forEach(function (dot) {
       var roll = Math.random();
-      if (roll < 0.52) return;
+      if (roll < 0.38) return;
 
-      dot.style.setProperty('--svg-dot-base', String(BASE));
-      dot.style.setProperty('--svg-dot-peak', rand(0.4, 1).toFixed(2));
-      dot.style.setProperty('--svg-dot-dur', rand(3.2, 8.5).toFixed(2) + 's');
-      dot.style.setProperty('--svg-dot-delay', rand(0, 10).toFixed(2) + 's');
-      dot.classList.add(roll < 0.82 ? 'svg-dots--breathe' : 'svg-dots--blink');
+      dot.style.setProperty('--svg-dot-dur', rand(3.4, 7.2).toFixed(2) + 's');
+      dot.style.setProperty('--svg-dot-delay', rand(0, 4.8).toFixed(2) + 's');
+      dot.classList.add(roll < 0.72 ? 'svg-dots--breathe' : 'svg-dots--blink');
     });
   }
 
