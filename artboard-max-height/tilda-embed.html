@@ -1,0 +1,116 @@
+<!-- ============================================================
+     Ограничение высоты зеро-блока #rec3351087101
+
+     Как подключить:
+     Вставьте весь этот файл в HTML-элемент Тильды
+     (в сам блок или в настройки страницы).
+
+     Поведение:
+     - 1366–1919px: высота 100vh, максимум 1080px
+     - 1920px и шире: высота 100vh, максимум 1220px
+     - ниже 1366px скрипт ничего не делает
+============================================================ -->
+
+<style>
+@media screen and (min-width: 1366px) and (max-width: 1919px) {
+  #rec3351087101 .t396__artboard,
+  #rec3351087101 .t396__filter,
+  #rec3351087101 .t396__carrier {
+    height: 100vh !important;
+    max-height: 1080px !important;
+  }
+}
+
+@media screen and (min-width: 1920px) {
+  #rec3351087101 .t396__artboard,
+  #rec3351087101 .t396__filter,
+  #rec3351087101 .t396__carrier {
+    height: 100vh !important;
+    max-height: 1220px !important;
+  }
+}
+</style>
+
+<script>
+(function () {
+  var REC_ID = '3351087101';
+  var MAX_H = 1080;
+  var MAX_H_1920 = 1220;
+  var MIN_W = 1366;
+  var MAX_W = 1919;
+  var started = false;
+
+  function currentMaxH() {
+    var w = window.innerWidth;
+    if (w >= 1920) return MAX_H_1920;
+    if (w >= MIN_W && w <= MAX_W) return MAX_H;
+    return 0;
+  }
+
+  function inRange() {
+    return currentMaxH() > 0;
+  }
+
+  function patch() {
+    if (typeof window.t396_ab__getHeight !== 'function') return false;
+    if (window.t396_ab__getHeight.__maxHPatched) return true;
+
+    var orig = window.t396_ab__getHeight;
+    window.t396_ab__getHeight = function (artboard, height) {
+      var h = orig.call(this, artboard, height);
+      try {
+        var id = artboard && artboard.getAttribute && artboard.getAttribute('data-artboard-recid');
+        var cap = currentMaxH();
+        if (id === REC_ID && cap) h = Math.min(h, cap);
+      } catch (e) {}
+      return h;
+    };
+    window.t396_ab__getHeight.__maxHPatched = true;
+    return true;
+  }
+
+  function apply() {
+    if (!inRange()) return;
+    if (!patch()) return;
+    var artboard = document.querySelector('#rec' + REC_ID + ' .t396__artboard');
+    if (!artboard) return;
+    if (typeof t396_ab__renderView === 'function') t396_ab__renderView(artboard);
+    if (typeof t396_scaleBlock === 'function') t396_scaleBlock(REC_ID);
+  }
+
+  function start() {
+    if (started || !inRange()) return;
+    started = true;
+    apply();
+    var n = 0;
+    var timer = setInterval(function () {
+      if (!inRange()) {
+        clearInterval(timer);
+        return;
+      }
+      apply();
+      if (++n >= 20) clearInterval(timer);
+    }, 200);
+    window.addEventListener('resize', apply);
+  }
+
+  function boot() {
+    if (!inRange()) {
+      window.addEventListener('resize', function onResizeIntoRange() {
+        if (inRange()) {
+          window.removeEventListener('resize', onResizeIntoRange);
+          start();
+        }
+      });
+      return;
+    }
+    start();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', boot);
+  } else {
+    boot();
+  }
+})();
+</script>

@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Artboard max-height demo</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: sans-serif;
+      background: #111;
+      color: #eee;
+    }
+    #status {
+      position: fixed;
+      z-index: 10;
+      top: 12px;
+      left: 12px;
+      padding: 12px 16px;
+      background: rgba(0,0,0,.72);
+      border-radius: 8px;
+      font: 14px/1.45 ui-monospace, SFMono-Regular, Menlo, monospace;
+      white-space: pre;
+    }
+    #rec3351087101 {
+      background: #2a1a4a;
+    }
+    .t396__artboard,
+    .t396__filter,
+    .t396__carrier {
+      box-sizing: border-box;
+      width: 100%;
+      background: linear-gradient(180deg, #8742EE 0%, #1a0b33 100%);
+    }
+  </style>
+</head>
+<body>
+  <div id="status"></div>
+  <pre id="report" hidden></pre>
+  <div id="rec3351087101">
+    <div class="t396__artboard" data-artboard-recid="3351087101" style="height: 2000px"></div>
+    <div class="t396__filter"></div>
+    <div class="t396__carrier"></div>
+  </div>
+
+  <script>
+    (function () {
+      var params = new URLSearchParams(location.search);
+      var forcedW = parseInt(params.get('w'), 10);
+      if (forcedW > 0) {
+        Object.defineProperty(window, 'innerWidth', { get: function () { return forcedW; } });
+      }
+
+      window.__demoLastHeight = null;
+      window.__demoRenderCount = 0;
+      window.__demoScaleCount = 0;
+
+      window.t396_ab__getHeight = function () {
+        return 2000;
+      };
+
+      window.t396_ab__renderView = function (artboard) {
+        var h = window.t396_ab__getHeight(artboard);
+        window.__demoLastHeight = h;
+        window.__demoRenderCount += 1;
+        artboard.style.height = h + 'px';
+        var rec = document.getElementById('rec3351087101');
+        rec.querySelector('.t396__filter').style.height = h + 'px';
+        rec.querySelector('.t396__carrier').style.height = h + 'px';
+      };
+
+      window.t396_scaleBlock = function () {
+        window.__demoScaleCount += 1;
+      };
+    })();
+  </script>
+  <script>
+    (function () {
+      function loadEmbed() {
+        return fetch('tilda-embed.html')
+          .then(function (r) { return r.text(); })
+          .then(function (html) {
+            var style = html.match(/<style>([\s\S]*?)<\/style>/);
+            var script = html.match(/<script>([\s\S]*?)<\/script>/);
+            if (style) {
+              var s = document.createElement('style');
+              s.textContent = style[1];
+              document.head.appendChild(s);
+            }
+            if (script) {
+              var sc = document.createElement('script');
+              sc.textContent = script[1];
+              document.body.appendChild(sc);
+            }
+          });
+      }
+
+      function paint() {
+        var artboard = document.querySelector('#rec3351087101 .t396__artboard');
+        var cs = window.getComputedStyle(artboard);
+        var report = {
+          innerWidth: window.innerWidth,
+          patchedHeight: window.__demoLastHeight,
+          cssHeight: cs.height,
+          cssMaxHeight: cs.maxHeight,
+          renders: window.__demoRenderCount,
+          scales: window.__demoScaleCount
+        };
+        document.getElementById('status').textContent =
+          'innerWidth: ' + report.innerWidth + 'px\n' +
+          'patchedHeight: ' + report.patchedHeight + '\n' +
+          'cssHeight: ' + report.cssHeight + '\n' +
+          'cssMaxHeight: ' + report.cssMaxHeight + '\n' +
+          'renders: ' + report.renders +
+          ', scales: ' + report.scales;
+        document.getElementById('report').textContent = JSON.stringify(report);
+        document.documentElement.setAttribute('data-demo-ready', '1');
+      }
+
+      loadEmbed().then(function () {
+        setTimeout(paint, 250);
+        window.addEventListener('resize', function () { setTimeout(paint, 50); });
+      });
+    })();
+  </script>
+</body>
+</html>
