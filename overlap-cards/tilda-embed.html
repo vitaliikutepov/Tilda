@@ -76,8 +76,11 @@
     -webkit-tap-highlight-color: transparent;
     transition: transform var(--ocs-time) var(--ocs-ease);
   }
-  #rec3354439901 .warningcard-1 { z-index: 1 !important; }
-  #rec3354439901 .warningcard-2 { z-index: 2 !important; }
+  /* Стек: Хищение сзади, Массовая спереди. Все карточки не ниже z-index 3 —
+     иначе 1 и 2 оказываются под свечением/заголовком Тильды и не кликаются.
+     3-я и 4-я как были: 3 и 4. */
+  #rec3354439901 .warningcard-1 { z-index: 3 !important; }
+  #rec3354439901 .warningcard-2 { z-index: 3 !important; }
   #rec3354439901 .warningcard-3 { z-index: 3 !important; }
   #rec3354439901 .warningcard-4 { z-index: 4 !important; }
   /* CTA как в заготовке рисуется поверх фейда 4-й карточки */
