@@ -11,10 +11,8 @@
      его инлайном — иначе до отдельных точек не достучаться.
      Уже инлайновый <svg> тоже подойдёт.
 
-     Поведение:
-     - часть точек остаётся статичной;
-     - часть медленно дышит;
-     - часть коротко вспыхивает в случайные моменты.
+     Цвет (fill) не меняется — как в исходном SVG.
+     Анимируется только прозрачность вокруг исходной.
 ============================================================ -->
 
 <style>
@@ -27,44 +25,10 @@
     pointer-events: none;
   }
 
-  /* исходная группа в макете с opacity="0.1" — снимаем,
-     чтобы моргала каждая точка, а не весь слой целиком */
-  .svg-dots svg g[opacity] {
-    opacity: 1 !important;
-  }
-
-  .svg-dots svg rect,
-  .svg-dots svg circle,
-  .svg-dots svg ellipse {
-    opacity: 0.16;
-    transform-box: fill-box;
-    transform-origin: center;
-  }
-
-  .svg-dots svg .svg-dots--breathe {
-    animation: svg-dots-breathe var(--svg-dot-dur, 6s) ease-in-out var(--svg-dot-delay, 0s) infinite;
-  }
-
-  .svg-dots svg .svg-dots--blink {
-    animation: svg-dots-blink var(--svg-dot-dur, 5s) ease-in-out var(--svg-dot-delay, 0s) infinite;
-  }
-
-  /* числа в keyframes, не var() — Safari иначе не интерполирует opacity */
-  @keyframes svg-dots-breathe {
-    0%, 100% { opacity: 0.16; }
-    50%      { opacity: 0.85; }
-  }
-
-  /* большую часть цикла точка тихая, вспышка короткая */
-  @keyframes svg-dots-blink {
-    0%, 68%, 100% { opacity: 0.16; }
-    78%           { opacity: 1; }
-    86%           { opacity: 0.16; }
-  }
-
   @media (prefers-reduced-motion: reduce) {
-    .svg-dots svg .svg-dots--breathe,
-    .svg-dots svg .svg-dots--blink {
+    .svg-dots svg rect,
+    .svg-dots svg circle,
+    .svg-dots svg ellipse {
       animation: none !important;
     }
   }
@@ -91,6 +55,22 @@
   function reducedMotion() {
     return window.matchMedia &&
       window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  }
+
+  function parseOpacity(el) {
+    var raw = el.getAttribute('opacity');
+    if (raw == null || raw === '') return 1;
+    var n = parseFloat(raw);
+    return isNaN(n) ? 1 : n;
+  }
+
+  function takeInheritedOpacity(svg) {
+    var factor = 1;
+    qa('g[opacity]', svg).concat(svg.getAttribute('opacity') != null ? [svg] : []).forEach(function (el) {
+      factor *= parseOpacity(el);
+      if (el !== svg || el.getAttribute('opacity') != null) el.removeAttribute('opacity');
+    });
+    return factor;
   }
 
   function svgSrc(img) {
@@ -124,22 +104,45 @@
     }
   }
 
+  function twinkle(dot, rest) {
+    if (!dot.animate) return;
+    var hi = Math.min(1, rest * 2.2);
+    var dur = rand(3400, 7200);
+    var delay = rand(0, 4800);
+    var roll = Math.random();
+
+    if (roll < 0.55) {
+      dot.animate(
+        [{ opacity: rest }, { opacity: hi }, { opacity: rest }],
+        { duration: dur, delay: delay, iterations: Infinity, easing: 'ease-in-out' }
+      );
+      return;
+    }
+
+    dot.animate(
+      [
+        { opacity: rest, offset: 0 },
+        { opacity: rest, offset: 0.68 },
+        { opacity: hi, offset: 0.78 },
+        { opacity: rest, offset: 0.86 },
+        { opacity: rest, offset: 1 }
+      ],
+      { duration: dur, delay: delay, iterations: Infinity, easing: 'ease-in-out' }
+    );
+  }
+
   function animateDots(svg) {
     if (!svg || svg.getAttribute('data-svg-dots') === '1') return;
     svg.setAttribute('data-svg-dots', '1');
 
-    var group = svg.querySelector('g[opacity]');
-    if (group) group.removeAttribute('opacity');
-
-    if (reducedMotion()) return;
+    var inherited = takeInheritedOpacity(svg);
 
     qa(DOTS, svg).forEach(function (dot) {
-      var roll = Math.random();
-      if (roll < 0.38) return;
-
-      dot.style.setProperty('--svg-dot-dur', rand(3.4, 7.2).toFixed(2) + 's');
-      dot.style.setProperty('--svg-dot-delay', rand(0, 4.8).toFixed(2) + 's');
-      dot.classList.add(roll < 0.72 ? 'svg-dots--breathe' : 'svg-dots--blink');
+      var rest = inherited * parseOpacity(dot);
+      dot.style.opacity = String(rest);
+      if (reducedMotion()) return;
+      if (Math.random() < 0.38) return;
+      twinkle(dot, rest);
     });
   }
 
