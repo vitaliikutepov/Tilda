@@ -1,0 +1,600 @@
+<!-- ============================================================
+     Текстовый слайдер 2 для Tilda Zero Block
+     Страница: https://form.ptsecurity.com/h1bg-special
+     Блок: #rec3367388301
+
+     Как подключить:
+     1. В зеро-блоке уже должны быть:
+        - стрелки  .main-slider-left-2  /  .main-slider-right-2
+        - текст    .slider-text-3
+        - обёртка  .text-slider-2
+        - пагинация: группы .cslide4-1 … .cslide4-4
+          и шейпы  .slide4-1 … .slide4-4
+          Пятый пункт скрипт клонирует сам.
+        Активный пункт — короткая полоска, остальные — точки 4px.
+     2. Вставьте весь этот файл в HTML-элемент Тильды
+        (в блок слайдера или в настройки страницы).
+     3. Тексты меняются в массиве SLIDE_TEXTS ниже.
+
+     Сниппет не пересекается с первым слайдером (#rec3351087301):
+     все селекторы ограничены этим рекордом.
+
+     Поведение:
+     - автосмена каждые 5 секунд;
+     - текст fill + autoheight: фейд 0.5с, без hug (стрелки по бокам);
+     - у активного пункта пагинации серый трек + белый прогресс;
+     - остальные пункты — белые точки;
+     - клик по стрелке / точке и свайп сбрасывают таймер;
+     - наведение на блок ставит автоплей на паузу.
+============================================================ -->
+
+<style>
+  .pts-text-slider-v2 .main-slider-left-2,
+  .pts-text-slider-v2 .main-slider-right-2,
+  .pts-text-slider-v2 .cslide4-1,
+  .pts-text-slider-v2 .cslide4-2,
+  .pts-text-slider-v2 .cslide4-3,
+  .pts-text-slider-v2 .cslide4-4,
+  .pts-text-slider-v2 .cslide4-5 {
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    pointer-events: auto !important;
+    z-index: 10;
+  }
+
+  /* Текст fill + autoheight, как в макете Тильды: всегда перенос. */
+  .pts-text-slider-v2 .slider-text-3 {
+    display: block !important;
+    table-layout: fixed !important;
+    white-space: normal !important;
+    text-align: center;
+    overflow: hidden !important;
+    min-width: 0 !important;
+    width: 100% !important;
+    flex: 1 1 auto !important;
+    box-sizing: border-box;
+    height: auto !important;
+    max-width: 864px;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+  .pts-text-slider-v2 .slider-text-3 .tn-atom {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    height: auto !important;
+    overflow: visible !important;
+    white-space: normal !important;
+    overflow-wrap: anywhere !important;
+    word-break: break-word !important;
+    transition: opacity 0.5s ease !important;
+    box-sizing: border-box;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  @media screen and (max-width: 1919px) {
+    .pts-text-slider-v2 .slider-text-3 { max-width: 864px; }
+  }
+  @media screen and (max-width: 1365px) {
+    .pts-text-slider-v2 .slider-text-3 { max-width: 1002px; }
+  }
+  @media screen and (max-width: 1023px) {
+    .pts-text-slider-v2 .slider-text-3 { max-width: 616px; }
+  }
+  @media screen and (max-width: 767px) {
+    .pts-text-slider-v2 .slider-text-3 {
+      max-width: min(280px, 100%) !important;
+      width: 100% !important;
+    }
+    #rec3367388301 .t-animate,
+    .pts-text-slider-v2 .t-animate {
+      opacity: 1 !important;
+      transform: none !important;
+      animation: none !important;
+    }
+  }
+
+  .pts-text-slider-v2 .pts-text-pager {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+    justify-content: center !important;
+    column-gap: 6px !important;
+    row-gap: 0 !important;
+    gap: 6px !important;
+  }
+
+  .pts-text-slider-v2 .cslide4-1,
+  .pts-text-slider-v2 .cslide4-2,
+  .pts-text-slider-v2 .cslide4-3,
+  .pts-text-slider-v2 .cslide4-4,
+  .pts-text-slider-v2 .cslide4-5 {
+    position: relative !important;
+    top: auto !important;
+    left: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+    display: block !important;
+    box-sizing: border-box !important;
+    width: 4px !important;
+    min-width: 4px !important;
+    max-width: 4px !important;
+    flex: 0 0 auto !important;
+    height: 4px !important;
+    overflow: visible !important;
+    border-radius: 55px !important;
+    background: transparent !important;
+    transition: none !important;
+  }
+
+  .pts-text-slider-v2 .cslide4-1.is-on,
+  .pts-text-slider-v2 .cslide4-2.is-on,
+  .pts-text-slider-v2 .cslide4-3.is-on,
+  .pts-text-slider-v2 .cslide4-4.is-on,
+  .pts-text-slider-v2 .cslide4-5.is-on {
+    width: 24px !important;
+    min-width: 24px !important;
+    max-width: 24px !important;
+  }
+
+  .pts-text-slider-v2 .cslide4-1::after,
+  .pts-text-slider-v2 .cslide4-2::after,
+  .pts-text-slider-v2 .cslide4-3::after,
+  .pts-text-slider-v2 .cslide4-4::after,
+  .pts-text-slider-v2 .cslide4-5::after {
+    content: "";
+    position: absolute;
+    inset: -14px -2px;
+  }
+
+  .pts-text-slider-v2 .cslide4-1 .tn-molecule,
+  .pts-text-slider-v2 .cslide4-2 .tn-molecule,
+  .pts-text-slider-v2 .cslide4-3 .tn-molecule,
+  .pts-text-slider-v2 .cslide4-4 .tn-molecule,
+  .pts-text-slider-v2 .cslide4-5 .tn-molecule {
+    position: relative !important;
+    width: 100% !important;
+    height: 4px !important;
+    overflow: hidden !important;
+    border-radius: 55px !important;
+    background-color: #676767 !important;
+    left: auto !important;
+    top: auto !important;
+  }
+
+  .pts-text-slider-v2 .slide4-1,
+  .pts-text-slider-v2 .slide4-2,
+  .pts-text-slider-v2 .slide4-3,
+  .pts-text-slider-v2 .slide4-4,
+  .pts-text-slider-v2 .slide4-5 {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    left: 0 !important;
+    top: 0 !important;
+    overflow: hidden !important;
+    border-radius: 55px !important;
+  }
+
+  .pts-text-slider-v2 .slide4-1 .tn-atom,
+  .pts-text-slider-v2 .slide4-2 .tn-atom,
+  .pts-text-slider-v2 .slide4-3 .tn-atom,
+  .pts-text-slider-v2 .slide4-4 .tn-atom,
+  .pts-text-slider-v2 .slide4-5 .tn-atom {
+    position: relative !important;
+    width: 100% !important;
+    height: 100% !important;
+    overflow: hidden !important;
+    border-radius: 55px !important;
+    background-color: transparent !important;
+    background-image: none !important;
+  }
+
+  .pts-text-slider-v2 .pt-pag-fill {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    height: 100%;
+    width: 100%;
+    border-radius: 55px;
+    background-color: #ffffff;
+    pointer-events: none;
+    z-index: 2;
+    transform: scaleX(0);
+    transform-origin: left center;
+    will-change: transform;
+  }
+
+  .pts-text-slider-v2 .cslide4-1:not(.is-on) .pt-pag-fill,
+  .pts-text-slider-v2 .cslide4-2:not(.is-on) .pt-pag-fill,
+  .pts-text-slider-v2 .cslide4-3:not(.is-on) .pt-pag-fill,
+  .pts-text-slider-v2 .cslide4-4:not(.is-on) .pt-pag-fill,
+  .pts-text-slider-v2 .cslide4-5:not(.is-on) .pt-pag-fill {
+    transform: scaleX(1) !important;
+  }
+</style>
+
+<script>
+(function () {
+  'use strict';
+
+  if (window.__ptsTextSlider2Init) return;
+  window.__ptsTextSlider2Init = true;
+
+  /* ==================== НАСТРОЙКИ ==================== */
+
+  var REC_SEL = '#rec3367388301';
+
+  var SLIDE_TEXTS = [
+    'Ведущий разработчик продуктов, решений и сервисов для выявления и предотвращения кибератак до того, как они причинят неприемлемый ущерб бизнесу',
+    'Специалисты Positive Technologies участвуют в разработке требований информационной безопасности в составе рабочих групп ФСТЭК России, Банка России и других регуляторов',
+    'Positive Technologies — один из лидеров в области результативной кибербезопасности',
+    'Чтобы продемонстрировать эффективность результативного подхода к кибербезопасности, компания проводит киберучения на собственной инфраструктуре и публично тестирует свои продукты',
+    'Первая и пока единственная компания из сферы кибербезопасности на Московской бирже (MOEX: POSI). Количество акционеров превышает 220 тысяч'
+  ];
+
+  var AUTOPLAY_MS = 5000;
+  var SWIPE_PX = 48;
+  var TEXT_OPACITY = '0.8';
+
+  var TEXT_MAX = {
+    320: 280,
+    768: 616,
+    1024: 1002,
+    1366: 864,
+    1920: 864
+  };
+
+  /* =================================================== */
+
+  var active = 0;
+  var pagItems = [];
+  var textEl = null;
+  var textAtom = null;
+  var hostEl = null;
+  var textTimers = [];
+  var autoplayPaused = false;
+  var autoplayStart = null;
+  var lastFrame = null;
+  var rafId = 0;
+  var lastGoAt = 0;
+  var currentBp = null;
+
+  function rootEl() {
+    return document.querySelector(REC_SEL) ||
+      document.querySelector('.text-slider-2') ||
+      document.querySelector('.pts-text-slider-v2');
+  }
+
+  function q(sel, root) {
+    return (root || hostEl || rootEl() || document).querySelector(sel);
+  }
+
+  function breakpointId() {
+    var w = window.innerWidth;
+    if (w >= 1920) return 1920;
+    if (w >= 1366) return 1366;
+    if (w >= 1024) return 1024;
+    if (w >= 768) return 768;
+    return 320;
+  }
+
+  function isPhoneLayout() {
+    return !!(window.matchMedia &&
+      window.matchMedia('(max-width: 767px)').matches);
+  }
+
+  function textMaxWidth() {
+    return TEXT_MAX[breakpointId()] || 864;
+  }
+
+  function ensurePagFill(bar) {
+    if (!bar) return null;
+    var atom = q('.tn-atom', bar) || bar;
+    var fill = q('.pt-pag-fill', atom);
+    if (!fill) {
+      fill = document.createElement('span');
+      fill.className = 'pt-pag-fill';
+      atom.appendChild(fill);
+    }
+    return fill;
+  }
+
+  function ensurePagerCount(root, count) {
+    var first = q('.cslide4-1', root);
+    if (!first || !first.parentElement) return;
+    var parent = first.parentElement;
+    parent.classList.add('pts-text-pager');
+    for (var n = 2; n <= count; n++) {
+      if (q('.cslide4-' + n, root)) continue;
+      var clone = first.cloneNode(true);
+      clone.className = String(clone.className || '')
+        .replace(/cslide4-\d+/g, 'cslide4-' + n)
+        .replace(/\bis-on\b/g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+      var slide = clone.querySelector('[class*="slide4-"]');
+      if (slide) {
+        slide.className = String(slide.className || '')
+          .replace(/slide4-\d+/g, 'slide4-' + n);
+      }
+      var fills = clone.querySelectorAll('.pt-pag-fill');
+      for (var i = 0; i < fills.length; i++) {
+        if (fills[i].parentNode) fills[i].parentNode.removeChild(fills[i]);
+      }
+      parent.appendChild(clone);
+    }
+  }
+
+  function syncPagination() {
+    for (var i = 0; i < pagItems.length; i++) {
+      var item = pagItems[i];
+      if (!item || !item.wrap) continue;
+      var on = i === active;
+      if (on && item.fill) {
+        item.fill.style.transform = 'scaleX(0)';
+      }
+      item.wrap.classList.toggle('is-on', on);
+      item.wrap.setAttribute('aria-current', on ? 'true' : 'false');
+      if (!on && item.fill) {
+        item.fill.style.transform = '';
+      }
+    }
+  }
+
+  function setFillProgress(p) {
+    var item = pagItems[active];
+    if (!item || !item.fill) return;
+    p = Math.max(0, Math.min(1, p));
+    item.fill.style.transform = 'scaleX(' + p + ')';
+  }
+
+  function stopAutoplay() {
+    autoplayPaused = true;
+  }
+
+  function startAutoplay() {
+    autoplayPaused = false;
+  }
+
+  function loop(now) {
+    if (autoplayStart === null) autoplayStart = now;
+    if (lastFrame === null) lastFrame = now;
+    if (autoplayPaused) autoplayStart += now - lastFrame;
+    lastFrame = now;
+
+    var p = (now - autoplayStart) / AUTOPLAY_MS;
+    if (p >= 1) {
+      setFillProgress(1);
+      go(active + 1, false, true);
+      p = 0;
+    }
+    setFillProgress(p);
+    rafId = requestAnimationFrame(loop);
+  }
+
+  function fitTextBox() {
+    if (!textEl) return;
+    var maxW = isPhoneLayout() ? 'min(280px, 100%)' : (textMaxWidth() + 'px');
+    textEl.style.setProperty('white-space', 'normal', 'important');
+    textEl.style.setProperty('width', '100%', 'important');
+    textEl.style.setProperty('max-width', maxW, 'important');
+    textEl.style.setProperty('flex-grow', '1', 'important');
+    textEl.style.setProperty('flex-shrink', '1', 'important');
+    textEl.style.setProperty('flex-basis', 'auto', 'important');
+    textEl.style.setProperty('min-width', '0px', 'important');
+    textEl.style.setProperty('height', 'auto', 'important');
+    textEl.style.setProperty('overflow', 'hidden', 'important');
+    if (textAtom) {
+      textAtom.style.setProperty('white-space', 'normal', 'important');
+      textAtom.style.setProperty('overflow-wrap', 'anywhere', 'important');
+      textAtom.style.setProperty('word-break', 'break-word', 'important');
+      textAtom.style.setProperty('max-width', '100%', 'important');
+      textAtom.style.setProperty('overflow', 'visible', 'important');
+    }
+  }
+
+  function setAtomOpacity(value) {
+    if (!textAtom) return;
+    textAtom.style.setProperty('opacity', value, 'important');
+  }
+
+  function setText(immediate) {
+    if (!textAtom || !textEl) return;
+    var str = SLIDE_TEXTS[active] || '';
+
+    textTimers.forEach(clearTimeout);
+    textTimers = [];
+
+    textAtom.style.setProperty('transition', 'opacity 0.5s ease', 'important');
+    fitTextBox();
+
+    if (immediate) {
+      textAtom.textContent = str;
+      setAtomOpacity(TEXT_OPACITY);
+      return;
+    }
+
+    setAtomOpacity('0');
+    textTimers.push(setTimeout(function () {
+      textAtom.textContent = str;
+      fitTextBox();
+    }, 500));
+    textTimers.push(setTimeout(function () {
+      setAtomOpacity(TEXT_OPACITY);
+    }, 1000));
+  }
+
+  function applyActive(immediate) {
+    setText(immediate);
+    syncPagination();
+  }
+
+  function go(index, immediate, fromAutoplay) {
+    var n = SLIDE_TEXTS.length;
+    if (!n) return;
+    var t = performance.now();
+    if (fromAutoplay && lastGoAt && t - lastGoAt < 400) return;
+    if (!immediate && !fromAutoplay && lastGoAt && t - lastGoAt < 40) return;
+    lastGoAt = t;
+    active = ((index % n) + n) % n;
+    autoplayStart = t;
+    lastFrame = null;
+    applyActive(immediate);
+    setFillProgress(0);
+    startAutoplay();
+  }
+
+  function bindClick(el, fn) {
+    if (!el) return;
+    el.addEventListener('click', function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      fn();
+      var ae = document.activeElement;
+      if (ae && ae.blur) ae.blur();
+    }, true);
+  }
+
+  function bindSwipe(el) {
+    if (!el) return;
+    var x0 = 0;
+    var y0 = 0;
+    var axis = '';
+
+    el.addEventListener('touchstart', function (e) {
+      if (!e.changedTouches || !e.changedTouches[0]) return;
+      var t = e.changedTouches[0];
+      x0 = t.clientX;
+      y0 = t.clientY;
+      axis = '';
+    }, { passive: true });
+
+    el.addEventListener('touchmove', function (e) {
+      if (axis === 'v') return;
+      if (!e.changedTouches || !e.changedTouches[0]) return;
+      var t = e.changedTouches[0];
+      var dx = t.clientX - x0;
+      var dy = t.clientY - y0;
+      if (!axis) {
+        if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
+        axis = Math.abs(dx) > Math.abs(dy) ? 'h' : 'v';
+      }
+      if (axis === 'h' && e.cancelable) e.preventDefault();
+    }, { passive: false });
+
+    el.addEventListener('touchend', function (e) {
+      if (axis !== 'h') return;
+      if (!e.changedTouches || !e.changedTouches[0]) return;
+      var dx = e.changedTouches[0].clientX - x0;
+      axis = '';
+      if (Math.abs(dx) < SWIPE_PX) return;
+      if (dx < 0) go(active + 1);
+      else go(active - 1);
+    });
+
+    el.addEventListener('touchcancel', function () {
+      axis = '';
+    });
+  }
+
+  function showSliderGroup() {
+    if (!hostEl || !hostEl.querySelectorAll) return;
+    var nodes = hostEl.querySelectorAll('.t-animate');
+    for (var i = 0; i < nodes.length; i++) {
+      nodes[i].style.setProperty('opacity', '1', 'important');
+      nodes[i].style.setProperty('transform', 'none', 'important');
+      nodes[i].style.setProperty('animation', 'none', 'important');
+    }
+  }
+
+  function init() {
+    hostEl = rootEl();
+    if (!hostEl) return;
+    hostEl.classList.add('pts-text-slider-v2');
+
+    textEl = q('.slider-text-3', hostEl);
+    if (!textEl) return;
+    textAtom = q('.tn-atom', textEl) || textEl;
+    if (isPhoneLayout()) showSliderGroup();
+
+    ensurePagerCount(hostEl, SLIDE_TEXTS.length);
+
+    pagItems = [];
+    var count = SLIDE_TEXTS.length;
+    for (var n = 1; n <= count; n++) {
+      var wrap = q('.cslide4-' + n, hostEl);
+      var bar = q('.slide4-' + n, hostEl);
+      var fill = ensurePagFill(bar);
+      pagItems.push({ wrap: wrap, bar: bar, fill: fill });
+      if (!wrap) continue;
+      wrap.setAttribute('role', 'button');
+      wrap.setAttribute('aria-label', 'Слайд ' + n);
+      (function (idx) {
+        bindClick(wrap, function () { go(idx); });
+      })(n - 1);
+    }
+
+    bindClick(q('.main-slider-left-2', hostEl), function () {
+      go(active - 1);
+    });
+    bindClick(q('.main-slider-right-2', hostEl), function () {
+      go(active + 1);
+    });
+    bindSwipe(hostEl);
+
+    hostEl.addEventListener('mouseenter', stopAutoplay);
+    hostEl.addEventListener('mouseleave', function () {
+      if (autoplayPaused) startAutoplay();
+    });
+
+    document.addEventListener('visibilitychange', function () {
+      if (document.hidden) stopAutoplay();
+      else startAutoplay();
+    });
+
+    currentBp = breakpointId();
+    var resizeTimer = null;
+    window.addEventListener('resize', function () {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(function () {
+        var bp = breakpointId();
+        if (bp === currentBp) return;
+        currentBp = bp;
+        if (isPhoneLayout()) showSliderGroup();
+        setText(true);
+      }, 250);
+    });
+
+    go(0, true);
+    if (rafId) cancelAnimationFrame(rafId);
+    rafId = requestAnimationFrame(loop);
+  }
+
+  function waitAndInit() {
+    var started = Date.now();
+    (function poll() {
+      var root = rootEl();
+      var text = root && root.querySelector('.slider-text-3');
+      var first = root && root.querySelector('.cslide4-1');
+      if ((text && first) || Date.now() - started > 2500) {
+        if (text) init();
+        return;
+      }
+      if (Date.now() - started < 20000) setTimeout(poll, 100);
+    })();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', waitAndInit);
+  } else {
+    waitAndInit();
+  }
+})();
+</script>
