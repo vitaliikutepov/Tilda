@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Мобильная отрисовка — демо</title>
+  <style>
+    * { box-sizing: border-box; }
+    body.t-body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #1B1B1B;
+      color: #fff;
+    }
+    .note {
+      max-width: 390px;
+      margin: 0 auto;
+      padding: 20px 16px 8px;
+      font-size: 13px;
+      line-height: 1.45;
+      color: #c8c8c8;
+    }
+    .note strong { color: #fff; }
+    .t396 { width: 100%; }
+    .t396__artboard {
+      background: #000;
+      padding: 24px 16px;
+    }
+    .card {
+      background: #1a1b23;
+      border-radius: 20px;
+      padding: 24px 20px;
+      min-height: 220px;
+      margin: 0 auto 16px;
+      max-width: 358px;
+    }
+    .card h2 {
+      margin: 0 0 12px;
+      font-size: 28px;
+      line-height: 1.15;
+    }
+    .card p {
+      margin: 0;
+      font-size: 16px;
+      line-height: 1.4;
+      color: #d8d8d8;
+    }
+    .spacer { height: 70vh; }
+
+    /* Как tilda-animation-2.0: Zero Block прячет appear-анимации */
+    .t396 .t-animate[data-animate-style=fadein],
+    .t396 .t-animate[data-animate-style=fadeinup] { opacity: 0; }
+    .t396 .t-animate[data-animate-style=fadeinup] {
+      transform: translateY(100px);
+    }
+    .t396 .t-animate_started[data-animate-style=fadein],
+    .t396 .t-animate_started[data-animate-style=fadeinup] {
+      opacity: 1;
+      transform: none;
+    }
+    .t396__elem--anim-hidden { opacity: 0; }
+  </style>
+</head>
+<body class="t-body">
+  <p class="note" id="mode-note"></p>
+
+  <div class="t396">
+    <div class="t396__artboard">
+      <div class="card">
+        <div class="t396__elem t-animate" data-animate-style="fadeinup" data-animate-mobile="y">
+          <h2>Сколько стоит взломать ваш бизнес?</h2>
+        </div>
+        <div class="t396__elem t-animate" data-animate-style="fadein" data-animate-mobile="y">
+          <p>Первый экран: контент должен быть виден сразу, без пустого серого кадра.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="spacer"></div>
+
+  <div class="t396" id="rec-demo-mid">
+    <div class="t396__artboard">
+      <div class="card" id="empty-shell">
+        <div class="t396__elem t-animate" data-animate-style="fadeinup" data-animate-mobile="y" data-animate-duration="1">
+          <h2>Что получите</h2>
+        </div>
+        <div class="tn-group t396__elem--anim-hidden" data-animate-sbs-event="intoview">
+          <p>Оценку стоимости взлома, отчёт по уязвимостям и рекомендации по защите.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="spacer"></div>
+
+  <div class="t396">
+    <div class="t396__artboard">
+      <div class="card">
+        <div class="t396__elem t-animate" data-animate-style="fadeinup" data-animate-mobile="y">
+          <h2>Почему лидеры рынка выходят на кибериспытания</h2>
+        </div>
+        <div class="t396__elem t-animate" data-animate-style="fadein" data-animate-mobile="y">
+          <p>Ещё один блок ниже по странице — при быстром скролле без сниппета сначала пустой фон.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="embed-slot"></div>
+  <script>
+    (function () {
+      var nofix = /(?:\?|&)nofix=1(?:&|$)/.test(location.search);
+      var note = document.getElementById('mode-note');
+      note.innerHTML = nofix
+        ? '<strong>Режим как у Тильды (nofix=1).</strong> Прокрутите быстро вниз: карточка серая, текст появится с задержкой.'
+        : '<strong>Сниппет включён.</strong> Текст в карточках виден сразу. Для бага откройте <code>demo.html?nofix=1</code>.';
+
+      /* Имитация Тильды: анимации стартуют через 1.5с и только в кадре */
+      function tildaLikeStart() {
+        setTimeout(function () {
+          var els = document.querySelectorAll('.t-animate, [data-animate-sbs-event="intoview"]');
+          if (!('IntersectionObserver' in window)) {
+            Array.prototype.forEach.call(els, activate);
+            return;
+          }
+          var io = new IntersectionObserver(function (entries, obs) {
+            entries.forEach(function (entry) {
+              if (!entry.isIntersecting) return;
+              activate(entry.target);
+              obs.unobserve(entry.target);
+            });
+          }, { rootMargin: '-20% 0px' });
+          Array.prototype.forEach.call(els, function (el) { io.observe(el); });
+        }, 1500);
+      }
+
+      function activate(el) {
+        el.classList.add('t-animate_started');
+        el.classList.remove('t396__elem--anim-hidden');
+      }
+
+      tildaLikeStart();
+
+      if (nofix) return;
+
+      fetch('tilda-embed.html')
+        .then(function (r) { return r.text(); })
+        .then(function (html) {
+          var slot = document.getElementById('embed-slot');
+          var doc = new DOMParser().parseFromString(html, 'text/html');
+          Array.prototype.forEach.call(doc.querySelectorAll('style, script'), function (node) {
+            var clone = document.createElement(node.tagName.toLowerCase());
+            clone.textContent = node.textContent;
+            slot.appendChild(clone);
+          });
+        })
+        .catch(function (err) {
+          document.body.insertAdjacentHTML(
+            'beforeend',
+            '<p style="padding:20px;color:#c00">Не удалось загрузить tilda-embed.html: откройте demo.html через локальный сервер.</p>'
+          );
+          console.error(err);
+        });
+    })();
+  </script>
+</body>
+</html>
