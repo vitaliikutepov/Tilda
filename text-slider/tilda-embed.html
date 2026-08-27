@@ -38,9 +38,13 @@
   }
 
   /* Текст: hug + скольжение стрелок, как в main-slider.
-     overflow + min-width:0 — иначе при удлинении flex прыгает. */
+     overflow + min-width:0 — иначе при удлинении flex прыгает.
+     display:block бьёт Tilda display:table: таблица игнорирует
+     max-width, если внутри nowrap (первая отрисовка на телефоне). */
   .slider-text-2,
   .slider-text {
+    display: block !important;
+    table-layout: fixed !important;
     transition:
       width 0.5s cubic-bezier(.25, .1, .25, 1),
       max-width 0.5s cubic-bezier(.25, .1, .25, 1),
@@ -52,6 +56,8 @@
     flex: 0 0 auto;
     box-sizing: border-box;
     max-width: 864px;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
   }
   .slider-text-2.pts-text-wrap,
   .slider-text.pts-text-wrap {
@@ -63,8 +69,10 @@
     width: 100%;
     overflow: hidden;
     max-width: 100%;
-    transition: opacity 0.5s ease;
+    transition: opacity 0.5s ease !important;
     box-sizing: border-box;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
   }
   .slider-text-2.pts-text-wrap .tn-atom,
   .slider-text.pts-text-wrap .tn-atom {
@@ -86,12 +94,38 @@
   @media screen and (max-width: 767px) {
     .slider-text-2,
     .slider-text {
+      white-space: normal !important;
       max-width: 280px !important;
-      white-space: normal;
+      width: 100% !important;
+      flex: 1 1 auto !important;
+      min-width: 0 !important;
     }
     .slider-text-2 .tn-atom,
     .slider-text .tn-atom {
-      white-space: normal;
+      white-space: normal !important;
+      max-width: 100% !important;
+    }
+
+    /* 320-артборд Тильды: группа 280px, overflow у артборда visible —
+       без клипа первая nowrap-строка уезжает за экран */
+    #rec3351087301 .t396__artboard,
+    #rec3351087301 .t396__artboard .t396__group,
+    #rec3351087301 .tn-group[data-group-id="1787754140592000001"] {
+      overflow: hidden !important;
+      max-width: 100%;
+    }
+
+    /* Появление блоков Тильды: opacity:0 до IO, на телефоне
+       сначала чёрный экран, потом резкий pop-in */
+    .t396__elem--anim-hidden {
+      opacity: 1 !important;
+      transform: none !important;
+      animation: none !important;
+    }
+    #rec3351087301 .t-animate {
+      opacity: 1 !important;
+      transform: none !important;
+      animation: none !important;
     }
   }
 
@@ -127,10 +161,7 @@
     overflow: visible !important;
     border-radius: 55px !important;
     background: transparent !important;
-    transition:
-      width 0.5s cubic-bezier(.25, .1, .25, 1),
-      min-width 0.5s cubic-bezier(.25, .1, .25, 1),
-      max-width 0.5s cubic-bezier(.25, .1, .25, 1);
+    transition: none !important;
   }
 
   .cslide4-1.is-on,
@@ -193,18 +224,23 @@
     background-image: none !important;
   }
 
+  /* заливка через scaleX от левого края: не зависит от анимации
+     ширины родителя (4px → 24px), иначе точка «наливается» и потом
+     прыгает в бар */
   .pt-pag-fill {
     position: absolute;
     left: 0;
     top: 0;
     bottom: 0;
     height: 100%;
-    width: 0;
+    width: 100%;
     border-radius: 55px;
     background-color: #ffffff;
     pointer-events: none;
     z-index: 2;
-    will-change: width;
+    transform: scaleX(0);
+    transform-origin: left center;
+    will-change: transform;
   }
 
   /* неактивный: белая точка */
@@ -212,20 +248,7 @@
   .cslide4-2:not(.is-on) .pt-pag-fill,
   .cslide4-3:not(.is-on) .pt-pag-fill,
   .cslide4-4:not(.is-on) .pt-pag-fill {
-    width: 100% !important;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .slider-text-2,
-    .slider-text,
-    .slider-text-2 .tn-atom,
-    .slider-text .tn-atom,
-    .cslide4-1,
-    .cslide4-2,
-    .cslide4-3,
-    .cslide4-4 {
-      transition: none !important;
-    }
+    transform: scaleX(1) !important;
   }
 </style>
 
@@ -247,6 +270,7 @@
 
   var AUTOPLAY_MS = 5000;
   var SWIPE_PX = 48;
+  var TEXT_OPACITY = '0.8';
 
   /* max-width текста: hug, пока не упрётся в потолок вьюпорта */
   var TEXT_MAX = {
@@ -271,16 +295,14 @@
   var lastFrame = null;
   var rafId = 0;
   var lastGoAt = 0;
-  var reducedMotion = false;
   var currentBp = null;
 
   function q(sel, root) {
     return (root || document).querySelector(sel);
   }
 
-  function prefersReducedMotion() {
-    return window.matchMedia &&
-      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function qa(sel, root) {
+    return (root || document).querySelectorAll(sel);
   }
 
   function breakpointId() {
@@ -292,8 +314,30 @@
     return 320;
   }
 
+  function visibleBoxWidth(el) {
+    if (!el) return 0;
+    var cs = window.getComputedStyle(el);
+    if (cs.display === 'none' || cs.visibility === 'hidden') return 0;
+    return el.offsetWidth || 0;
+  }
+
   function textMaxWidth() {
-    return TEXT_MAX[breakpointId()] || 864;
+    var cap = TEXT_MAX[breakpointId()] || 864;
+    if (!textEl) return cap;
+    var row = textEl.parentElement;
+    if (row) {
+      var rowW = row.clientWidth;
+      if (rowW > 0) {
+        var left = q('.main-slider-left', row) || q('.slider-left', row);
+        var right = q('.main-slider-right', row) || q('.slider-right', row);
+        var arrows = visibleBoxWidth(left) + visibleBoxWidth(right);
+        var gaps = 16;
+        var avail = rowW - arrows - gaps;
+        if (avail > 40) cap = Math.min(cap, avail);
+        else cap = Math.min(cap, rowW);
+      }
+    }
+    return cap;
   }
 
   function ensurePagFill(bar) {
@@ -313,11 +357,13 @@
       var item = pagItems[i];
       if (!item || !item.wrap) continue;
       var on = i === active;
+      if (on && item.fill) {
+        item.fill.style.transform = 'scaleX(0)';
+      }
       item.wrap.classList.toggle('is-on', on);
       item.wrap.setAttribute('aria-current', on ? 'true' : 'false');
-      if (!item.fill) continue;
-      if (!on) {
-        item.fill.style.width = '';
+      if (!on && item.fill) {
+        item.fill.style.transform = '';
       }
     }
   }
@@ -326,7 +372,7 @@
     var item = pagItems[active];
     if (!item || !item.fill) return;
     p = Math.max(0, Math.min(1, p));
-    item.fill.style.width = (p * 100) + '%';
+    item.fill.style.transform = 'scaleX(' + p + ')';
   }
 
   function stopAutoplay() {
@@ -357,9 +403,14 @@
     if (!textAtom) return null;
     if (!measurer) {
       measurer = document.createElement('span');
+      measurer.setAttribute('aria-hidden', 'true');
       measurer.style.cssText =
-        'position:absolute;left:-9999px;top:0;visibility:hidden;pointer-events:none;';
-      document.body.appendChild(measurer);
+        'position:absolute;left:0;top:0;visibility:hidden;pointer-events:none;' +
+        'display:inline-block;white-space:nowrap;max-width:none;';
+      var mount = (textEl && textEl.parentNode) ||
+        (hostEl && hostEl.appendChild ? hostEl : null) ||
+        document.body;
+      mount.appendChild(measurer);
     }
     var cs = getComputedStyle(textAtom);
     measurer.style.font = cs.font;
@@ -379,7 +430,7 @@
     el.style.whiteSpace = 'nowrap';
     el.style.maxWidth = 'none';
     el.textContent = str;
-    var natural = Math.ceil(el.getBoundingClientRect().width);
+    var natural = el.scrollWidth || 0;
     if (natural <= maxW) return { w: natural, wrap: false };
     return { w: maxW, wrap: true };
   }
@@ -404,6 +455,11 @@
     textEl.style.setProperty('flex-basis', w, 'important');
   }
 
+  function setAtomOpacity(value) {
+    if (!textAtom) return;
+    textAtom.style.setProperty('opacity', value, 'important');
+  }
+
   function setText(immediate) {
     if (!textAtom || !textEl) return;
     var str = SLIDE_TEXTS[active] || '';
@@ -412,23 +468,23 @@
     textTimers.forEach(clearTimeout);
     textTimers = [];
 
-    if (immediate || reducedMotion) {
-      applyWrap(info.wrap);
-      textAtom.textContent = str;
-      lockTextBox(info.w);
-      textAtom.style.opacity = '';
-      return;
-    }
-
-    textAtom.style.transition = 'opacity 0.5s ease';
+    textAtom.style.setProperty('transition', 'opacity 0.5s ease', 'important');
     textEl.style.transition =
       'width 0.5s cubic-bezier(.25,.1,.25,1),' +
       'max-width 0.5s cubic-bezier(.25,.1,.25,1),' +
       'flex-basis 0.5s cubic-bezier(.25,.1,.25,1)';
 
-    var fromW = textEl.getBoundingClientRect().width;
+    if (immediate) {
+      applyWrap(info.wrap);
+      textAtom.textContent = str;
+      lockTextBox(info.w);
+      setAtomOpacity(TEXT_OPACITY);
+      return;
+    }
+
+    var fromW = textEl.offsetWidth || info.w;
     lockTextBox(fromW);
-    textAtom.style.opacity = '0';
+    setAtomOpacity('0');
 
     textTimers.push(setTimeout(function () {
       var toW = info.w;
@@ -450,7 +506,7 @@
     }, 500));
 
     textTimers.push(setTimeout(function () {
-      textAtom.style.opacity = '';
+      setAtomOpacity(TEXT_OPACITY);
     }, 1000));
   }
 
@@ -534,12 +590,32 @@
     return rec || text.parentElement || text;
   }
 
+  function revealTildaAnims() {
+    if (breakpointId() !== 320) return;
+    var nodes = qa('.t396__elem--anim-hidden');
+    var i;
+    for (i = 0; i < nodes.length; i++) {
+      nodes[i].classList.remove('t396__elem--anim-hidden');
+      nodes[i].style.opacity = '1';
+      nodes[i].style.transform = 'none';
+      nodes[i].style.animation = 'none';
+    }
+    var rec = q('#rec3351087301') || hostEl;
+    if (!rec) return;
+    nodes = qa('.t-animate', rec);
+    for (i = 0; i < nodes.length; i++) {
+      nodes[i].style.opacity = '1';
+      nodes[i].style.transform = 'none';
+      nodes[i].style.animation = 'none';
+    }
+  }
+
   function init() {
-    reducedMotion = prefersReducedMotion();
     textEl = q('.slider-text-2') || q('.slider-text');
     if (!textEl) return;
     textAtom = q('.tn-atom', textEl) || textEl;
     hostEl = findHost();
+    revealTildaAnims();
 
     pagItems = [];
     var count = Math.min(SLIDE_TEXTS.length, 4);
@@ -580,15 +656,6 @@
       else startAutoplay();
     });
 
-    if (window.matchMedia) {
-      var mq = window.matchMedia('(prefers-reduced-motion: reduce)');
-      var onMq = function () {
-        reducedMotion = mq.matches;
-      };
-      if (mq.addEventListener) mq.addEventListener('change', onMq);
-      else if (mq.addListener) mq.addListener(onMq);
-    }
-
     currentBp = breakpointId();
     var resizeTimer = null;
     window.addEventListener('resize', function () {
@@ -601,6 +668,7 @@
           measurer.parentNode.removeChild(measurer);
           measurer = null;
         }
+        revealTildaAnims();
         setText(true);
       }, 250);
     });

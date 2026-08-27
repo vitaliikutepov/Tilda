@@ -85,6 +85,7 @@
     }
 
     .slider-text-2 {
+      display: table;
       flex: 0 0 auto;
       min-width: 0;
       text-align: center;
@@ -140,16 +141,49 @@
     }
 
     @media (max-width: 767px) {
-      .pts-text-slider { min-height: 120px; padding: 20px 12px; }
+      .pts-text-slider { min-height: 120px; padding: 20px 12px; overflow: hidden; }
+      .pts-text-row {
+        max-width: 280px;
+        width: 100%;
+        column-gap: 0;
+      }
+      /* как в Тильде на 320: стрелки скрыты, текст fill 280 */
       .main-slider-left,
-      .main-slider-right {
-        flex-basis: 40px;
-        width: 40px;
-        height: 40px;
+      .main-slider-right { display: none; }
+      .slider-text-2 {
+        display: table;
+        width: 100%;
+        max-width: 280px;
       }
       .slider-text-2 .tn-atom {
         font-size: 14px;
         line-height: 1.4;
+      }
+    }
+
+    /* соседний блок: имитация t396__elem--anim-hidden */
+    .next-block {
+      background: #000;
+      color: #fff;
+      min-height: 180px;
+      padding: 32px 24px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .next-block h2 {
+      font-size: 18px;
+      margin: 0 0 8px;
+    }
+    .next-block p {
+      margin: 0;
+      color: #ccc;
+      font-size: 14px;
+      line-height: 1.45;
+      max-width: 520px;
+    }
+    @media (max-width: 767px) {
+      .t396__elem--anim-hidden {
+        opacity: 0;
       }
     }
   </style>
@@ -211,6 +245,17 @@
           <div class="tn-elem slide4-4"><div class="tn-atom"></div></div>
         </div>
       </div>
+    </div>
+  </div>
+
+  <div class="next-block">
+    <div class="t396__elem--anim-hidden t-animate">
+      <h2>Следующий блок</h2>
+      <p>
+        На телефоне Тильда держит такие блоки в <code>t396__elem--anim-hidden</code>
+        (opacity: 0) до пересечения с вьюпортом — из‑за этого при скролле сначала
+        чёрный экран, потом резкое появление. Сниппет снимает этот класс на mobile.
+      </p>
     </div>
   </div>
 
