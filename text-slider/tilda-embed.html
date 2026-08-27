@@ -95,15 +95,24 @@
     .slider-text-2,
     .slider-text {
       white-space: normal !important;
-      max-width: 280px !important;
       width: 100% !important;
+      max-width: min(280px, 100%) !important;
+      height: auto !important;
       flex: 1 1 auto !important;
       min-width: 0 !important;
+      overflow: hidden !important;
+      overflow-wrap: anywhere;
+      word-break: break-word;
     }
     .slider-text-2 .tn-atom,
     .slider-text .tn-atom {
       white-space: normal !important;
+      width: 100% !important;
       max-width: 100% !important;
+      height: auto !important;
+      overflow: visible !important;
+      overflow-wrap: anywhere !important;
+      word-break: break-word !important;
     }
 
     /* fadeinup у группы слайдера: на mobile Тильда может оставить opacity:0.
@@ -296,6 +305,11 @@
     return 320;
   }
 
+  function isPhoneLayout() {
+    return !!(window.matchMedia &&
+      window.matchMedia('(max-width: 767px)').matches);
+  }
+
   function visibleBoxWidth(el) {
     if (!el) return 0;
     var cs = window.getComputedStyle(el);
@@ -418,14 +432,25 @@
 
   function applyWrap(wrap) {
     if (!textEl) return;
+    if (isPhoneLayout()) wrap = true;
     textEl.classList.toggle('pts-text-wrap', !!wrap);
     var ws = wrap ? 'normal' : 'nowrap';
     textEl.style.setProperty('white-space', ws, 'important');
-    if (textAtom) textAtom.style.setProperty('white-space', ws, 'important');
+    if (textAtom) {
+      textAtom.style.setProperty('white-space', ws, 'important');
+      if (wrap) {
+        textAtom.style.setProperty('overflow-wrap', 'anywhere', 'important');
+        textAtom.style.setProperty('word-break', 'break-word', 'important');
+      }
+    }
   }
 
   function lockTextBox(widthPx) {
     if (!textEl) return;
+    if (isPhoneLayout()) {
+      fitPhoneText();
+      return;
+    }
     var w = Math.max(0, Math.round(widthPx)) + 'px';
     textEl.style.setProperty('min-width', '0px', 'important');
     textEl.style.setProperty('overflow', 'hidden', 'important');
@@ -436,6 +461,27 @@
     textEl.style.setProperty('flex-basis', w, 'important');
   }
 
+  function fitPhoneText() {
+    if (!textEl) return;
+    applyWrap(true);
+    textEl.style.setProperty('width', '100%', 'important');
+    textEl.style.setProperty('max-width', 'min(280px, 100%)', 'important');
+    textEl.style.setProperty('flex-grow', '1', 'important');
+    textEl.style.setProperty('flex-shrink', '1', 'important');
+    textEl.style.setProperty('flex-basis', 'auto', 'important');
+    textEl.style.setProperty('min-width', '0px', 'important');
+    textEl.style.setProperty('height', 'auto', 'important');
+    textEl.style.setProperty('overflow', 'hidden', 'important');
+    textEl.style.transition = 'none';
+    if (textAtom) {
+      textAtom.style.setProperty('white-space', 'normal', 'important');
+      textAtom.style.setProperty('overflow-wrap', 'anywhere', 'important');
+      textAtom.style.setProperty('word-break', 'break-word', 'important');
+      textAtom.style.setProperty('max-width', '100%', 'important');
+      textAtom.style.setProperty('overflow', 'visible', 'important');
+    }
+  }
+
   function setAtomOpacity(value) {
     if (!textAtom) return;
     textAtom.style.setProperty('opacity', value, 'important');
@@ -444,10 +490,30 @@
   function setText(immediate) {
     if (!textAtom || !textEl) return;
     var str = SLIDE_TEXTS[active] || '';
-    var info = measureText(str);
 
     textTimers.forEach(clearTimeout);
     textTimers = [];
+
+    if (isPhoneLayout()) {
+      textAtom.style.setProperty('transition', 'opacity 0.5s ease', 'important');
+      if (immediate) {
+        textAtom.textContent = str;
+        fitPhoneText();
+        setAtomOpacity(TEXT_OPACITY);
+        return;
+      }
+      setAtomOpacity('0');
+      textTimers.push(setTimeout(function () {
+        textAtom.textContent = str;
+        fitPhoneText();
+      }, 500));
+      textTimers.push(setTimeout(function () {
+        setAtomOpacity(TEXT_OPACITY);
+      }, 1000));
+      return;
+    }
+
+    var info = measureText(str);
 
     textAtom.style.setProperty('transition', 'opacity 0.5s ease', 'important');
     textEl.style.transition =
