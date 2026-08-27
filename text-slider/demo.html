@@ -85,9 +85,10 @@
     }
 
     .slider-text-2 {
-      flex: 0 1 auto;
+      flex: 0 0 auto;
       min-width: 0;
       text-align: center;
+      overflow: hidden;
     }
     .slider-text-2 .tn-atom {
       color: #fff;
@@ -95,7 +96,6 @@
       line-height: 1.5;
       font-weight: 400;
       opacity: 0.8;
-      white-space: nowrap;
     }
 
     .pag-row {
@@ -150,7 +150,6 @@
       .slider-text-2 .tn-atom {
         font-size: 14px;
         line-height: 1.4;
-        white-space: normal;
       }
     }
   </style>
@@ -162,7 +161,9 @@
       Демо логики сниппета <code>tilda-embed.html</code> под блок
       <code>#rec3351087301</code> на
       <a href="https://form.ptsecurity.com/h1bg-special" style="color:#ccc">form.ptsecurity.com/h1bg-special</a>.
-      Автопроигрывание 5 с, активный пункт пагинации — прогрессбар, остальные — точки.
+      Автопроигрывание 5 с. Текст hug со скольжением стрелок, длинные строки
+      переносятся (max-width: 280 / 616 / 1002 / 864). Активный пункт пагинации —
+      прогрессбар, остальные — точки.
     </p>
   </div>
 
