@@ -1,0 +1,223 @@
+<!-- ============================================================
+     Моргание точек SVG (.svg-dots) для Tilda Zero Block
+
+     Как подключить:
+     1. В зеро-блоке картинке/HTML с SVG задайте класс  svg-dots
+        (поле «CSS класс» у элемента).
+     2. Весь этот файл вставьте в HTML-элемент Тильды
+        (в тот же блок или в настройки страницы).
+
+     Если SVG стоит как <img>, скрипт подгрузит файл и встроит
+     его инлайном — иначе до отдельных точек не достучаться.
+     Уже инлайновый <svg> тоже подойдёт.
+
+     Цвет (fill) не меняется — как в исходном SVG.
+     Анимируется только прозрачность: часть точек почти гаснет.
+============================================================ -->
+
+<style>
+  .svg-dots svg {
+    display: block;
+    width: 100%;
+    height: auto;
+    max-width: 100%;
+    overflow: visible;
+    pointer-events: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .svg-dots svg rect,
+    .svg-dots svg circle,
+    .svg-dots svg ellipse {
+      animation: none !important;
+    }
+  }
+</style>
+
+<script>
+(function () {
+  'use strict';
+
+  if (window.__svgDotsInit) return;
+  window.__svgDotsInit = true;
+
+  var SELECTOR = '.svg-dots';
+  var DOTS = 'rect, circle, ellipse';
+
+  function qa(sel, root) {
+    return Array.prototype.slice.call((root || document).querySelectorAll(sel));
+  }
+
+  function rand(min, max) {
+    return min + Math.random() * (max - min);
+  }
+
+  function reducedMotion() {
+    return window.matchMedia &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  }
+
+  function parseOpacity(el) {
+    var raw = el.getAttribute('opacity');
+    if (raw == null || raw === '') return 1;
+    var n = parseFloat(raw);
+    return isNaN(n) ? 1 : n;
+  }
+
+  function takeInheritedOpacity(svg) {
+    var factor = 1;
+    qa('g[opacity]', svg).concat(svg.getAttribute('opacity') != null ? [svg] : []).forEach(function (el) {
+      factor *= parseOpacity(el);
+      if (el !== svg || el.getAttribute('opacity') != null) el.removeAttribute('opacity');
+    });
+    return factor;
+  }
+
+  function svgSrc(img) {
+    return img.getAttribute('data-original') ||
+      img.getAttribute('data-src') ||
+      img.currentSrc ||
+      img.src ||
+      '';
+  }
+
+  function isSvgUrl(url) {
+    if (!url) return false;
+    var clean = url.split('?')[0].split('#')[0].toLowerCase();
+    return /\.svg$/.test(clean) || clean.indexOf('image/svg') !== -1;
+  }
+
+  function copyLayout(from, to) {
+    var cls = from.getAttribute('class');
+    if (cls) to.setAttribute('class', cls);
+    to.classList.add('svg-dots__svg');
+    var style = from.getAttribute('style');
+    if (style) to.setAttribute('style', style);
+    to.style.display = 'block';
+    to.style.width = '100%';
+    to.style.height = 'auto';
+    to.style.maxWidth = '100%';
+    to.removeAttribute('width');
+    to.removeAttribute('height');
+    if (!to.getAttribute('preserveAspectRatio')) {
+      to.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+    }
+  }
+
+  function twinkle(dot, rest) {
+    if (!dot.animate) return;
+    var hi = Math.min(1, rest * 2.2);
+    var lo = rand(0, 0.025);
+    var delay = rand(0, 5200);
+    var roll = Math.random();
+
+    if (roll < 0.42) {
+      dot.animate(
+        [{ opacity: rest }, { opacity: lo }, { opacity: rest }],
+        { duration: rand(4200, 9000), delay: delay, iterations: Infinity, easing: 'ease-in-out' }
+      );
+      return;
+    }
+
+    if (roll < 0.72) {
+      dot.animate(
+        [{ opacity: rest }, { opacity: hi }, { opacity: rest }],
+        { duration: rand(3400, 7200), delay: delay, iterations: Infinity, easing: 'ease-in-out' }
+      );
+      return;
+    }
+
+    dot.animate(
+      [
+        { opacity: rest, offset: 0 },
+        { opacity: rest, offset: 0.62 },
+        { opacity: lo, offset: 0.74 },
+        { opacity: rest, offset: 0.86 },
+        { opacity: rest, offset: 1 }
+      ],
+      { duration: rand(3800, 8000), delay: delay, iterations: Infinity, easing: 'ease-in-out' }
+    );
+  }
+
+  function animateDots(svg) {
+    if (!svg || svg.getAttribute('data-svg-dots') === '1') return;
+    svg.setAttribute('data-svg-dots', '1');
+
+    var inherited = takeInheritedOpacity(svg);
+
+    qa(DOTS, svg).forEach(function (dot) {
+      var rest = inherited * parseOpacity(dot);
+      dot.style.opacity = String(rest);
+      if (reducedMotion()) return;
+      if (Math.random() < 0.38) return;
+      twinkle(dot, rest);
+    });
+  }
+
+  function inlineFromText(img, text) {
+    var doc = new DOMParser().parseFromString(text, 'image/svg+xml');
+    var svg = doc.documentElement;
+    if (!svg || svg.nodeName.toLowerCase() !== 'svg') return;
+    if (doc.querySelector('parsererror')) return;
+    var node = document.importNode(svg, true);
+    copyLayout(img, node);
+    if (img.parentNode) img.parentNode.replaceChild(node, img);
+    animateDots(node);
+  }
+
+  function processHost(host) {
+    if (!host) return;
+    var inline = host.tagName && host.tagName.toLowerCase() === 'svg'
+      ? host
+      : host.querySelector('svg');
+    if (inline) {
+      animateDots(inline);
+      return;
+    }
+
+    var img = host.querySelector('img');
+    if (!img || img.getAttribute('data-svg-dots-fetch') === '1') return;
+    var src = svgSrc(img);
+    if (!isSvgUrl(src)) return;
+
+    img.setAttribute('data-svg-dots-fetch', '1');
+    fetch(src, { mode: 'cors' })
+      .then(function (res) {
+        if (!res.ok) throw new Error('svg ' + res.status);
+        return res.text();
+      })
+      .then(function (text) { inlineFromText(img, text); })
+      .catch(function () {
+        img.removeAttribute('data-svg-dots-fetch');
+      });
+  }
+
+  function scan() {
+    qa(SELECTOR).forEach(processHost);
+  }
+
+  function waitAndScan() {
+    var started = Date.now();
+    (function poll() {
+      scan();
+      var ready = qa(SELECTOR).some(function (el) {
+        return el.querySelector('svg') || el.querySelector('img');
+      });
+      if (ready || Date.now() - started > 2500) return;
+      if (Date.now() - started < 20000) setTimeout(poll, 120);
+    })();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', waitAndScan);
+  } else {
+    waitAndScan();
+  }
+
+  var resizeTimer = null;
+  window.addEventListener('resize', function () {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(scan, 300);
+  });
+})();
+</script>
