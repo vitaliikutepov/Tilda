@@ -1,0 +1,121 @@
+<!-- ============================================================
+     Мобильная отрисовка зеро-блоков без «пустого» кадра
+     Страница: https://form.ptsecurity.com/h1bg-special
+
+     Как подключить:
+     Вставьте весь этот файл в HTML-элемент Тильды
+     (в настройки страницы или отдельный T123-блок).
+
+     Почему нужен:
+     На мобилке Тильда держит элементы .t-animate с opacity:0
+     и группы SBS (intoview) с классом t396__elem--anim-hidden,
+     пока они не попадут во вьюпорт. IntersectionObserver ещё и
+     с отрицательным rootMargin (~20% высоты блока), плюс старт
+     анимаций откладывается на 1.5 с. При быстром скролле видно
+     только фон (#1B1B1B / карточки #1a1b23), потом контент
+     резко появляется.
+
+     Поведение:
+     - до 979px (мобильный брейкпоинт анимаций Тильды) контент
+       виден сразу, без fadein/fadeinup;
+     - SBS «при появлении» тоже сразу видимы;
+     - hover-SBS и loop-анимации не трогаем;
+     - на warning-карточках снимаем backdrop-filter: blur(150px) —
+       он заставляет мобильный GPU откладывать отрисовку слоёв.
+============================================================ -->
+<style>
+  @media screen and (max-width: 979px) {
+    /* Appear-анимации Zero Block: CSS Тильды ставит opacity:0
+       на .t396 .t-animate на ВСЕХ ширинах, а JS включает их
+       только когда блок уже в кадре. */
+    .t396 .t-animate,
+    .t396 .t-animate[data-animate-style] {
+      opacity: 1 !important;
+      visibility: visible !important;
+      transform: none !important;
+      -webkit-transform: none !important;
+      animation: none !important;
+      -webkit-animation: none !important;
+      transition: none !important;
+    }
+
+    /* SBS «при появлении в экране»: класс anim-hidden прячет
+       группу, пока не сработает intoview. Hover не трогаем. */
+    .t396 [data-animate-sbs-event="intoview"].t396__elem--anim-hidden,
+    .t396 [data-animate-sbs-event="intoview"] {
+      opacity: 1 !important;
+      visibility: visible !important;
+    }
+
+    /* Карточки рисков: blur(150px) на 4 слоях — тяжёлый offscreen
+       paint на iOS/Android, из‑за него при скролле виден пустой фон. */
+    #rec3354439901 .warningcard-1,
+    #rec3354439901 .warningcard-2,
+    #rec3354439901 .warningcard-3,
+    #rec3354439901 .warningcard-4,
+    #rec3354439901 .warningcard-4::before {
+      -webkit-backdrop-filter: none !important;
+      backdrop-filter: none !important;
+    }
+  }
+</style>
+<script>
+(function () {
+  var MQ = window.matchMedia('(max-width: 979px)');
+
+  function each(list, fn) {
+    Array.prototype.forEach.call(list, fn);
+  }
+
+  function reveal() {
+    if (!MQ.matches) return;
+
+    each(document.querySelectorAll('.t396 .t-animate'), function (el) {
+      el.classList.add('t-animate_started');
+      el.classList.remove('t-animate_wait', 't-animate_paused');
+    });
+
+    each(
+      document.querySelectorAll('.t396 [data-animate-sbs-event="intoview"].t396__elem--anim-hidden'),
+      function (el) {
+        el.classList.remove('t396__elem--anim-hidden');
+      }
+    );
+  }
+
+  function bumpLazy() {
+    try {
+      if (window.lazyload_img && window.lazyload_img._settings) {
+        window.lazyload_img._settings.threshold = Math.max(
+          window.lazyload_img._settings.threshold || 0,
+          2000
+        );
+      }
+      if (typeof window.t_lazyload_update === 'function') {
+        window.t_lazyload_update();
+      } else if (window.lazyload_img && typeof window.lazyload_img.update === 'function') {
+        window.lazyload_img.update();
+      }
+    } catch (err) {}
+  }
+
+  function run() {
+    reveal();
+    bumpLazy();
+  }
+
+  function start() {
+    run();
+    window.addEventListener('load', run);
+    /* Тильда стартует appear-анимации с задержкой 1.5с — повторяем после неё. */
+    setTimeout(run, 200);
+    setTimeout(run, 1600);
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', start);
+  } else {
+    start();
+  }
+})();
+</script>
