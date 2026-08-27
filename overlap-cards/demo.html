@@ -25,12 +25,13 @@
         radial-gradient(ellipse 80% 60% at 70% 40%, rgba(80, 0, 0, 0.45), #000 70%);
       overflow: visible;
     }
-    .heading {
+    .tilda-glow {
       position: absolute;
-      top: 257px;
-      left: calc(50% - 960px + 160px);
-      width: 636px;
-      z-index: 4;
+      z-index: 3;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
     }
     .heading h1 { margin: 0 0 16px; font-size: 36px; font-weight: 700; line-height: 1.2; }
     .heading p { margin: 0; font-size: 18px; line-height: 1.4; color: #c8c8c8; }
@@ -143,6 +144,9 @@
   <div id="rec3354439901" class="r t-rec" data-record-type="396">
     <div class="t396">
       <div class="t396__artboard">
+        <!-- Как свечение Тильды: z-index 3 на весь артборд. Карточки 1–2
+             должны быть не ниже 3, иначе клики уходят в этот слой. -->
+        <div class="t396__elem tn-elem tilda-glow" data-elem-id="1787757973269000001"></div>
         <div class="heading">
           <h1>Определите, какой риск недопустим для вашего бизнеса</h1>
           <p>На кибериспытаниях вы сможете проверить готовность компании именно к такому сценарию.</p>
