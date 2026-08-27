@@ -23,7 +23,7 @@
       min-height: 770px;
       background:
         radial-gradient(ellipse 80% 60% at 70% 40%, rgba(80, 0, 0, 0.45), #000 70%);
-      overflow: hidden;
+      overflow: visible;
     }
     .heading {
       position: absolute;
@@ -46,11 +46,17 @@
     .warningcard-4 { top: 320px; left: calc(50% - 960px + 1060px); width: 700px; }
     .tn-molecule {
       display: flex;
-      align-items: center;
-      gap: 12px;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 16px;
       padding: 20px;
       border-radius: 16px;
       background: #282828;
+    }
+    .tn-molecule .head {
+      display: flex;
+      align-items: center;
+      gap: 12px;
     }
     .warn { width: 24px; height: 24px; flex: 0 0 24px; }
     .title { flex: 1; font-size: 18px; font-weight: 700; }
@@ -59,27 +65,27 @@
       border-radius: 50%; font-size: 11px; text-align: center; line-height: 14px; color: #aaa;
     }
     .t396__elem[data-elem-type="text"] {
-      position: absolute;
-      padding: 0 20px 20px;
+      position: relative;
       color: #e7ecf3;
       font-size: 16px;
       line-height: 1.5;
     }
-    .ocs-cta {
+    .ocs-cta-src {
       position: absolute;
       top: 532px;
       left: calc(50% - 960px + 1272px);
       width: 276px;
       text-align: center;
+      z-index: 8;
     }
-    .ocs-cta .hint {
+    .ocs-cta-src .hint {
       margin: 0 0 16px;
       font-size: 11px;
       letter-spacing: .08em;
       text-transform: uppercase;
       color: #8a8a8a;
     }
-    .ocs-cta a {
+    .ocs-cta-src a {
       display: inline-flex;
       padding: 16px 28px;
       border-radius: 12px;
@@ -107,6 +113,23 @@
       }
       .heading h1 { font-size: 26px; }
       .heading p { font-size: 14px; }
+      .warningcard-1,
+      .warningcard-2,
+      .warningcard-3,
+      .warningcard-4 {
+        left: calc(50% - 160px + 20px);
+        width: 280px;
+      }
+      .warningcard-1 { top: 213px; }
+      .warningcard-2 { top: 265px; }
+      .warningcard-3 { top: 337px; }
+      .warningcard-4 { top: 409px; }
+      .tn-molecule { padding: 16px; border-radius: 12px; }
+      .ocs-cta-src {
+        top: 645px;
+        left: calc(50% - 160px + 20px);
+        width: 280px;
+      }
     }
   </style>
 </head>
@@ -127,46 +150,54 @@
 
         <div class="t396__group tn-group warningcard-1" data-group-id="1787822237482000002">
           <div class="tn-molecule">
-            <svg class="warn" viewBox="0 0 28 28"><path d="M14 3.2 25.4 23.6H2.6L14 3.2Z" fill="#E31B23"/><path d="M14 11.2v6.1" stroke="#fff" stroke-width="2.1" stroke-linecap="round"/><circle cx="14" cy="20.2" r="1.15" fill="#fff"/></svg>
-            <div class="title">Хищение денежных средств</div>
-            <span class="help">?</span>
+            <div class="head">
+              <svg class="warn" viewBox="0 0 28 28"><path d="M14 3.2 25.4 23.6H2.6L14 3.2Z" fill="#E31B23"/><path d="M14 11.2v6.1" stroke="#fff" stroke-width="2.1" stroke-linecap="round"/><circle cx="14" cy="20.2" r="1.15" fill="#fff"/></svg>
+              <div class="title">Хищение денежных средств</div>
+              <span class="help">?</span>
+            </div>
+            <div class="t396__elem" data-elem-type="text" data-elem-id="1787822252534000003">
+              Прямые финансовые потери для компании: оформление покупок без оплаты, изменение сумм в счетах.
+            </div>
           </div>
-        </div>
-        <div class="t396__elem" data-elem-type="text" data-elem-id="1787822252534000003">
-          Прямые финансовые потери для компании: оформление покупок без оплаты, изменение сумм в счетах.
         </div>
 
         <div class="t396__group tn-group warningcard-2" data-group-id="1787822370860000007">
           <div class="tn-molecule">
-            <svg class="warn" viewBox="0 0 28 28"><path d="M14 3.2 25.4 23.6H2.6L14 3.2Z" fill="#E31B23"/><path d="M14 11.2v6.1" stroke="#fff" stroke-width="2.1" stroke-linecap="round"/><circle cx="14" cy="20.2" r="1.15" fill="#fff"/></svg>
-            <div class="title">Компрометация критических бизнес-систем</div>
-            <span class="help">?</span>
+            <div class="head">
+              <svg class="warn" viewBox="0 0 28 28"><path d="M14 3.2 25.4 23.6H2.6L14 3.2Z" fill="#E31B23"/><path d="M14 11.2v6.1" stroke="#fff" stroke-width="2.1" stroke-linecap="round"/><circle cx="14" cy="20.2" r="1.15" fill="#fff"/></svg>
+              <div class="title">Компрометация критических бизнес-систем</div>
+              <span class="help">?</span>
+            </div>
+            <div class="t396__elem" data-elem-type="text" data-elem-id="1787822370860000008">
+              Доступ к таким системам как ERP, CRM, WMS или OMS и нарушение их работы, целостности и конфиденциальности.
+            </div>
           </div>
-        </div>
-        <div class="t396__elem" data-elem-type="text" data-elem-id="1787822370860000008">
-          Доступ к таким системам как ERP, CRM, WMS или OMS и нарушение их работы, целостности и конфиденциальности.
         </div>
 
         <div class="t396__group tn-group warningcard-3" data-group-id="1787822403649000014">
           <div class="tn-molecule">
-            <svg class="warn" viewBox="0 0 28 28"><path d="M14 3.2 25.4 23.6H2.6L14 3.2Z" fill="#E31B23"/><path d="M14 11.2v6.1" stroke="#fff" stroke-width="2.1" stroke-linecap="round"/><circle cx="14" cy="20.2" r="1.15" fill="#fff"/></svg>
-            <div class="title">Компрометация серверной инфраструктуры</div>
-            <span class="help">?</span>
+            <div class="head">
+              <svg class="warn" viewBox="0 0 28 28"><path d="M14 3.2 25.4 23.6H2.6L14 3.2Z" fill="#E31B23"/><path d="M14 11.2v6.1" stroke="#fff" stroke-width="2.1" stroke-linecap="round"/><circle cx="14" cy="20.2" r="1.15" fill="#fff"/></svg>
+              <div class="title">Компрометация серверной инфраструктуры</div>
+              <span class="help">?</span>
+            </div>
+            <div class="t396__elem" data-elem-type="text" data-elem-id="1787822403649000015">
+              Получение контроля над серверами компании, на которых работают сайт, приложения и внутренние сервисы.
+            </div>
           </div>
-        </div>
-        <div class="t396__elem" data-elem-type="text" data-elem-id="1787822403649000015">
-          Получение контроля над серверами компании, на которых работают сайт, приложения и внутренние сервисы.
         </div>
 
         <div class="t396__group tn-group warningcard-4" data-group-id="1787822418398000021">
           <div class="tn-molecule">
-            <svg class="warn" viewBox="0 0 28 28"><path d="M14 3.2 25.4 23.6H2.6L14 3.2Z" fill="#E31B23"/><path d="M14 11.2v6.1" stroke="#fff" stroke-width="2.1" stroke-linecap="round"/><circle cx="14" cy="20.2" r="1.15" fill="#fff"/></svg>
-            <div class="title">Массовая компрометация конфиденциальной информации</div>
-            <span class="help">?</span>
+            <div class="head">
+              <svg class="warn" viewBox="0 0 28 28"><path d="M14 3.2 25.4 23.6H2.6L14 3.2Z" fill="#E31B23"/><path d="M14 11.2v6.1" stroke="#fff" stroke-width="2.1" stroke-linecap="round"/><circle cx="14" cy="20.2" r="1.15" fill="#fff"/></svg>
+              <div class="title">Массовая компрометация конфиденциальной информации</div>
+              <span class="help">?</span>
+            </div>
+            <div class="t396__elem" data-elem-type="text" data-elem-id="1787822418398000022">
+              Получение доступа к персональным данным клиентов, коммерческой информации, внутренним документам.
+            </div>
           </div>
-        </div>
-        <div class="t396__elem" data-elem-type="text" data-elem-id="1787822418398000022">
-          Получение доступа к персональным данным клиентов, коммерческой информации, внутренним документам.
         </div>
 
         <div class="t396__group ocs-cta-src" data-group-id="1787822608320000002">

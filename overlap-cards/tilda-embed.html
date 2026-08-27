@@ -1,49 +1,39 @@
 <!-- ============================================================
-     Стек warning-карточек для Tilda Zero Block
+     Warning-карточки для Tilda Zero Block
      Страница: https://form.ptsecurity.com/h1bg-special
      Блок:     #rec3354439901
 
      Как подключить:
      1. В зеро-блоке уже есть группы .warningcard-1 … .warningcard-4
-        и тексты описаний + группа с кнопкой «Оставить заявку».
+        и тексты описаний (CTA не трогаем).
      2. Вставьте ВЕСЬ этот файл в HTML-элемент страницы
         (настройки страницы / T123 / HTML в этом же зеро-блоке).
      3. Опубликуйте. В редакторе Тильда HTML не рисует.
 
      Поведение:
-     - по умолчанию все карточки закрыты (видна только шапка);
-     - стек — flex-автолейаут: открытие верхней сдвигает нижние вниз;
-     - ≥1366px — раскрытие по ховеру;
-     - <1366px — аккордеон по тапу (одна открытая карточка);
-     - на мобилке зум как у Тильды (280px сетки 320 → ~380px на телефоне);
-     - четвёртая карточка выше (309px), фейд заливки и обводки;
-     - оверлап 14px; ховер 0.8s ease-in-out;
+     - карточки остаются на местах заготовки Тильды
+       (без своего зума, стека и top/left/width);
+     - по умолчанию закрыты (описание скрыто);
+     - ≥1366px — раскрытие по ховеру, нижние карточки сдвигаются вниз;
+     - <1366px — аккордеон по тапу;
+     - CTA «Оставить заявку» не модифицируется;
      - стиль: rgba(255,0,0,.1) + stroke 1px rgba(255,0,0,.1)
-       + backdrop-blur 150px, радиус 16 / 12.
+       + backdrop-blur 150px, радиус 16 / 12;
+     - четвёртая карточка с фейдом заливки и обводки в открытом виде.
 ============================================================ -->
 
 <style>
   #rec3354439901 {
-    --ocs-overlap: 14px;
     --ocs-radius: 16px;
     --ocs-ease: ease-in-out;
     --ocs-time: 0.8s;
     --ocs-red: rgba(255, 0, 0, 0.1);
-    overflow-x: hidden !important;
   }
   @media screen and (max-width: 767px) {
     #rec3354439901 { --ocs-radius: 12px; }
   }
 
-  #rec3354439901 .t396__artboard,
-  #rec3354439901 .t396__filter,
-  #rec3354439901 .t396__carrier {
-    overflow-x: hidden !important;
-    overflow-y: visible !important;
-  }
-
-  /* Описания скрыты до ховера/тапа — и до, и после оборачивания JS.
-     В Тильде они position:absolute и иначе рисуются «поверх» закрытых карточек. */
+  /* Описания скрыты, пока карточка закрыта */
   #rec3354439901 [data-elem-id="1787822252534000003"],
   #rec3354439901 [data-elem-id="1787822370860000008"],
   #rec3354439901 [data-elem-id="1787822403649000015"],
@@ -66,8 +56,8 @@
     opacity: 0 !important;
     visibility: hidden !important;
     pointer-events: none !important;
-    transform: none !important;
     display: block !important;
+    zoom: 1 !important;
   }
   #rec3354439901 .ocs-body .tn-atom {
     display: block !important;
@@ -80,59 +70,11 @@
     padding: 0 !important;
   }
 
-  /* Стек: на десктопе — лесенка 700px, ниже 1366 — колонка заготовки (поля 20px) */
-  #rec3354439901 .ocs-stack {
-    position: absolute;
-    z-index: 6;
-    top: 140px;
-    left: calc(50% - 960px + 1060px);
-    width: 700px;
-    max-width: 100%;
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    box-sizing: border-box;
-  }
-  @media screen and (max-width: 1919px) {
-    #rec3354439901 .ocs-stack {
-      top: 120px;
-      left: calc(50% - 683px + 646px);
-      width: 700px;
-    }
-  }
-  @media screen and (max-width: 1365px) {
-    #rec3354439901 .ocs-stack {
-      top: 346px;
-      left: calc(50% - 512px + 20px);
-      width: 984px;
-      max-width: none;
-      align-items: stretch;
-    }
-  }
-  @media screen and (max-width: 1023px) {
-    #rec3354439901 .ocs-stack {
-      left: calc(50% - 384px + 20px);
-      width: 728px;
-    }
-  }
-  @media screen and (max-width: 767px) {
-    #rec3354439901 .ocs-stack {
-      top: 213px;
-      left: calc(50% - 160px + 20px);
-      width: 280px;
-      max-width: 280px;
-      zoom: calc(100vw / 320);
-    }
-  }
-
-  #rec3354439901 .ocs-card {
-    position: relative;
-    z-index: 1;
-    width: 700px;
-    max-width: 100%;
-    min-width: 0;
-    margin: 0;
+  /* Только внешний вид. top / left / width / zoom — как в заготовке Тильды */
+  #rec3354439901 .warningcard-1,
+  #rec3354439901 .warningcard-2,
+  #rec3354439901 .warningcard-3,
+  #rec3354439901 .warningcard-4 {
     box-sizing: border-box;
     border-radius: var(--ocs-radius);
     border: 1px solid var(--ocs-red);
@@ -142,83 +84,14 @@
     overflow: hidden;
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
-    transition: margin-top var(--ocs-time) var(--ocs-ease);
-  }
-  #rec3354439901 .ocs-card:nth-child(1) { width: 580px; z-index: 1; }
-  #rec3354439901 .ocs-card:nth-child(2) { width: 620px; z-index: 2; }
-  #rec3354439901 .ocs-card:nth-child(3) { width: 660px; z-index: 3; }
-  #rec3354439901 .ocs-card:nth-child(4),
-  #rec3354439901 .ocs-card--fade {
-    width: 700px;
-    z-index: 4;
-    min-height: 309px;
-    flex-shrink: 0;
-    -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 calc(100% - 180px), transparent 100%);
-    mask-image: linear-gradient(to bottom, #000 0%, #000 calc(100% - 180px), transparent 100%);
-  }
-  @media screen and (max-width: 1365px) {
-    #rec3354439901 .ocs-card,
-    #rec3354439901 .ocs-card:nth-child(1),
-    #rec3354439901 .ocs-card:nth-child(2),
-    #rec3354439901 .ocs-card:nth-child(3),
-    #rec3354439901 .ocs-card:nth-child(4) {
-      width: 100% !important;
-    }
-  }
-  #rec3354439901 .ocs-card + .ocs-card {
-    margin-top: calc(var(--ocs-overlap) * -1);
+    height: auto !important;
+    transition: transform var(--ocs-time) var(--ocs-ease);
   }
 
-  #rec3354439901 .ocs-stack .warningcard-1,
-  #rec3354439901 .ocs-stack .warningcard-2,
-  #rec3354439901 .ocs-stack .warningcard-3,
-  #rec3354439901 .ocs-stack .warningcard-4,
-  #rec3354439901 .ocs-stack .tn-group,
-  #rec3354439901 .ocs-stack .tn-molecule {
-    position: relative !important;
-    top: auto !important;
-    left: auto !important;
-    bottom: auto !important;
-    right: auto !important;
-    width: 100% !important;
-    max-width: 100% !important;
-    min-width: 0 !important;
-    height: auto !important;
-    margin: 0 !important;
-    z-index: auto !important;
-    transform: none !important;
-    box-sizing: border-box !important;
-  }
-  #rec3354439901 .ocs-stack .ocs-cta {
-    position: absolute !important;
-    left: 50% !important;
-    right: auto !important;
-    bottom: 0 !important;
-    top: auto !important;
-    transform: translateX(-50%) !important;
-    width: 276px !important;
-    max-width: 100% !important;
-    padding: 0 !important;
-    background: none !important;
-    border: 0 !important;
-    flex-shrink: 0;
-    overflow: visible !important;
-    z-index: 8 !important;
-    pointer-events: auto;
-  }
-  @media screen and (max-width: 1365px) {
-    #rec3354439901 .ocs-stack .ocs-cta {
-      width: 80% !important;
-    }
-  }
-  @media screen and (max-width: 767px) {
-    #rec3354439901 .ocs-stack .ocs-cta {
-      width: 100% !important;
-    }
-  }
-
-  #rec3354439901 .ocs-card .tn-molecule {
-    height: auto !important;
+  #rec3354439901 .warningcard-1 .tn-molecule,
+  #rec3354439901 .warningcard-2 .tn-molecule,
+  #rec3354439901 .warningcard-3 .tn-molecule,
+  #rec3354439901 .warningcard-4 .tn-molecule {
     background: transparent !important;
     background-image: none !important;
     border: 0 !important;
@@ -226,9 +99,13 @@
     overflow: visible !important;
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
+    height: auto !important;
   }
-  #rec3354439901 .ocs-card .tn-molecule .tn-atom,
-  #rec3354439901 .ocs-card .title {
+
+  #rec3354439901 .warningcard-1 .tn-atom,
+  #rec3354439901 .warningcard-2 .tn-atom,
+  #rec3354439901 .warningcard-3 .tn-atom,
+  #rec3354439901 .warningcard-4 .tn-atom {
     min-width: 0;
     max-width: 100%;
     white-space: normal !important;
@@ -236,19 +113,13 @@
 
   #rec3354439901 .ocs-reveal {
     display: block;
+    width: 100%;
     max-height: 0 !important;
     overflow: hidden !important;
     opacity: 0;
     transition: max-height var(--ocs-time) var(--ocs-ease), opacity var(--ocs-time) var(--ocs-ease);
   }
-  #rec3354439901 .ocs-reveal-inner {
-    overflow: hidden !important;
-    min-height: 0 !important;
-    min-width: 0 !important;
-  }
 
-  /* Открытое состояние: описание снова в потоке карточки */
-  #rec3354439901 .ocs-card.is-open .ocs-reveal { opacity: 1; }
   #rec3354439901 .ocs-card.is-open .ocs-reveal,
   #rec3354439901 .ocs-card.is-open .ocs-body,
   #rec3354439901 .ocs-card.is-open .ocs-body .tn-atom {
@@ -259,16 +130,17 @@
     overflow: visible !important;
     pointer-events: auto !important;
   }
+  #rec3354439901 .ocs-card.is-open .ocs-reveal { opacity: 1; }
   #rec3354439901 .ocs-card.is-open .ocs-body {
-    padding: 0 20px 20px !important;
     display: block !important;
   }
-  #rec3354439901 .ocs-card.is-open + .ocs-card {
-    margin-top: -4px;
+
+  #rec3354439901 .warningcard-4.is-open {
+    -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 calc(100% - 180px), transparent 100%);
+    mask-image: linear-gradient(to bottom, #000 0%, #000 calc(100% - 180px), transparent 100%);
   }
 
   @media screen and (min-width: 1366px) {
-    #rec3354439901 .ocs-card:hover .ocs-reveal { opacity: 1; }
     #rec3354439901 .ocs-card:hover .ocs-reveal,
     #rec3354439901 .ocs-card:hover .ocs-body,
     #rec3354439901 .ocs-card:hover .ocs-body .tn-atom {
@@ -279,23 +151,21 @@
       overflow: visible !important;
       pointer-events: auto !important;
     }
+    #rec3354439901 .ocs-card:hover .ocs-reveal { opacity: 1; }
     #rec3354439901 .ocs-card:hover .ocs-body {
-      padding: 0 20px 20px !important;
       display: block !important;
     }
-    #rec3354439901 .ocs-card:hover + .ocs-card {
-      margin-top: -4px;
-    }
-  }
-
-  @media screen and (max-width: 767px) {
-    #rec3354439901 .ocs-card.is-open .ocs-body {
-      padding: 0 16px 16px !important;
+    #rec3354439901 .warningcard-4:hover {
+      -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 calc(100% - 180px), transparent 100%);
+      mask-image: linear-gradient(to bottom, #000 0%, #000 calc(100% - 180px), transparent 100%);
     }
   }
 
   @media (prefers-reduced-motion: reduce) {
-    #rec3354439901 .ocs-card,
+    #rec3354439901 .warningcard-1,
+    #rec3354439901 .warningcard-2,
+    #rec3354439901 .warningcard-3,
+    #rec3354439901 .warningcard-4,
     #rec3354439901 .ocs-reveal {
       transition: none !important;
     }
@@ -327,38 +197,14 @@
     return window.matchMedia('(min-width: ' + HOVER_BP + 'px)').matches;
   }
 
-  /* Тильда на 320+upscale=window ставит zoom=clientWidth/320 на прямых детей артборда
-     (.t396__group / .t396__elem). Стек — наш div, без зума 280px/213px остаются
-     экранными и карточки уже заготовки (~380px) и наезжают на текст. */
-  function tildaPhoneZoom(rec) {
-    if (!window.matchMedia('(max-width: 767px)').matches) return '';
-    var board = rec && q('.t396__artboard', rec);
-    var kids = board ? board.children : [];
-    var i;
-    for (i = 0; i < kids.length; i++) {
-      var el = kids[i];
-      if (el.classList.contains('ocs-stack')) continue;
-      if ((el.classList.contains('tn-group') || el.classList.contains('t396__elem')) && el.style.zoom) {
-        return el.style.zoom;
-      }
-    }
-    var w = window.tn_scale_initial_window_width || document.documentElement.clientWidth;
-    return (w / 320).toFixed(3);
-  }
-
-  function syncStackZoom(stack, rec) {
-    if (!stack) return;
-    var z = tildaPhoneZoom(rec);
-    stack.style.zoom = z || '';
+  function cards(rec) {
+    return rec.querySelectorAll('.warningcard-1, .warningcard-2, .warningcard-3, .warningcard-4');
   }
 
   function nextTextSibling(header) {
     var el = header.nextElementSibling;
     while (el) {
-      if (el.classList.contains('ocs-stack') || el.classList.contains('ocs-card')) {
-        el = el.nextElementSibling;
-        continue;
-      }
+      if (el.closest(CTA_SEL)) return null;
       if (el.matches('.t396__elem[data-elem-type="text"]')) return el;
       if (CARD_SEL.some(function (s) { return el.matches(s); })) return null;
       el = el.nextElementSibling;
@@ -376,121 +222,129 @@
     el.style.width = '100%';
     el.style.height = '';
     el.style.minHeight = '0';
-    el.style.maxHeight = '';
     el.style.opacity = '';
     el.style.visibility = '';
-    el.style.transform = 'none';
+    el.style.zoom = '1';
   }
 
-  function setOpen(card, open, stack) {
-    var cards = stack.querySelectorAll('.ocs-card');
-    Array.prototype.forEach.call(cards, function (c) {
+  function applyShifts(rec) {
+    var list = cards(rec);
+    var hover = hoverMode();
+    var dy = 0;
+    Array.prototype.forEach.call(list, function (card) {
+      card.style.transform = dy ? 'translateY(' + dy + 'px)' : '';
+      var open = hover ? card.matches(':hover') : card.classList.contains('is-open');
+      if (!open) return;
+      var reveal = card.querySelector('.ocs-reveal');
+      if (reveal) dy += reveal.scrollHeight;
+    });
+  }
+
+  function setOpen(rec, card, open) {
+    Array.prototype.forEach.call(cards(rec), function (c) {
       var on = open && c === card;
       c.classList.toggle('is-open', on);
       c.setAttribute('aria-expanded', on ? 'true' : 'false');
     });
+    applyShifts(rec);
   }
 
-  function bindStack(stack) {
-    if (stack.getAttribute('data-ocs-bound') === '1') return;
-    stack.setAttribute('data-ocs-bound', '1');
+  function bindRec(rec) {
+    if (rec.getAttribute('data-ocs-bound') === '1') return;
+    rec.setAttribute('data-ocs-bound', '1');
 
-    stack.addEventListener('click', function (e) {
+    rec.addEventListener('click', function (e) {
       if (hoverMode()) return;
-      if (e.target.closest('a, button, .tn-atom__button-text')) return;
-      var card = e.target.closest('.ocs-card');
-      if (!card || !stack.contains(card)) return;
-      setOpen(card, !card.classList.contains('is-open'), stack);
+      if (e.target.closest('a, button, .tn-atom__button-text, ' + CTA_SEL)) return;
+      var card = e.target.closest('.warningcard-1, .warningcard-2, .warningcard-3, .warningcard-4');
+      if (!card || !rec.contains(card)) return;
+      setOpen(rec, card, !card.classList.contains('is-open'));
     });
 
-    stack.addEventListener('keydown', function (e) {
+    rec.addEventListener('keydown', function (e) {
       if (e.key !== 'Enter' && e.key !== ' ') return;
-      var card = e.target.closest('.ocs-card');
-      if (!card || !stack.contains(card)) return;
+      var card = e.target.closest('.warningcard-1, .warningcard-2, .warningcard-3, .warningcard-4');
+      if (!card || !rec.contains(card)) return;
       e.preventDefault();
-      setOpen(card, !card.classList.contains('is-open'), stack);
+      setOpen(rec, card, !card.classList.contains('is-open'));
+    });
+
+    rec.addEventListener('mouseover', function (e) {
+      if (!hoverMode()) return;
+      if (!e.target.closest('.warningcard-1, .warningcard-2, .warningcard-3, .warningcard-4')) return;
+      applyShifts(rec);
+    });
+    rec.addEventListener('mouseout', function () {
+      if (!hoverMode()) return;
+      applyShifts(rec);
     });
   }
 
   function wrapOnce(rec) {
-    if (q('.ocs-stack', rec)) return q('.ocs-stack', rec);
-    var board = q('.t396__artboard', rec);
-    if (!board) return null;
-
+    if (rec.getAttribute('data-ocs-ready') === '1') return rec;
     var headers = CARD_SEL.map(function (s) { return q(s, rec); });
     if (headers.some(function (h) { return !h; })) return null;
 
-    var stack = document.createElement('div');
-    stack.className = 'ocs-stack';
-    board.appendChild(stack);
-
     headers.forEach(function (header, i) {
-      var card = document.createElement('div');
-      card.className = 'ocs-card';
-      if (i === 3) card.classList.add('ocs-card--fade');
-      card.setAttribute('tabindex', '0');
-      card.setAttribute('aria-expanded', 'false');
+      header.classList.add('ocs-card');
+      if (i === 3) header.classList.add('ocs-card--fade');
+      header.setAttribute('tabindex', '0');
+      header.setAttribute('aria-expanded', 'false');
+
+      if (header.querySelector('.ocs-reveal')) return;
 
       var body = q(BODY_SEL[i], rec) || nextTextSibling(header);
-      stack.appendChild(card);
-      card.appendChild(header);
+      if (body && body.closest(CTA_SEL)) body = null;
 
       var reveal = document.createElement('div');
       reveal.className = 'ocs-reveal';
       var inner = document.createElement('div');
       inner.className = 'ocs-reveal-inner';
       reveal.appendChild(inner);
-      card.appendChild(reveal);
 
+      if (body && header.contains(body) && body.parentNode) {
+        body.parentNode.insertBefore(reveal, body);
+      } else {
+        header.appendChild(reveal);
+      }
       if (body) {
         prepareBody(body);
         inner.appendChild(body);
       }
     });
 
-    var cta = q(CTA_SEL, rec);
-    if (cta) {
-      cta.classList.add('ocs-cta');
-      stack.appendChild(cta);
-    }
-
+    rec.setAttribute('data-ocs-ready', '1');
     rec.classList.add('ocs-ready');
-    bindStack(stack);
-    syncStackZoom(stack, rec);
-    return stack;
+    bindRec(rec);
+    return rec;
   }
 
   function boot() {
     var rec = document.getElementById('rec' + REC_ID);
     if (!rec) return;
-    var stack = wrapOnce(rec);
-    if (stack) syncStackZoom(stack, rec);
+    wrapOnce(rec);
   }
 
   function start() {
     boot();
-    if (!q('#rec' + REC_ID + ' .ocs-stack')) {
+    if (!q('#rec' + REC_ID + ' .ocs-card')) {
       var tries = 0;
       var t = setInterval(function () {
         tries += 1;
         boot();
-        if (q('#rec' + REC_ID + ' .ocs-stack') || tries > 40) clearInterval(t);
+        if (q('#rec' + REC_ID + ' .ocs-card') || tries > 40) clearInterval(t);
       }, 100);
     }
-    setTimeout(function () {
-      var rec = document.getElementById('rec' + REC_ID);
-      if (rec) syncStackZoom(q('.ocs-stack', rec), rec);
-    }, 300);
     window.addEventListener('resize', function () {
       var rec = document.getElementById('rec' + REC_ID);
       if (!rec) return;
-      syncStackZoom(q('.ocs-stack', rec), rec);
       if (hoverMode()) {
-        Array.prototype.forEach.call(rec.querySelectorAll('.ocs-card.is-open'), function (c) {
+        Array.prototype.forEach.call(cards(rec), function (c) {
           c.classList.remove('is-open');
           c.setAttribute('aria-expanded', 'false');
         });
       }
+      applyShifts(rec);
     });
   }
 
