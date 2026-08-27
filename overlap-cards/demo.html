@@ -1,68 +1,167 @@
 <!DOCTYPE html>
 <!--
-  Это ЛОКАЛЬНОЕ демо. В Тильду его вставлять нельзя.
-  Для Тильды копируйте overlap-cards/tilda-embed.html
+  Локальное демо. В Тильду вставляйте tilda-embed.html
+  (он вешается на #rec3354439901, не этот файл).
 -->
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Карточки с нахлёстом — Tilda demo</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
+  <title>Warning-карточки — Tilda rec3354439901</title>
   <style>
     * { box-sizing: border-box; }
-    html, body { margin: 0; min-height: 100%; }
-    body {
-      font-family: Inter, "Helvetica Neue", Arial, sans-serif;
-      background: #050203;
-      color: #fff;
+    html, body { margin: 0; background: #000; color: #fff; font-family: Arial, sans-serif; }
+    .note {
+      position: relative; z-index: 2;
+      max-width: 640px; margin: 16px auto 0; padding: 0 20px;
+      color: #8a8082; font-size: 13px; line-height: 1.4;
     }
-    .page {
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 32px 16px 48px;
-      background:
-        radial-gradient(ellipse 70% 55% at 50% 42%, rgba(72, 8, 14, 0.55) 0%, rgba(8, 1, 2, 0.2) 48%, #050203 72%);
-    }
-    #embed-slot { width: 100%; }
-    .page-head {
+    #rec3354439901 { position: relative; }
+    #rec3354439901 .t396__artboard {
+      position: relative;
       width: 100%;
-      max-width: 560px;
-      margin: 0 auto 8px;
-      padding: 0 16px;
+      min-height: 770px;
+      background:
+        radial-gradient(ellipse 80% 60% at 70% 40%, rgba(80, 0, 0, 0.45), #000 70%);
+      overflow: hidden;
     }
-    h1 {
-      margin: 0 0 8px;
-      font-size: 20px;
+    .heading {
+      position: absolute;
+      top: 257px;
+      left: calc(50% - 960px + 160px);
+      width: 636px;
+      z-index: 4;
+    }
+    .heading h1 { margin: 0 0 16px; font-size: 36px; font-weight: 700; line-height: 1.2; }
+    .heading p { margin: 0; font-size: 18px; line-height: 1.4; color: #c8c8c8; }
+    .tn-group.warningcard-1,
+    .tn-group.warningcard-2,
+    .tn-group.warningcard-3,
+    .tn-group.warningcard-4 {
+      position: absolute;
+    }
+    .warningcard-1 { top: 140px; left: calc(50% - 960px + 1120px); width: 580px; }
+    .warningcard-2 { top: 200px; left: calc(50% - 960px + 1100px); width: 620px; }
+    .warningcard-3 { top: 260px; left: calc(50% - 960px + 1080px); width: 660px; }
+    .warningcard-4 { top: 320px; left: calc(50% - 960px + 1060px); width: 700px; }
+    .tn-molecule {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 20px;
+      border-radius: 16px;
+      background: #282828;
+    }
+    .warn { width: 24px; height: 24px; flex: 0 0 24px; }
+    .title { flex: 1; font-size: 18px; font-weight: 700; }
+    .help {
+      width: 16px; height: 16px; border: 1.5px solid rgba(255,255,255,.35);
+      border-radius: 50%; font-size: 11px; text-align: center; line-height: 14px; color: #aaa;
+    }
+    .t396__elem[data-elem-type="text"] {
+      position: absolute;
+      padding: 0 20px 20px;
+      color: #e7ecf3;
+      font-size: 16px;
+      line-height: 1.5;
+    }
+    .ocs-cta {
+      position: absolute;
+      top: 532px;
+      left: calc(50% - 960px + 1272px);
+      width: 276px;
+      text-align: center;
+    }
+    .ocs-cta .hint {
+      margin: 0 0 16px;
+      font-size: 11px;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: #8a8a8a;
+    }
+    .ocs-cta a {
+      display: inline-flex;
+      padding: 16px 28px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,.15);
+      color: #fff;
+      text-decoration: none;
       font-weight: 600;
     }
-    .note {
-      margin: 0 0 12px;
-      max-width: 640px;
-      color: #8a8082;
-      font-size: 14px;
-      line-height: 1.45;
+    @media (max-width: 1365px) {
+      .heading { position: relative; top: auto; left: auto; width: auto; padding: 40px 20px 0; }
+      .heading h1 { font-size: 28px; }
     }
   </style>
 </head>
 <body>
-  <div class="page">
-    <div class="page-head">
-      <h1>Стек карточек с нахлёстом</h1>
-      <p class="note">
-        Наведите на карточку — она выдвигается, и становится видно описание.
-        На телефоне карточка открывается по нажатию.
-        Код для Тильды: <code>tilda-embed.html</code>.
-      </p>
+  <p class="note">
+    Демо логики сниппета для <code>#rec3354439901</code>.
+    ≥1366px — ховер, ниже — аккордеон по клику.
+    В Тильду вставляйте <code>tilda-embed.html</code>.
+  </p>
+
+  <div id="rec3354439901" class="r t-rec" data-record-type="396">
+    <div class="t396">
+      <div class="t396__artboard">
+        <div class="heading">
+          <h1>Определите, какой риск недопустим для вашего бизнеса</h1>
+          <p>На кибериспытаниях вы сможете проверить готовность компании именно к такому сценарию.</p>
+        </div>
+
+        <div class="t396__group tn-group warningcard-1" data-group-id="1787822237482000002">
+          <div class="tn-molecule">
+            <svg class="warn" viewBox="0 0 28 28"><path d="M14 3.2 25.4 23.6H2.6L14 3.2Z" fill="#E31B23"/><path d="M14 11.2v6.1" stroke="#fff" stroke-width="2.1" stroke-linecap="round"/><circle cx="14" cy="20.2" r="1.15" fill="#fff"/></svg>
+            <div class="title">Хищение денежных средств</div>
+            <span class="help">?</span>
+          </div>
+        </div>
+        <div class="t396__elem" data-elem-type="text" data-elem-id="1787822252534000003">
+          Прямые финансовые потери для компании: оформление покупок без оплаты, изменение сумм в счетах.
+        </div>
+
+        <div class="t396__group tn-group warningcard-2" data-group-id="1787822370860000007">
+          <div class="tn-molecule">
+            <svg class="warn" viewBox="0 0 28 28"><path d="M14 3.2 25.4 23.6H2.6L14 3.2Z" fill="#E31B23"/><path d="M14 11.2v6.1" stroke="#fff" stroke-width="2.1" stroke-linecap="round"/><circle cx="14" cy="20.2" r="1.15" fill="#fff"/></svg>
+            <div class="title">Компрометация критических бизнес-систем</div>
+            <span class="help">?</span>
+          </div>
+        </div>
+        <div class="t396__elem" data-elem-type="text" data-elem-id="1787822370860000008">
+          Доступ к таким системам как ERP, CRM, WMS или OMS и нарушение их работы, целостности и конфиденциальности.
+        </div>
+
+        <div class="t396__group tn-group warningcard-3" data-group-id="1787822403649000014">
+          <div class="tn-molecule">
+            <svg class="warn" viewBox="0 0 28 28"><path d="M14 3.2 25.4 23.6H2.6L14 3.2Z" fill="#E31B23"/><path d="M14 11.2v6.1" stroke="#fff" stroke-width="2.1" stroke-linecap="round"/><circle cx="14" cy="20.2" r="1.15" fill="#fff"/></svg>
+            <div class="title">Компрометация серверной инфраструктуры</div>
+            <span class="help">?</span>
+          </div>
+        </div>
+        <div class="t396__elem" data-elem-type="text" data-elem-id="1787822403649000015">
+          Получение контроля над серверами компании, на которых работают сайт, приложения и внутренние сервисы.
+        </div>
+
+        <div class="t396__group tn-group warningcard-4" data-group-id="1787822418398000021">
+          <div class="tn-molecule">
+            <svg class="warn" viewBox="0 0 28 28"><path d="M14 3.2 25.4 23.6H2.6L14 3.2Z" fill="#E31B23"/><path d="M14 11.2v6.1" stroke="#fff" stroke-width="2.1" stroke-linecap="round"/><circle cx="14" cy="20.2" r="1.15" fill="#fff"/></svg>
+            <div class="title">Массовая компрометация конфиденциальной информации</div>
+            <span class="help">?</span>
+          </div>
+        </div>
+        <div class="t396__elem" data-elem-type="text" data-elem-id="1787822418398000022">
+          Получение доступа к персональным данным клиентов, коммерческой информации, внутренним документам.
+        </div>
+
+        <div class="t396__group ocs-cta-src" data-group-id="1787822608320000002">
+          <p class="hint">Не уверены какое событие выбрать?</p>
+          <a href="#popup:request">Оставить заявку</a>
+        </div>
+      </div>
     </div>
-    <div id="embed-slot"></div>
   </div>
 
+  <div id="embed-slot"></div>
   <script>
     fetch('tilda-embed.html')
       .then(function (r) { return r.text(); })
@@ -76,10 +175,7 @@
         });
       })
       .catch(function (err) {
-        document.body.insertAdjacentHTML(
-          'beforeend',
-          '<p style="padding:20px;color:#c00">Не удалось загрузить tilda-embed.html: откройте demo.html через локальный сервер.</p>'
-        );
+        document.body.insertAdjacentHTML('beforeend', '<p style="padding:20px;color:#c00">Нужен локальный сервер.</p>');
         console.error(err);
       });
   </script>
