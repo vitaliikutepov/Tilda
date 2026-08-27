@@ -251,6 +251,7 @@
 
   function resetFillEl(fill) {
     if (!fill) return;
+    fill.setAttribute('data-pt-gen', 'reset');
     fill.style.animation = 'none';
     fill.style.width = '0px';
     void fill.offsetWidth;
@@ -491,7 +492,7 @@
     if (hostEl) {
       hostEl.addEventListener('mouseenter', stopAutoplay);
       hostEl.addEventListener('mouseleave', function () {
-        startAutoplay();
+        if (autoplayPaused) startAutoplay();
       });
     }
 
