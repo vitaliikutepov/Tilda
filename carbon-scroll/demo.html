@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Carbon — SVG scroll story</title>
+  <style>
+    html, body { margin: 0; background: #000; }
+  </style>
+</head>
+<body>
+  <div id="embed-slot"></div>
+  <script>
+    fetch("tilda-embed.html")
+      .then(function (r) { return r.text(); })
+      .then(function (html) {
+        var slot = document.getElementById("embed-slot");
+        var doc = new DOMParser().parseFromString(html, "text/html");
+        Array.prototype.forEach.call(doc.body.childNodes, function (node) {
+          if (node.tagName === "SCRIPT") {
+            var s = document.createElement("script");
+            s.textContent = node.textContent;
+            slot.appendChild(s);
+          } else {
+            slot.appendChild(document.importNode(node, true));
+          }
+        });
+        Array.prototype.forEach.call(doc.head.querySelectorAll("style"), function (node) {
+          document.head.appendChild(document.importNode(node, true));
+        });
+      })
+      .catch(function () {
+        document.body.insertAdjacentHTML(
+          "beforeend",
+          "<p style='color:#fff;padding:24px'>Откройте demo.html через локальный сервер.</p>"
+        );
+      });
+  </script>
+</body>
+</html>
