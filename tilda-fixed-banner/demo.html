@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sticky banner — Tilda demo</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #fbfafc;
+      color: #312740;
+    }
+    .page {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 32px 20px 120px;
+    }
+    h1 { font-size: 20px; margin: 0 0 8px; }
+    .note { color: #6b6280; font-size: 14px; line-height: 1.45; margin: 0 0 24px; }
+    .filler {
+      height: 4000px;
+      border-radius: 16px;
+      background: linear-gradient(#fff, #eee8f8);
+      padding: 24px;
+    }
+
+    /* Карточка баннера (упрощённая копия зеро-блока rec2643778101) */
+    #rec2643778101 .t396__artboard { background: transparent; }
+    #rec2643778101 .tn-group[data-group-id="1785513176003000002"] {
+      width: min(1060px, calc(100% - 32px));
+      margin: 0 auto 16px;
+      border-radius: 24px;
+      background: linear-gradient(0turn, rgba(255,255,255,0.6), rgba(255,255,255,0.6));
+      backdrop-filter: blur(40px);
+      -webkit-backdrop-filter: blur(40px);
+    }
+    #rec2643778101 .tn-group[data-group-id="1785512632521000001"] {
+      display: flex;
+      gap: 16px;
+      align-items: center;
+      padding: 4px 32px 4px 0;
+      border-radius: 24px;
+      background-image: linear-gradient(0.251turn, #8742ee 0%, #a970ff 100%);
+      color: #fff;
+      position: relative;
+    }
+    .banner-image img { display: block; height: 96px; width: auto; }
+    .banner-copy { flex: 1; min-width: 0; padding: 16px 0; }
+    .banner-header { font-size: 20px; font-weight: 700; margin-bottom: 8px; }
+    .banner-text { font-size: 16px; opacity: 0.92; }
+    .banner-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 128px;
+      height: 56px;
+      padding: 0 20px;
+      border-radius: 16px;
+      background: #fff;
+      color: #8742ee;
+      text-decoration: none;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+    .close-banner {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      width: 32px;
+      height: 32px;
+      border: 0;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.22);
+      color: #fff;
+      font-size: 22px;
+      line-height: 1;
+      cursor: pointer;
+    }
+    .close-banner .tn-atom__button-icon::before { content: "×"; }
+
+    @media screen and (max-width: 767px) {
+      #rec2643778101 .tn-group[data-group-id="1785513176003000002"] {
+        width: 100%;
+        margin: 0;
+        border-radius: 24px 24px 0 0;
+      }
+      #rec2643778101 .tn-group[data-group-id="1785512632521000001"] {
+        flex-direction: column;
+        align-items: stretch;
+        padding: 16px 16px 20px;
+        border-radius: 24px 24px 0 0;
+        gap: 8px;
+      }
+      .banner-image { display: flex; justify-content: center; }
+      .banner-header { font-size: 14px; }
+      .banner-text { font-size: 12px; }
+      .banner-button {
+        width: 100%;
+        height: 40px;
+        font-size: 12px;
+      }
+      #rec2643778101.banner-collapsed .close-banner .tn-atom__button-icon::before {
+        content: "⌃";
+        font-size: 16px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <h1>Фиксированный баннер</h1>
+    <p class="note">
+      Прокрутите страницу (~1600px) — баннер выедет снизу.
+      На узком экране (≤767px) он свёрнут: тап по карточке раскрывает,
+      «Подробнее» ведёт по ссылке, крестик закрывает.
+    </p>
+    <div class="filler">Контент страницы для прокрутки</div>
+    <p>Конец страницы — баннер здесь прячется.</p>
+  </div>
+
+  <div id="rec2643778101" class="r t-rec">
+    <div class="t396">
+      <div class="t396__artboard">
+        <div class="tn-group" data-group-id="1785513176003000002">
+          <div class="tn-group" data-group-id="1785512632521000001">
+            <div class="banner-image">
+              <img src="https://static.tildacdn.com/tild6462-3334-4237-b061-346633323332/Frame_2136140128_1.png" alt="" />
+            </div>
+            <div class="banner-copy">
+              <div class="banner-header">Хакатон для учителей и школьников</div>
+              <div class="banner-text">C 20 августа по 12 декабря соберите команду и разработайте решение</div>
+            </div>
+            <a class="banner-button" href="https://www.sferum.ru/hackathon_2026" target="_blank" rel="noopener">Подробнее</a>
+            <button type="button" class="close-banner" aria-label="Закрыть">
+              <span class="tn-atom__button-icon"></span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="embed-slot"></div>
+  <script>
+    fetch('tilda-embed.html')
+      .then(function (r) { return r.text(); })
+      .then(function (html) {
+        var slot = document.getElementById('embed-slot');
+        var doc = new DOMParser().parseFromString(html, 'text/html');
+        Array.prototype.forEach.call(doc.querySelectorAll('style, script'), function (node) {
+          var clone = document.createElement(node.tagName.toLowerCase());
+          clone.textContent = node.textContent;
+          slot.appendChild(clone);
+        });
+      })
+      .catch(function (err) {
+        document.body.insertAdjacentHTML(
+          'beforeend',
+          '<p style="padding:20px;color:#c00">Не удалось загрузить tilda-embed.html: откройте demo.html через локальный сервер.</p>'
+        );
+        console.error(err);
+      });
+  </script>
+</body>
+</html>
