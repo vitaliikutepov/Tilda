@@ -95,12 +95,8 @@
     var ao = Math.asin(Math.min(0.999, cr / (R_OUT - cr)));
     var ai = Math.asin(Math.min(0.999, cr / (R_IN + cr)));
     var need = ao + ai + 0.004;
-    if (span < need){
-      cr = Math.max(0.4, cr * span / need);
-      ao = Math.asin(Math.min(0.999, cr / Math.max(0.5, R_OUT - cr)));
-      ai = Math.asin(Math.min(0.999, cr / (R_IN + cr)));
-      if (span < ao + ai + 0.004) span = ao + ai + 0.004;
-    }
+    /* Keep 2px corner radius; tiny percents become a short rounded sliver. */
+    if (span < need) span = need;
     var a1 = a0 + span;
     var kos = Math.sqrt(Math.max(0, (R_OUT - cr) * (R_OUT - cr) - cr * cr));
     var kis = Math.sqrt(Math.max(0, (R_IN + cr) * (R_IN + cr) - cr * cr));
