@@ -1,0 +1,179 @@
+<!--
+  Фиксированный баннер для зеро-блока Tilda (rec2643778101)
+
+  Что делает:
+  1. Закрепляет блок внизу экрана (position: fixed).
+  2. Баннер выезжает снизу после 1600px прокрутки страницы.
+  3. Баннер прячется при достижении конца страницы.
+  4. Кнопка с классом close-banner закрывает баннер.
+  5. На экранах до 768px у баннера два состояния — свёрнутое и развёрнутое:
+     - в свёрнутом видны только banner-image, banner-header и close-banner
+       (иконка кнопки меняется на Component_11.svg);
+     - тап по всей карточке разворачивает баннер (появляются
+       banner-text и banner-button, флекс-контейнер увеличивается);
+     - после разворота иконка снова становится крестиком и закрывает
+       баннер полностью; кнопка «Подробнее» (.banner-button) работает
+       как обычная ссылка.
+
+  Куда вставить: Настройки страницы -> Дополнительно -> HTML-код для вставки
+  внутрь тега BODY (или блок T123 на этой же странице).
+-->
+
+<style>
+  /* ===== 1. Фиксация блока внизу экрана + слайд-анимация ===== */
+  #rec2643778101 {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    z-index: 9990;
+    transform: translateY(110%);
+    transition: transform 0.45s ease;
+  }
+  #rec2643778101.banner-visible {
+    transform: translateY(0);
+  }
+
+  /* Высота артборда подстраивается под содержимое —
+     это нужно, чтобы блок «ужимался» в свёрнутом мобильном состоянии */
+  #rec2643778101 .t396__artboard {
+    height: auto !important;
+    min-height: 0 !important;
+    background-color: transparent !important;
+    pointer-events: none; /* прозрачные поля по бокам не перекрывают страницу */
+  }
+  #rec2643778101 .t396__carrier,
+  #rec2643778101 .t396__filter {
+    display: none !important;
+  }
+
+  /* Корневая группа теперь в потоке и задаёт высоту артборда */
+  #rec2643778101 .tn-group[data-group-id="1785513176003000002"] {
+    position: relative !important;
+    pointer-events: auto;
+  }
+  #rec2643778101 .close-banner {
+    pointer-events: auto;
+    cursor: pointer;
+  }
+
+  /* ===== 5. Свёрнутое состояние на мобильных (до 768px) ===== */
+  @media screen and (max-width: 767px) {
+    #rec2643778101.banner-collapsed .banner-text,
+    #rec2643778101.banner-collapsed .banner-button {
+      display: none !important;
+    }
+    /* В свёрнутом состоянии у кнопки close-banner другая иконка */
+    #rec2643778101.banner-collapsed .close-banner .tn-atom__button-icon {
+      --icon: url('https://static.tildacdn.com/tild6431-3962-4166-b133-643336376237/Component_11.svg') !important;
+    }
+    /* Вся карточка — зона раскрытия */
+    #rec2643778101.banner-collapsed .tn-group[data-group-id="1785513176003000002"] {
+      cursor: pointer;
+      -webkit-tap-highlight-color: rgba(135, 66, 238, 0.12);
+    }
+  }
+</style>
+
+<script>
+(function () {
+  var REC_ID = 'rec2643778101';     // id записи зеро-блока
+  var SHOW_AFTER_SCROLL = 1600;     // px прокрутки, после которых баннер появляется
+  var BOTTOM_OFFSET = 0;            // за сколько px до конца страницы баннер прячется
+  var MOBILE_MAX = 767;             // мобильный брейкпоинт
+
+  function closest(el, selector) {
+    if (!el) return null;
+    if (el.nodeType !== 1) el = el.parentElement;
+    if (!el) return null;
+    if (el.closest) return el.closest(selector);
+    return null;
+  }
+
+  function init() {
+    var banner = document.getElementById(REC_ID);
+    if (!banner) return;
+
+    var closedByUser = false;  // баннер закрыт крестиком
+    var userExpanded = false;  // на мобильном пользователь развернул баннер
+
+    function isMobile() {
+      return window.innerWidth <= MOBILE_MAX;
+    }
+
+    function isPageEnd() {
+      var doc = document.documentElement;
+      var scrollBottom = (window.pageYOffset || doc.scrollTop) + window.innerHeight;
+      return scrollBottom >= doc.scrollHeight - BOTTOM_OFFSET - 2;
+    }
+
+    /* 2 + 3: показать после 1600px прокрутки, спрятать в конце страницы */
+    function updateVisibility() {
+      if (closedByUser) return;
+      var scrolled = window.pageYOffset || document.documentElement.scrollTop;
+      var show = scrolled >= SHOW_AFTER_SCROLL && !isPageEnd();
+      banner.classList.toggle('banner-visible', show);
+    }
+
+    function closeBanner() {
+      closedByUser = true;
+      banner.classList.remove('banner-visible');
+    }
+
+    function expandBanner() {
+      userExpanded = true;
+      banner.classList.remove('banner-collapsed');
+      /* просим Тильду пересчитать размеры зеро-блока */
+      window.dispatchEvent(new Event('resize'));
+    }
+
+    /* 5: стартовое состояние на мобильных — свёрнутое */
+    if (isMobile()) {
+      banner.classList.add('banner-collapsed');
+    }
+
+    /* 5.2: тап по всей карточке на мобилке разворачивает баннер.
+       Кнопка «Подробнее» не перехватывается — после раскрытия это обычная ссылка. */
+    banner.addEventListener('click', function (e) {
+      if (!isMobile() || !banner.classList.contains('banner-collapsed')) return;
+      if (closest(e.target, '.banner-button')) return;
+      if (closest(e.target, '.close-banner')) return;
+      e.preventDefault();
+      expandBanner();
+    });
+
+    /* 4 + 5.3: крестик закрывает; в свёрнутом виде тап по иконке тоже раскрывает */
+    var closeButtons = banner.querySelectorAll('.close-banner');
+    Array.prototype.forEach.call(closeButtons, function (btn) {
+      btn.addEventListener('click', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (isMobile() && banner.classList.contains('banner-collapsed')) {
+          expandBanner();
+        } else {
+          closeBanner();
+        }
+      });
+    });
+
+    window.addEventListener('scroll', updateVisibility, { passive: true });
+    window.addEventListener('resize', function () {
+      if (!isMobile()) {
+        banner.classList.remove('banner-collapsed');
+      } else if (!userExpanded && !closedByUser) {
+        banner.classList.add('banner-collapsed');
+      }
+      updateVisibility();
+    });
+
+    updateVisibility();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();
+</script>
