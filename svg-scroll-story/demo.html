@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Три этапа — SVG-анимация по скроллу</title>
+  <style>
+    :root {
+      --bg: #10120f;
+      --ink: #e4ddd0;
+      --body: #b7b1a6;
+      --dim: #7c776c;
+      --faint: #2c2e28;
+      --accent: #e0a14a;
+      --moss: #86b89a;
+      --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+      --sans: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--ink);
+      font-family: var(--sans);
+      transition: background-color 0.9s ease;
+      overflow-x: hidden;
+    }
+    ::selection { background: var(--accent); color: #141210; }
+
+    .page-intro, .page-out {
+      position: relative;
+      min-height: 100vh;
+      padding: 18vh clamp(1.25rem, 6vw, 5.5rem) 12vh;
+      max-width: 46rem;
+    }
+    .page-out { min-height: auto; padding-bottom: 18vh; max-width: 52rem; }
+    .eyebrow {
+      font-family: var(--mono);
+      font-size: .75rem;
+      letter-spacing: .22em;
+      text-transform: uppercase;
+      color: var(--dim);
+      margin: 0 0 1rem;
+    }
+    h1, h2 {
+      font-weight: 750;
+      letter-spacing: -.02em;
+      line-height: 1.04;
+      margin: 0 0 1.1rem;
+      text-wrap: balance;
+    }
+    h1 { font-size: clamp(2.4rem, 6.4vw, 4.4rem); }
+    h2 { font-size: clamp(1.7rem, 4vw, 2.8rem); }
+    .lede, .page-intro p, .page-out p, .copy p {
+      font-size: clamp(.98rem, 1.6vw, 1.08rem);
+      line-height: 1.6;
+      color: var(--body);
+      margin: 0 0 .9rem;
+    }
+    .lede { max-width: 36rem; }
+    strong { color: var(--ink); font-weight: 650; }
+    .stat {
+      font-family: var(--mono);
+      font-size: .82rem;
+      line-height: 1.7;
+      color: var(--dim);
+      border-left: 1px solid var(--faint);
+      padding-left: 1rem;
+      margin-top: 1.4rem;
+    }
+    .stat b { color: var(--accent); font-weight: 500; }
+    .scroll-cue {
+      position: absolute;
+      bottom: 2rem;
+      left: clamp(1.25rem, 6vw, 5.5rem);
+      font-family: var(--mono);
+      font-size: .7rem;
+      letter-spacing: .26em;
+      text-transform: uppercase;
+      color: var(--dim);
+      display: flex;
+      align-items: center;
+      gap: .8rem;
+    }
+    .scroll-cue::after {
+      content: "";
+      width: 1px;
+      height: 2.6rem;
+      background: var(--dim);
+      animation: cue 2.2s ease-in-out infinite;
+      transform-origin: top;
+    }
+    @keyframes cue {
+      0%, 100% { transform: scaleY(.3); opacity: .4; }
+      50% { transform: scaleY(1); opacity: 1; }
+    }
+
+    .how {
+      display: grid;
+      gap: .8rem;
+      margin: 2rem 0 0;
+      font-family: var(--mono);
+      font-size: .78rem;
+      line-height: 1.55;
+      color: var(--dim);
+    }
+    .how div {
+      border: 1px solid var(--faint);
+      padding: .85rem 1rem;
+    }
+    .how b { color: var(--ink); font-weight: 500; }
+
+    /* ---- sticky story ---- */
+    .scene { position: relative; height: calc(var(--len, 7) * 100vh); }
+    .stage {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      height: 100svh;
+      overflow: hidden;
+    }
+    .art {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+    .art path, .art line, .art circle, .art rect, .art ellipse, .art polyline, .art polygon {
+      fill: none;
+      stroke: var(--ink);
+      stroke-width: calc(2px * var(--k, 1));
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    .art .thin { stroke-width: calc(1.2px * var(--k, 1)); }
+    .art .hair { stroke-width: calc(1px * var(--k, 1)); stroke: var(--dim); }
+    .art .acc { stroke: var(--accent); }
+    .art .moss { stroke: var(--moss); }
+    .art text {
+      fill: var(--dim);
+      font-family: var(--mono);
+      font-size: 13px;
+      letter-spacing: .06em;
+      paint-order: stroke fill;
+      stroke: var(--bg);
+      stroke-width: calc(7px * var(--k, 1));
+      stroke-linejoin: round;
+    }
+    .art .dot { fill: var(--ink); stroke: none; }
+    .art .adot { fill: var(--accent); stroke: none; }
+    .art .mdot { fill: var(--moss); stroke: none; }
+
+    .copy {
+      position: absolute;
+      z-index: 2;
+      top: clamp(4.2rem, 9vh, 6.5rem);
+      left: clamp(1.25rem, 6vw, 5.5rem);
+      max-width: 34rem;
+      pointer-events: none;
+      opacity: 0;
+      transform: translateY(14px);
+    }
+    .copy h2, .copy p, .copy .eyebrow {
+      text-shadow: 0 0 4px var(--bg), 0 0 10px var(--bg), 0 0 18px var(--bg);
+    }
+
+    .hud {
+      position: absolute;
+      z-index: 3;
+      right: clamp(1.25rem, 4vw, 3.5rem);
+      top: 1.4rem;
+      text-align: right;
+      pointer-events: none;
+      font-family: var(--mono);
+    }
+    .hud .ch {
+      font-size: .66rem;
+      letter-spacing: .22em;
+      text-transform: uppercase;
+      color: var(--dim);
+      min-height: 1em;
+    }
+    .hud .mech {
+      margin-top: .35rem;
+      font-size: .7rem;
+      color: var(--accent);
+      letter-spacing: .04em;
+      max-width: 22rem;
+      margin-left: auto;
+    }
+    .scrubber {
+      position: absolute;
+      right: clamp(1.25rem, 4vw, 3.5rem);
+      bottom: 1.5rem;
+      z-index: 3;
+      pointer-events: none;
+    }
+    .scrubber svg { display: block; }
+
+    .checklist {
+      display: grid;
+      gap: .65rem;
+      margin-top: 1.6rem;
+    }
+    .checklist li {
+      list-style: none;
+      font-size: .95rem;
+      color: var(--body);
+      padding-left: 1.2rem;
+      position: relative;
+      line-height: 1.5;
+    }
+    .checklist { padding: 0; }
+    .checklist li::before {
+      content: "→";
+      position: absolute;
+      left: 0;
+      color: var(--accent);
+      font-family: var(--mono);
+    }
+
+    @media (max-width: 760px) {
+      .copy { max-width: none; right: 1.25rem; }
+      .art { top: 32%; }
+      .hud { top: auto; bottom: 4.2rem; }
+      .art text { font-size: 16px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .scroll-cue::after { animation: none; }
+      body { transition: none; }
+    }
+  </style>
+</head>
+<body>
+  <section class="page-intro">
+    <p class="eyebrow">Прототип · SVG × scroll</p>
+    <h1>Три этапа.<br>Одна сцена.</h1>
+    <p class="lede">Пример <a href="https://consider.digital/story/" style="color:var(--accent)">consider.digital/story</a> рисует каждую главу отдельно: sticky-кадр, линии появляются через <code style="font-family:var(--mono);color:var(--ink)">stroke-dashoffset</code>, следующая сцена — новый холст. Между главами нет превращения.</p>
+    <p class="lede">У вас объекты на этапах <strong>разные</strong>, поэтому морф «точка в точку» не сработает. Вместо этого каждый объект несёт <strong>роль</strong>. При переходе пара с одной ролью едет навстречу: старый рисунок стирается, новый дорисовывается.</p>
+    <div class="how">
+      <div><b>небо</b> — солнце → фонарь → узел сети</div>
+      <div><b>вертикаль</b> — дерево → труба → мачта</div>
+      <div><b>дом</b> — изба → здание → экран</div>
+      <div><b>человек</b> — идёт → сидит → смотрит</div>
+    </div>
+    <p class="stat">плейсхолдеры, не ваши иллюстрации<br><b>подставим группы SVG и таблицу ролей</b>, когда файлы будут готовы</p>
+    <div class="scroll-cue">скролл</div>
+  </section>
+
+  <section class="scene" id="story" style="--len:7.2">
+    <div class="stage">
+      <svg class="art" id="art" viewBox="0 0 1200 680" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+        <line id="ground" class="draw" data-w="0 .28" x1="40" y1="560" x2="1160" y2="560"/>
+
+        <g id="stage-1">
+          <g class="obj" data-role="extra">
+            <path class="hair draw" data-w=".08 .42" d="M40,560 C140,505 210,528 300,492 C390,454 430,530 540,508 C660,482 740,535 860,516 C980,496 1060,538 1160,528"/>
+            <text class="draw-txt" data-w=".55 .85" x="64" y="610">источник</text>
+          </g>
+
+          <g class="obj" data-role="sky" id="sun">
+            <circle class="draw" data-w=".1 .48" cx="1000" cy="150" r="40"/>
+          </g>
+
+          <g class="obj" data-role="tall">
+            <line class="draw" data-w=".22 .5" x1="210" y1="560" x2="210" y2="332"/>
+            <line class="thin draw" data-w=".32 .55" x1="210" y1="430" x2="158" y2="368"/>
+            <line class="thin draw" data-w=".34 .58" x1="210" y1="410" x2="268" y2="352"/>
+            <line class="thin draw" data-w=".36 .6" x1="210" y1="378" x2="172" y2="308"/>
+            <line class="thin draw" data-w=".38 .62" x1="210" y1="360" x2="252" y2="296"/>
+            <circle class="draw" data-w=".4 .7" cx="178" cy="278" r="50"/>
+            <circle class="draw" data-w=".44 .74" cx="246" cy="268" r="56"/>
+            <circle class="draw" data-w=".48 .78" cx="210" cy="228" r="46"/>
+            <text class="draw-txt" data-w=".7 .95" x="168" y="610">дерево</text>
+          </g>
+
+          <g class="obj" data-role="human">
+            <circle class="draw" data-w=".55 .78" cx="400" cy="444" r="15"/>
+            <line class="draw" data-w=".58 .8" x1="400" y1="459" x2="400" y2="508"/>
+            <line class="draw" data-w=".62 .84" x1="400" y1="508" x2="378" y2="560"/>
+            <line class="draw" data-w=".62 .84" x1="400" y1="508" x2="424" y2="560"/>
+            <line class="thin draw" data-w=".6 .82" x1="400" y1="476" x2="376" y2="512"/>
+            <line class="thin draw" data-w=".6 .82" x1="400" y1="476" x2="428" y2="498"/>
+            <text class="draw-txt" data-w=".78 1" x="368" y="610">человек</text>
+          </g>
+
+          <g class="obj" data-role="home">
+            <path class="draw" data-w=".48 .72" d="M500,560 L500,430 L640,328 L780,430 L780,560"/>
+            <line class="thin draw" data-w=".55 .76" x1="640" y1="328" x2="640" y2="560"/>
+            <rect class="draw" data-w=".6 .8" x="616" y="488" width="48" height="72"/>
+            <rect class="thin draw" data-w=".64 .84" x="528" y="458" width="44" height="34"/>
+            <rect class="thin draw" data-w=".66 .86" x="708" y="458" width="44" height="34"/>
+            <line class="thin draw" data-w=".7 .88" x1="742" y1="390" x2="742" y2="352"/>
+            <path class="hair draw" data-w=".74 .92" d="M742,352 C732,338 752,326 742,310"/>
+            <text class="draw-txt" data-w=".8 1" x="612" y="610">дом</text>
+          </g>
+        </g>
+
+        <g id="stage-2">
+          <g class="obj" data-role="extra">
+            <line class="hair draw" x1="40" y1="578" x2="1160" y2="578"/>
+            <path class="hair draw" d="M70,548 L92,528 L148,528 L168,548"/>
+            <circle class="hair draw" cx="104" cy="548" r="8"/>
+            <circle class="hair draw" cx="148" cy="548" r="8"/>
+            <text class="draw-txt" x="64" y="610">система</text>
+          </g>
+
+          <g class="obj" data-role="sky" id="lamp">
+            <line class="draw" x1="980" y1="560" x2="1020" y2="560"/>
+            <line class="draw" x1="1000" y1="560" x2="1000" y2="208"/>
+            <path class="draw" d="M968,208 Q1000,176 1032,208"/>
+            <line class="thin draw" x1="968" y1="208" x2="1032" y2="208"/>
+            <circle class="adot" id="lamp-glow" cx="1000" cy="228" r="7" opacity="0"/>
+            <text class="draw-txt" x="968" y="610">фонарь</text>
+          </g>
+
+          <g class="obj" data-role="tall" id="factory">
+            <rect class="draw" x="128" y="428" width="172" height="132"/>
+            <path class="draw" d="M128,428 L152,398 L176,428 L200,398 L224,428 L248,398 L272,428 L300,398 L300,428"/>
+            <rect class="draw" x="192" y="248" width="40" height="150"/>
+            <path class="acc draw" d="M212,246 C196,226 226,208 210,186 C198,168 224,156 214,138"/>
+            <text class="draw-txt" x="168" y="610">труба</text>
+          </g>
+
+          <g class="obj" data-role="human">
+            <circle class="draw" cx="400" cy="432" r="15"/>
+            <line class="draw" x1="400" y1="447" x2="400" y2="498"/>
+            <line class="draw" x1="400" y1="498" x2="386" y2="560"/>
+            <line class="draw" x1="400" y1="498" x2="430" y2="498"/>
+            <line class="draw" x1="430" y1="498" x2="430" y2="560"/>
+            <path class="thin draw" d="M388,498 L388,452 L422,452"/>
+            <line class="thin draw" x1="400" y1="466" x2="448" y2="488"/>
+            <line class="draw" x1="438" y1="490" x2="518" y2="490"/>
+            <line class="thin draw" x1="506" y1="490" x2="506" y2="560"/>
+            <text class="draw-txt" x="368" y="610">за столом</text>
+          </g>
+
+          <g class="obj" data-role="home" id="building">
+            <rect class="draw" x="528" y="196" width="224" height="364"/>
+            <line class="thin draw" x1="528" y1="228" x2="752" y2="228"/>
+            <line class="thin draw" x1="640" y1="196" x2="640" y2="164"/>
+            <line class="thin draw" x1="640" y1="164" x2="658" y2="178"/>
+            <text class="draw-txt" x="604" y="610">здание</text>
+          </g>
+        </g>
+
+        <g id="stage-3">
+          <g class="obj" data-role="extra" id="net-extra">
+            <line class="hair draw" x1="80" y1="200" x2="80" y2="560"/>
+            <line class="hair draw" x1="80" y1="200" x2="1160" y2="200"/>
+            <text class="draw-txt" x="64" y="610">результат</text>
+          </g>
+
+          <g class="obj" data-role="sky" id="nodes">
+            <text class="draw-txt" x="956" y="610">сеть</text>
+          </g>
+
+          <g class="obj" data-role="tall">
+            <line class="draw" x1="210" y1="560" x2="210" y2="168"/>
+            <line class="draw" x1="168" y1="560" x2="210" y2="418"/>
+            <line class="draw" x1="252" y1="560" x2="210" y2="418"/>
+            <line class="thin draw" x1="210" y1="168" x2="176" y2="214"/>
+            <line class="thin draw" x1="210" y1="168" x2="244" y2="214"/>
+            <circle class="draw" cx="210" cy="168" r="8"/>
+            <ellipse class="thin draw" cx="178" cy="268" rx="36" ry="14" transform="rotate(-28 178 268)"/>
+            <ellipse class="thin draw" cx="246" cy="318" rx="32" ry="13" transform="rotate(24 246 318)"/>
+            <text class="draw-txt" x="176" y="610">мачта</text>
+          </g>
+
+          <g class="obj" data-role="human">
+            <circle class="draw" cx="400" cy="444" r="15"/>
+            <line class="draw" x1="400" y1="459" x2="400" y2="508"/>
+            <line class="draw" x1="400" y1="508" x2="382" y2="560"/>
+            <line class="draw" x1="400" y1="508" x2="420" y2="560"/>
+            <line class="thin draw" x1="400" y1="476" x2="388" y2="512"/>
+            <line class="thin draw" x1="400" y1="476" x2="438" y2="498"/>
+            <text class="draw-txt" x="360" y="610">смотрит</text>
+          </g>
+
+          <g class="obj" data-role="home">
+            <rect class="draw" x="508" y="286" width="264" height="176" rx="8"/>
+            <rect class="thin draw" x="522" y="300" width="236" height="132"/>
+            <line class="draw" x1="640" y1="462" x2="640" y2="512"/>
+            <line class="draw" x1="588" y1="512" x2="692" y2="512"/>
+            <line class="moss thin draw" x1="546" y1="328" x2="722" y2="328"/>
+            <rect class="thin draw" x="546" y="348" width="92" height="58"/>
+            <line class="thin draw" x1="656" y1="354" x2="738" y2="354"/>
+            <line class="thin draw" x1="656" y1="376" x2="720" y2="376"/>
+            <line class="thin draw" x1="656" y1="398" x2="704" y2="398"/>
+            <text class="draw-txt" x="608" y="610">экран</text>
+          </g>
+        </g>
+
+        <circle id="net-pulse" class="mdot" r="4.5" opacity="0"/>
+      </svg>
+
+      <div class="copy" id="copy-1">
+        <p class="eyebrow">01 · Источник</p>
+        <h2>Сцена собирается<br>штрих за штрихом.</h2>
+        <p>Как у consider.digital: длина линии известна, скролл двигает <strong>playhead</strong>, линия «рисуется». У каждого объекта есть роль — по ней мы потом найдём пару на следующем этапе.</p>
+      </div>
+      <div class="copy" id="copy-2">
+        <p class="eyebrow">02 · Преобразование</p>
+        <h2>Роли едут навстречу<br>и переписываются.</h2>
+        <p>Солнце не обязано быть похоже на фонарь. Оно <strong>сдаёт позицию</strong>: стирается, пока едет к фонарю; фонарь дорисовывается с той же стороны. Дерево становится трубой, дом — зданием.</p>
+      </div>
+      <div class="copy" id="copy-3">
+        <p class="eyebrow">03 · Результат</p>
+        <h2>Снова другие объекты.<br>Та же механика.</h2>
+        <p>Труба → мачта, здание → экран, фонарь → сеть. Когда придут иллюстрации, меняются только группы SVG и таблица ролей — движок скролла остаётся.</p>
+      </div>
+
+      <div class="hud">
+        <div class="ch" id="chapter">01 · источник</div>
+        <div class="mech" id="mech">прорисовка линий</div>
+      </div>
+      <div class="scrubber" aria-hidden="true">
+        <svg width="240" height="16" viewBox="0 0 240 16">
+          <g id="ticks" stroke="#3a3d38" stroke-width="1"></g>
+          <line id="playhead" x1="2" y1="1" x2="2" y2="15" stroke="#e0a14a" stroke-width="2"/>
+        </svg>
+      </div>
+    </div>
+  </section>
+
+  <section class="page-out">
+    <p class="eyebrow">Что нужно от иллюстраций</p>
+    <h2>Три SVG на одном<br>артборде.</h2>
+    <p>Движок не требует, чтобы контуры совпадали. Нужна сетка ролей и аккуратный экспорт.</p>
+    <ul class="checklist">
+      <li>Один viewBox на все три этапа (например 1440×900), объекты-пары стоят в похожих зонах кадра.</li>
+      <li>Каждый смысловой объект — группа с id и <code>data-role</code>: небо, вертикаль, дом, человек, плюс extras.</li>
+      <li>Если хотите эффект «рисунок оживает» — обводки (stroke), не заливки. Заливки тоже можно: тогда вход/выход будет fade+scale, без прорисовки линии.</li>
+      <li>Без встроенных растров, тяжёлых фильтров и масок, если возможно.</li>
+      <li>Таблица соответствий: что на этапе 1 становится чем на этапе 2 и 3. Если пары нет — объект просто стирается и появляется заново на месте.</li>
+    </ul>
+    <p class="stat">после файлов<br><b>подставим ваши группы вместо плейсхолдеров</b> и подправим тайминг под композицию</p>
+  </section>
+
+  <script>
+  (function () {
+    "use strict";
+    var d = document;
+    function $(s, c) { return (c || d).querySelector(s); }
+    function $$(s, c) { return Array.prototype.slice.call((c || d).querySelectorAll(s)); }
+    function clamp(v, a, b) { return Math.min(b, Math.max(a, v)); }
+    function seg(p, a, b) { return b === a ? 1 : clamp((p - a) / (b - a), 0, 1); }
+    function ease(t) { return t * t * (3 - 2 * t); }
+    var SVGNS = "http://www.w3.org/2000/svg";
+    function el(tag, attrs, parent) {
+      var n = d.createElementNS(SVGNS, tag);
+      for (var k in attrs) n.setAttribute(k, attrs[k]);
+      if (parent) parent.appendChild(n);
+      return n;
+    }
+    var reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    var P = {
+      introEnd: 0.18,
+      hold1End: 0.28,
+      t12End: 0.46,
+      hold2End: 0.56,
+      t23End: 0.74,
+      hold3End: 1
+    };
+    var ROLES = ["sky", "tall", "home", "human"];
+    var STAGGER = { sky: 0, tall: 0.07, home: 0.14, human: 0.21 };
+    var TRAVEL = 0.4;
+
+    /* ---- generated geometry ---- */
+    (function () {
+      var sun = $("#sun");
+      if (sun) {
+        for (var i = 0; i < 12; i++) {
+          var a = (i / 12) * Math.PI * 2 - Math.PI / 2;
+          el("line", {
+            x1: (1000 + Math.cos(a) * 52).toFixed(1),
+            y1: (150 + Math.sin(a) * 52).toFixed(1),
+            x2: (1000 + Math.cos(a) * 78).toFixed(1),
+            y2: (150 + Math.sin(a) * 78).toFixed(1),
+            "class": "thin draw",
+            "data-w": ".18 .58"
+          }, sun);
+        }
+      }
+      var factory = $("#factory");
+      if (factory) {
+        for (var r = 0; r < 2; r++) {
+          for (var c = 0; c < 3; c++) {
+            el("rect", {
+              x: 148 + c * 44, y: 452 + r * 42, width: 28, height: 26,
+              "class": "thin draw"
+            }, factory);
+          }
+        }
+      }
+      var building = $("#building");
+      if (building) {
+        for (var br = 0; br < 6; br++) {
+          for (var bc = 0; bc < 4; bc++) {
+            el("rect", {
+              x: 552 + bc * 50, y: 252 + br * 46, width: 26, height: 30,
+              "class": "thin draw"
+            }, building);
+          }
+        }
+      }
+      var nodes = $("#nodes");
+      var pts = [
+        [980, 118], [1048, 156], [960, 188], [1024, 230],
+        [1088, 198], [932, 148], [1060, 98]
+      ];
+      if (nodes) {
+        pts.forEach(function (pt, i) {
+          el("circle", { cx: pt[0], cy: pt[1], r: 7, "class": (i % 2 ? "moss " : "acc ") + "draw" }, nodes);
+        });
+        var pairs = [[0, 1], [0, 2], [0, 5], [1, 3], [1, 4], [1, 6], [2, 3], [3, 4], [5, 2], [6, 4]];
+        pairs.forEach(function (pr) {
+          var a = pts[pr[0]], b = pts[pr[1]];
+          el("line", {
+            x1: a[0], y1: a[1], x2: b[0], y2: b[1],
+            "class": "hair draw"
+          }, nodes);
+        });
+        el("path", {
+          id: "net-wire",
+          d: "M932,148 L980,118 L1060,98 L1048,156 L1088,198 L1024,230 L960,188 L932,148",
+          style: "display:none"
+        }, nodes);
+      }
+    })();
+
+    (function () {
+      var g = $("#ticks");
+      if (!g) return;
+      for (var i = 0; i < 40; i++) {
+        el("line", { x1: 2 + i * 6.1, y1: i % 5 === 0 ? 3 : 6, x2: 2 + i * 6.1, y2: i % 5 === 0 ? 13 : 10 }, g);
+      }
+    })();
+
+    /* ---- collect objects ---- */
+    function collect(id) {
+      var root = $(id);
+      var objs = $$(".obj", root).map(function (g) {
+        var box = { x: 0, y: 0, width: 0, height: 0 };
+        try { box = g.getBBox(); } catch (e) {}
+        return {
+          g: g,
+          role: g.getAttribute("data-role") || "extra",
+          mode: g.getAttribute("data-enter") || "draw",
+          draws: $$(".draw", g),
+          texts: $$(".draw-txt, text", g),
+          cx: box.x + box.width / 2,
+          cy: box.y + box.height / 2
+        };
+      });
+      return { root: root, objs: objs };
+    }
+
+    var draws = $$(".draw");
+    draws.forEach(function (n) {
+      var L = 200;
+      try { L = n.getTotalLength(); } catch (e) {}
+      n._len = L || 200;
+      if (!reduced) {
+        n.style.strokeDasharray = n._len;
+        n.style.strokeDashoffset = n._len;
+      }
+    });
+
+    var S = [null, collect("#stage-1"), collect("#stage-2"), collect("#stage-3")];
+    var ground = $("#ground");
+    var lampGlow = $("#lamp-glow");
+    var netPulse = $("#net-pulse");
+    var netWire = $("#net-wire");
+    var netLen = 0;
+    if (netWire) { try { netLen = netWire.getTotalLength(); } catch (e) {} }
+
+    function setDraw(n, t) {
+      if (reduced) return;
+      t = clamp(t, 0, 1);
+      if (t >= 1) {
+        if (!n._done) { n.style.strokeDasharray = "none"; n.style.strokeDashoffset = 0; n._done = true; }
+        return;
+      }
+      if (n._done) { n.style.strokeDasharray = n._len; n._done = false; }
+      n.style.strokeDashoffset = n._len * (1 - t);
+    }
+
+    function drawObj(o, t) {
+      t = clamp(t, 0, 1);
+      if (o.mode === "fade") {
+        o.g.style.opacity = String(t);
+        return;
+      }
+      var n = o.draws.length;
+      o.draws.forEach(function (node, i) {
+        var k = n <= 1 ? t : clamp((t - i * (0.35 / Math.max(n, 1))) / 0.72, 0, 1);
+        setDraw(node, k);
+      });
+      o.texts.forEach(function (node) { node.style.opacity = String(t); });
+    }
+
+    function hideStage(s) {
+      s.objs.forEach(function (o) {
+        o.g.style.opacity = "0";
+        o.g.removeAttribute("transform");
+        drawObj(o, 0);
+      });
+    }
+    function showStage(s) {
+      s.objs.forEach(function (o) {
+        o.g.style.opacity = o.mode === "fade" ? "1" : "1";
+        o.g.removeAttribute("transform");
+        drawObj(o, 1);
+      });
+    }
+    function findRole(s, role) {
+      for (var i = 0; i < s.objs.length; i++) if (s.objs[i].role === role) return s.objs[i];
+      return null;
+    }
+
+    function exitInPlace(o, t) {
+      o.g.removeAttribute("transform");
+      o.g.style.opacity = String(1 - ease(clamp((t - 0.55) / 0.45, 0, 1)));
+      drawObj(o, 1 - ease(t));
+    }
+    function enterInPlace(o, t) {
+      o.g.removeAttribute("transform");
+      o.g.style.opacity = String(ease(clamp(t / 0.35, 0, 1)));
+      drawObj(o, ease(t));
+    }
+
+    function handoffPair(a, b, t) {
+      t = clamp(t, 0, 1);
+      var out = ease(clamp(t / 0.58, 0, 1));
+      var inn = ease(clamp((t - 0.32) / 0.68, 0, 1));
+      var dx = (b.cx - a.cx) * TRAVEL;
+      var dy = (b.cy - a.cy) * TRAVEL;
+      a.g.setAttribute("transform", "translate(" + (dx * out) + "," + (dy * out) + ")");
+      b.g.setAttribute("transform", "translate(" + (-dx * (1 - inn)) + "," + (-dy * (1 - inn)) + ")");
+      a.g.style.opacity = String(1 - clamp((t - 0.42) / 0.3, 0, 1));
+      b.g.style.opacity = String(clamp((t - 0.2) / 0.22, 0, 1));
+      drawObj(a, 1 - out);
+      drawObj(b, inn);
+    }
+
+    function handoff(fromS, toS, t) {
+      var maxStagger = 0.21;
+      ROLES.forEach(function (role) {
+        var a = findRole(fromS, role);
+        var b = findRole(toS, role);
+        var lt = clamp((t - (STAGGER[role] || 0)) / (1 - maxStagger), 0, 1);
+        if (a && b) handoffPair(a, b, lt);
+        else if (a) exitInPlace(a, lt);
+        else if (b) enterInPlace(b, lt);
+      });
+      var extrasOut = fromS.objs.filter(function (o) { return o.role === "extra"; });
+      var extrasIn = toS.objs.filter(function (o) { return o.role === "extra"; });
+      extrasOut.forEach(function (o, i) { exitInPlace(o, clamp((t - i * 0.04) / 0.55, 0, 1)); });
+      extrasIn.forEach(function (o, i) { enterInPlace(o, clamp((t - 0.38 - i * 0.04) / 0.62, 0, 1)); });
+    }
+
+    function drawIntro(introT) {
+      S[1].objs.forEach(function (o) {
+        o.g.style.opacity = "1";
+        o.g.removeAttribute("transform");
+        o.draws.forEach(function (n) {
+          var w = (n.getAttribute("data-w") || "0 1").split(" ");
+          setDraw(n, seg(introT, +w[0], +w[1]));
+        });
+        o.texts.forEach(function (n) {
+          var w = (n.getAttribute("data-w") || ".7 1").split(" ");
+          n.style.opacity = String(seg(introT, +w[0], +w[1]));
+        });
+      });
+    }
+
+    function fadeCopy(el, t) {
+      t = clamp(t, 0, 1);
+      el.style.opacity = String(t);
+      el.style.transform = t > 0.01 ? "translateY(" + (14 * (1 - t)) + "px)" : "translateY(14px)";
+    }
+    function win(p, a, b, c, e) { return seg(p, a, b) * (1 - seg(p, c, e)); }
+
+    var chapter = $("#chapter");
+    var mech = $("#mech");
+    var playhead = $("#playhead");
+    var copy1 = $("#copy-1"), copy2 = $("#copy-2"), copy3 = $("#copy-3");
+    var scene = $("#story");
+    var art = $("#art");
+    var curBg = null, curCh = null, curMech = null;
+    var sceneTop = 0, sceneH = 0, docH = 1;
+
+    function setHud(ch, m) {
+      if (curCh !== ch) { curCh = ch; chapter.textContent = ch; }
+      if (curMech !== m) { curMech = m; mech.textContent = m; }
+    }
+    function setBg(c) {
+      if (curBg !== c) {
+        curBg = c;
+        d.body.style.backgroundColor = c;
+        d.documentElement.style.setProperty("--bg", c);
+      }
+    }
+
+    function measure() {
+      var r = scene.getBoundingClientRect();
+      sceneTop = r.top + window.pageYOffset;
+      sceneH = scene.offsetHeight;
+      docH = Math.max(1, d.documentElement.scrollHeight - window.innerHeight);
+    }
+
+    function updateStrokeScale() {
+      var vb = art.viewBox && art.viewBox.baseVal;
+      if (!vb || !vb.width) return;
+      var rec = art.getBoundingClientRect();
+      if (!rec.width || !rec.height) return;
+      var k = Math.max(vb.width / rec.width, vb.height / rec.height);
+      art.style.setProperty("--k", k.toFixed(3));
+    }
+
+    function update() {
+      var y = window.pageYOffset;
+      var vh = window.innerHeight;
+      var span = Math.max(1, sceneH - vh);
+      var p = clamp((y - sceneTop) / span, 0, 1);
+      if (y + vh < sceneTop || y > sceneTop + sceneH) {
+        /* still update if sticky is in view; otherwise skip heavy work when far */
+      }
+
+      if (ground) {
+        if (p <= 0) setDraw(ground, 0);
+        else setDraw(ground, reduced ? 1 : clamp(p / 0.05, 0, 1));
+      }
+
+      if (reduced) {
+        var idx = p < 0.33 ? 1 : p < 0.66 ? 2 : 3;
+        [1, 2, 3].forEach(function (i) { if (i === idx) showStage(S[i]); else hideStage(S[i]); });
+        fadeCopy(copy1, idx === 1 ? 1 : 0);
+        fadeCopy(copy2, idx === 2 ? 1 : 0);
+        fadeCopy(copy3, idx === 3 ? 1 : 0);
+        setBg(idx === 1 ? "#12150f" : idx === 2 ? "#101218" : "#14100e");
+        setHud("0" + idx, "статичные кадры");
+      } else if (p < P.hold1End) {
+        drawIntro(clamp(p / P.introEnd, 0, 1));
+        hideStage(S[2]);
+        hideStage(S[3]);
+        setBg("#12150f");
+        setHud("01 · источник", p < P.introEnd ? "прорисовка линий" : "удержание кадра");
+      } else if (p < P.t12End) {
+        hideStage(S[3]);
+        handoff(S[1], S[2], seg(p, P.hold1End, P.t12End));
+        setBg("#111318");
+        setHud("01 → 02", "роли едут навстречу и перерисовываются");
+      } else if (p < P.hold2End) {
+        hideStage(S[1]);
+        showStage(S[2]);
+        hideStage(S[3]);
+        setBg("#101218");
+        setHud("02 · система", "удержание кадра");
+      } else if (p < P.t23End) {
+        hideStage(S[1]);
+        handoff(S[2], S[3], seg(p, P.hold2End, P.t23End));
+        setBg("#121110");
+        setHud("02 → 03", "труба → мачта · здание → экран · фонарь → сеть");
+      } else {
+        hideStage(S[1]);
+        hideStage(S[2]);
+        showStage(S[3]);
+        setBg("#14100e");
+        setHud("03 · результат", "удержание кадра");
+      }
+
+      if (lampGlow) {
+        var glow = (p >= P.t12End && p < P.hold2End) ? 0.95 : (p >= P.hold1End && p < P.t12End) ? seg(p, P.hold1End + 0.08, P.t12End) * 0.95 : 0;
+        lampGlow.setAttribute("opacity", glow);
+      }
+      if (netPulse && netWire && netLen) {
+        if (p >= P.t23End) {
+          var t = seg(p, P.t23End, 0.95);
+          var pt = netWire.getPointAtLength(t * netLen);
+          netPulse.setAttribute("cx", pt.x);
+          netPulse.setAttribute("cy", pt.y);
+          netPulse.setAttribute("opacity", t > 0 && t < 1 ? 0.95 : 0);
+        } else {
+          netPulse.setAttribute("opacity", 0);
+        }
+      }
+
+      fadeCopy(copy1, win(p, 0.02, 0.09, 0.255, 0.32));
+      fadeCopy(copy2, win(p, 0.40, 0.47, 0.545, 0.61));
+      fadeCopy(copy3, win(p, 0.68, 0.75, 0.97, 1.02));
+
+      if (playhead && docH > 0) {
+        var x = 2 + (y / docH) * 236;
+        playhead.setAttribute("x1", x);
+        playhead.setAttribute("x2", x);
+      }
+    }
+
+    var ticking = false;
+    function onScroll() {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(function () { update(); ticking = false; });
+    }
+    function onResize() { measure(); updateStrokeScale(); update(); }
+
+    if (reduced) {
+      draws.forEach(function (n) { n.style.strokeDasharray = "none"; });
+    }
+
+    measure();
+    updateStrokeScale();
+    update();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onResize);
+    setTimeout(onResize, 400);
+  })();
+  </script>
+</body>
+</html>
