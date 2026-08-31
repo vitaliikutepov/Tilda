@@ -69,10 +69,61 @@
 
   cardDraws.forEach(function(n){ n.style.opacity = "0"; });
 
+  /* Fill ring: outer 144, inner 128, 16px track. Path inset 1px so a 2px
+     centered stroke sits on the track edges. Corner radius 2px. */
+  var R_OUT = 143;
+  var R_IN = 129;
+  var CORNER = 2;
+
+  function polar(r, a){
+    return [r * Math.cos(a), r * Math.sin(a)];
+  }
+  function pstr(p){
+    return p[0].toFixed(3) + " " + p[1].toFixed(3);
+  }
+  function fullRingPath(ro, ri){
+    return "M " + ro + " 0 A " + ro + " " + ro + " 0 1 1 " + (-ro) + " 0 A " + ro + " " + ro + " 0 1 1 " + ro + " 0 Z " +
+           "M " + ri + " 0 A " + ri + " " + ri + " 0 1 0 " + (-ri) + " 0 A " + ri + " " + ri + " 0 1 0 " + ri + " 0 Z";
+  }
+  function ringSectorPath(frac){
+    frac = clamp(frac, 0, 1);
+    if (frac <= 0) return "";
+    if (frac >= 0.995) return fullRingPath(R_OUT, R_IN);
+    var a0 = -Math.PI / 2;
+    var span = frac * Math.PI * 2;
+    var cr = Math.min(CORNER, (R_OUT - R_IN) / 2 - 0.05);
+    var ao = Math.asin(Math.min(0.999, cr / (R_OUT - cr)));
+    var ai = Math.asin(Math.min(0.999, cr / (R_IN + cr)));
+    var need = ao + ai + 0.004;
+    if (span < need){
+      cr = Math.max(0.4, cr * span / need);
+      ao = Math.asin(Math.min(0.999, cr / Math.max(0.5, R_OUT - cr)));
+      ai = Math.asin(Math.min(0.999, cr / (R_IN + cr)));
+      if (span < ao + ai + 0.004) span = ao + ai + 0.004;
+    }
+    var a1 = a0 + span;
+    var kos = Math.sqrt(Math.max(0, (R_OUT - cr) * (R_OUT - cr) - cr * cr));
+    var kis = Math.sqrt(Math.max(0, (R_IN + cr) * (R_IN + cr) - cr * cr));
+    var tos = polar(R_OUT, a0 + ao);
+    var toe = polar(R_OUT, a1 - ao);
+    var tie = polar(R_IN, a1 - ai);
+    var tis = polar(R_IN, a0 + ai);
+    var large = (span - 2 * ao) > Math.PI ? 1 : 0;
+    var largeI = (span - 2 * ai) > Math.PI ? 1 : 0;
+    return "M " + pstr(tos) +
+      " A " + R_OUT + " " + R_OUT + " 0 " + large + " 1 " + pstr(toe) +
+      " A " + cr.toFixed(3) + " " + cr.toFixed(3) + " 0 0 1 " + pstr(polar(kos, a1)) +
+      " L " + pstr(polar(kis, a1)) +
+      " A " + cr.toFixed(3) + " " + cr.toFixed(3) + " 0 0 1 " + pstr(tie) +
+      " A " + R_IN + " " + R_IN + " 0 " + largeI + " 0 " + pstr(tis) +
+      " A " + cr.toFixed(3) + " " + cr.toFixed(3) + " 0 0 1 " + pstr(polar(kis, a0)) +
+      " L " + pstr(polar(kos, a0)) +
+      " A " + cr.toFixed(3) + " " + cr.toFixed(3) + " 0 0 1 " + pstr(tos) +
+      " Z";
+  }
+
   gauges.forEach(function(g){
-    var arc = $(".mp-gauge-arc", g);
-    arc._C = 2 * Math.PI * 135.4;
-    arc.style.strokeDasharray = "0 " + arc._C;
+    g._fill = $(".mp-gauge-fill", g);
     g._v = parseFloat(g.getAttribute("data-v"));
     g._dec = parseInt(g.getAttribute("data-dec"), 10);
     g._val = $(".mp-gauge-val", g);
@@ -237,9 +288,8 @@
       var lt = ease(seg(gT, st, st + 0.4));
       g.style.opacity = String(lt);
       g.setAttribute("transform", g._xy + " scale(" + (0.9 + 0.1 * lt) + ")");
-      var arc = $(".mp-gauge-arc", g);
       var pct = (g._v / 100) * lt;
-      arc.style.strokeDasharray = (arc._C * pct) + " " + arc._C;
+      if (g._fill) g._fill.setAttribute("d", ringSectorPath(pct));
       g._val.textContent = fmt(g._v * lt, g._dec);
     });
 

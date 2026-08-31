@@ -107,11 +107,11 @@ for i in range(3):
 cards_svg = "\n".join(card_chunks)
 
 gauges = [
-    {"cx": 195, "cy": 363, "v": 100, "dec": 0, "fill": True, "cap": ["ТРЕНДОВЫЕ"]},
-    {"cx": 523, "cy": 363, "v": 6.2, "dec": 1, "fill": False, "cap": ["НА ВАЖНЫХ АКТИВАХ"]},
-    {"cx": 851, "cy": 363, "v": 4.3, "dec": 1, "fill": False, "cap": ["НА МАРШРУТАХ АТАК"]},
-    {"cx": 1179, "cy": 363, "v": 0.3, "dec": 1, "fill": False, "cap": ["НА ОПАСНЫХ", "МАРШРУТАХ АТАК"]},
-    {"cx": 1507, "cy": 363, "v": 0.06, "dec": 2, "fill": False, "cap": ["НА ПЕРЕСЕЧЕНИИ", "МАРШРУТОВ"]},
+    {"cx": 195, "cy": 363, "v": 100, "dec": 0, "cap": ["ТРЕНДОВЫЕ"]},
+    {"cx": 523, "cy": 363, "v": 6.2, "dec": 1, "cap": ["НА ВАЖНЫХ АКТИВАХ"]},
+    {"cx": 851, "cy": 363, "v": 4.3, "dec": 1, "cap": ["НА МАРШРУТАХ АТАК"]},
+    {"cx": 1179, "cy": 363, "v": 0.3, "dec": 1, "cap": ["НА ОПАСНЫХ", "МАРШРУТАХ АТАК"]},
+    {"cx": 1507, "cy": 363, "v": 0.06, "dec": 2, "cap": ["НА ПЕРЕСЕЧЕНИИ", "МАРШРУТОВ"]},
 ]
 gauge_svg_parts = []
 for i, g in enumerate(gauges):
@@ -121,12 +121,11 @@ for i, g in enumerate(gauges):
         cap.append(
             f'<tspan x="0" y="{y0 + j * 16}">{line}</tspan>'
         )
-    disc_fill = "#D9D9D9" if g["fill"] else "rgba(255,255,255,0.05)"
     gauge_svg_parts.append(
         f'''    <g class="mp-gauge" data-i="{i}" data-v="{g["v"]}" data-dec="{g["dec"]}" transform="translate({g["cx"]},{g["cy"]})">
-      <circle class="mp-gauge-disc" r="144" fill="{disc_fill}" stroke="url(#mp-gauge-stroke)" stroke-width="2"/>
-      <circle class="mp-gauge-arc" r="135.4" fill="none" stroke="url(#mp-arc)" stroke-width="17.2" stroke-linecap="round" transform="rotate(-90)"/>
-      <text class="mp-gauge-val" text-anchor="middle" y="-6">{0 if g["dec"] else 0}</text>
+      <circle class="mp-gauge-track" r="136" fill="none" stroke="#0D0D0D" stroke-width="16"/>
+      <path class="mp-gauge-fill" fill="url(#mp-gauge-fill)" stroke="url(#mp-gauge-border)" stroke-width="2" fill-rule="evenodd" stroke-linejoin="miter"/>
+      <text class="mp-gauge-val" text-anchor="middle" y="-6">0</text>
       <text class="mp-gauge-cap" text-anchor="middle">{"".join(cap)}</text>
     </g>'''
     )
@@ -193,12 +192,17 @@ html = f"""<!-- ============================================================
         <linearGradient id="mp-num" x1="0" y1="0" x2="1" y2="1">
           <stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#B3B3B3"/>
         </linearGradient>
-        <linearGradient id="mp-arc" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stop-color="#D5E2F3"/><stop offset="0.5" stop-color="#F2F6FC"/><stop offset="1" stop-color="#788EAC"/>
+        <linearGradient id="mp-gauge-fill" gradientUnits="userSpaceOnUse" x1="-144" y1="-144" x2="201.088" y2="-32.183">
+          <stop stop-color="#FFFFFF"/>
+          <stop offset="1" stop-color="#151515"/>
         </linearGradient>
-        <linearGradient id="mp-gauge-stroke" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stop-color="#D5E2F3" stop-opacity="0.45"/>
-          <stop offset="1" stop-color="#788EAC" stop-opacity="0.35"/>
+        <linearGradient id="mp-gauge-border" gradientUnits="userSpaceOnUse" x1="-158.412" y1="-178.436" x2="199.96" y2="133.539">
+          <stop offset="0.0683" stop-color="#D5E2F3" stop-opacity="0.4"/>
+          <stop offset="0.4577" stop-color="#F2F6FC" stop-opacity="0.1"/>
+          <stop offset="0.5386" stop-color="#E8EDF5" stop-opacity="0.1"/>
+          <stop offset="0.6767" stop-color="#CDD6E4" stop-opacity="0.1"/>
+          <stop offset="0.8537" stop-color="#A1B1C7" stop-opacity="0.4"/>
+          <stop offset="1" stop-color="#788EAC" stop-opacity="0.4"/>
         </linearGradient>
         <linearGradient id="mp-shimmer" x1="0" y1="0" x2="200" y2="0" gradientUnits="userSpaceOnUse">
           <stop offset="0" stop-color="white" stop-opacity="0"/>

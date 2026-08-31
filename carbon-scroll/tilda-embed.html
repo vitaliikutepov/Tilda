@@ -55,12 +55,17 @@
         <linearGradient id="mp-num" x1="0" y1="0" x2="1" y2="1">
           <stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#B3B3B3"/>
         </linearGradient>
-        <linearGradient id="mp-arc" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stop-color="#D5E2F3"/><stop offset="0.5" stop-color="#F2F6FC"/><stop offset="1" stop-color="#788EAC"/>
+        <linearGradient id="mp-gauge-fill" gradientUnits="userSpaceOnUse" x1="-144" y1="-144" x2="201.088" y2="-32.183">
+          <stop stop-color="#FFFFFF"/>
+          <stop offset="1" stop-color="#151515"/>
         </linearGradient>
-        <linearGradient id="mp-gauge-stroke" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stop-color="#D5E2F3" stop-opacity="0.45"/>
-          <stop offset="1" stop-color="#788EAC" stop-opacity="0.35"/>
+        <linearGradient id="mp-gauge-border" gradientUnits="userSpaceOnUse" x1="-158.412" y1="-178.436" x2="199.96" y2="133.539">
+          <stop offset="0.0683" stop-color="#D5E2F3" stop-opacity="0.4"/>
+          <stop offset="0.4577" stop-color="#F2F6FC" stop-opacity="0.1"/>
+          <stop offset="0.5386" stop-color="#E8EDF5" stop-opacity="0.1"/>
+          <stop offset="0.6767" stop-color="#CDD6E4" stop-opacity="0.1"/>
+          <stop offset="0.8537" stop-color="#A1B1C7" stop-opacity="0.4"/>
+          <stop offset="1" stop-color="#788EAC" stop-opacity="0.4"/>
         </linearGradient>
         <linearGradient id="mp-shimmer" x1="0" y1="0" x2="200" y2="0" gradientUnits="userSpaceOnUse">
           <stop offset="0" stop-color="white" stop-opacity="0"/>
@@ -260,32 +265,32 @@
         </g>
         <g id="mp-s5">
     <g class="mp-gauge" data-i="0" data-v="100" data-dec="0" transform="translate(195,363)">
-      <circle class="mp-gauge-disc" r="144" fill="#D9D9D9" stroke="url(#mp-gauge-stroke)" stroke-width="2"/>
-      <circle class="mp-gauge-arc" r="135.4" fill="none" stroke="url(#mp-arc)" stroke-width="17.2" stroke-linecap="round" transform="rotate(-90)"/>
+      <circle class="mp-gauge-track" r="136" fill="none" stroke="#0D0D0D" stroke-width="16"/>
+      <path class="mp-gauge-fill" fill="url(#mp-gauge-fill)" stroke="url(#mp-gauge-border)" stroke-width="2" fill-rule="evenodd" stroke-linejoin="miter"/>
       <text class="mp-gauge-val" text-anchor="middle" y="-6">0</text>
       <text class="mp-gauge-cap" text-anchor="middle"><tspan x="0" y="42">ТРЕНДОВЫЕ</tspan></text>
     </g>
     <g class="mp-gauge" data-i="1" data-v="6.2" data-dec="1" transform="translate(523,363)">
-      <circle class="mp-gauge-disc" r="144" fill="rgba(255,255,255,0.05)" stroke="url(#mp-gauge-stroke)" stroke-width="2"/>
-      <circle class="mp-gauge-arc" r="135.4" fill="none" stroke="url(#mp-arc)" stroke-width="17.2" stroke-linecap="round" transform="rotate(-90)"/>
+      <circle class="mp-gauge-track" r="136" fill="none" stroke="#0D0D0D" stroke-width="16"/>
+      <path class="mp-gauge-fill" fill="url(#mp-gauge-fill)" stroke="url(#mp-gauge-border)" stroke-width="2" fill-rule="evenodd" stroke-linejoin="miter"/>
       <text class="mp-gauge-val" text-anchor="middle" y="-6">0</text>
       <text class="mp-gauge-cap" text-anchor="middle"><tspan x="0" y="42">НА ВАЖНЫХ АКТИВАХ</tspan></text>
     </g>
     <g class="mp-gauge" data-i="2" data-v="4.3" data-dec="1" transform="translate(851,363)">
-      <circle class="mp-gauge-disc" r="144" fill="rgba(255,255,255,0.05)" stroke="url(#mp-gauge-stroke)" stroke-width="2"/>
-      <circle class="mp-gauge-arc" r="135.4" fill="none" stroke="url(#mp-arc)" stroke-width="17.2" stroke-linecap="round" transform="rotate(-90)"/>
+      <circle class="mp-gauge-track" r="136" fill="none" stroke="#0D0D0D" stroke-width="16"/>
+      <path class="mp-gauge-fill" fill="url(#mp-gauge-fill)" stroke="url(#mp-gauge-border)" stroke-width="2" fill-rule="evenodd" stroke-linejoin="miter"/>
       <text class="mp-gauge-val" text-anchor="middle" y="-6">0</text>
       <text class="mp-gauge-cap" text-anchor="middle"><tspan x="0" y="42">НА МАРШРУТАХ АТАК</tspan></text>
     </g>
     <g class="mp-gauge" data-i="3" data-v="0.3" data-dec="1" transform="translate(1179,363)">
-      <circle class="mp-gauge-disc" r="144" fill="rgba(255,255,255,0.05)" stroke="url(#mp-gauge-stroke)" stroke-width="2"/>
-      <circle class="mp-gauge-arc" r="135.4" fill="none" stroke="url(#mp-arc)" stroke-width="17.2" stroke-linecap="round" transform="rotate(-90)"/>
+      <circle class="mp-gauge-track" r="136" fill="none" stroke="#0D0D0D" stroke-width="16"/>
+      <path class="mp-gauge-fill" fill="url(#mp-gauge-fill)" stroke="url(#mp-gauge-border)" stroke-width="2" fill-rule="evenodd" stroke-linejoin="miter"/>
       <text class="mp-gauge-val" text-anchor="middle" y="-6">0</text>
       <text class="mp-gauge-cap" text-anchor="middle"><tspan x="0" y="34">НА ОПАСНЫХ</tspan><tspan x="0" y="50">МАРШРУТАХ АТАК</tspan></text>
     </g>
     <g class="mp-gauge" data-i="4" data-v="0.06" data-dec="2" transform="translate(1507,363)">
-      <circle class="mp-gauge-disc" r="144" fill="rgba(255,255,255,0.05)" stroke="url(#mp-gauge-stroke)" stroke-width="2"/>
-      <circle class="mp-gauge-arc" r="135.4" fill="none" stroke="url(#mp-arc)" stroke-width="17.2" stroke-linecap="round" transform="rotate(-90)"/>
+      <circle class="mp-gauge-track" r="136" fill="none" stroke="#0D0D0D" stroke-width="16"/>
+      <path class="mp-gauge-fill" fill="url(#mp-gauge-fill)" stroke="url(#mp-gauge-border)" stroke-width="2" fill-rule="evenodd" stroke-linejoin="miter"/>
       <text class="mp-gauge-val" text-anchor="middle" y="-6">0</text>
       <text class="mp-gauge-cap" text-anchor="middle"><tspan x="0" y="34">НА ПЕРЕСЕЧЕНИИ</tspan><tspan x="0" y="50">МАРШРУТОВ</tspan></text>
     </g>
@@ -366,10 +371,61 @@
 
   cardDraws.forEach(function(n){ n.style.opacity = "0"; });
 
+  /* Fill ring: outer 144, inner 128, 16px track. Path inset 1px so a 2px
+     centered stroke sits on the track edges. Corner radius 2px. */
+  var R_OUT = 143;
+  var R_IN = 129;
+  var CORNER = 2;
+
+  function polar(r, a){
+    return [r * Math.cos(a), r * Math.sin(a)];
+  }
+  function pstr(p){
+    return p[0].toFixed(3) + " " + p[1].toFixed(3);
+  }
+  function fullRingPath(ro, ri){
+    return "M " + ro + " 0 A " + ro + " " + ro + " 0 1 1 " + (-ro) + " 0 A " + ro + " " + ro + " 0 1 1 " + ro + " 0 Z " +
+           "M " + ri + " 0 A " + ri + " " + ri + " 0 1 0 " + (-ri) + " 0 A " + ri + " " + ri + " 0 1 0 " + ri + " 0 Z";
+  }
+  function ringSectorPath(frac){
+    frac = clamp(frac, 0, 1);
+    if (frac <= 0) return "";
+    if (frac >= 0.995) return fullRingPath(R_OUT, R_IN);
+    var a0 = -Math.PI / 2;
+    var span = frac * Math.PI * 2;
+    var cr = Math.min(CORNER, (R_OUT - R_IN) / 2 - 0.05);
+    var ao = Math.asin(Math.min(0.999, cr / (R_OUT - cr)));
+    var ai = Math.asin(Math.min(0.999, cr / (R_IN + cr)));
+    var need = ao + ai + 0.004;
+    if (span < need){
+      cr = Math.max(0.4, cr * span / need);
+      ao = Math.asin(Math.min(0.999, cr / Math.max(0.5, R_OUT - cr)));
+      ai = Math.asin(Math.min(0.999, cr / (R_IN + cr)));
+      if (span < ao + ai + 0.004) span = ao + ai + 0.004;
+    }
+    var a1 = a0 + span;
+    var kos = Math.sqrt(Math.max(0, (R_OUT - cr) * (R_OUT - cr) - cr * cr));
+    var kis = Math.sqrt(Math.max(0, (R_IN + cr) * (R_IN + cr) - cr * cr));
+    var tos = polar(R_OUT, a0 + ao);
+    var toe = polar(R_OUT, a1 - ao);
+    var tie = polar(R_IN, a1 - ai);
+    var tis = polar(R_IN, a0 + ai);
+    var large = (span - 2 * ao) > Math.PI ? 1 : 0;
+    var largeI = (span - 2 * ai) > Math.PI ? 1 : 0;
+    return "M " + pstr(tos) +
+      " A " + R_OUT + " " + R_OUT + " 0 " + large + " 1 " + pstr(toe) +
+      " A " + cr.toFixed(3) + " " + cr.toFixed(3) + " 0 0 1 " + pstr(polar(kos, a1)) +
+      " L " + pstr(polar(kis, a1)) +
+      " A " + cr.toFixed(3) + " " + cr.toFixed(3) + " 0 0 1 " + pstr(tie) +
+      " A " + R_IN + " " + R_IN + " 0 " + largeI + " 0 " + pstr(tis) +
+      " A " + cr.toFixed(3) + " " + cr.toFixed(3) + " 0 0 1 " + pstr(polar(kis, a0)) +
+      " L " + pstr(polar(kos, a0)) +
+      " A " + cr.toFixed(3) + " " + cr.toFixed(3) + " 0 0 1 " + pstr(tos) +
+      " Z";
+  }
+
   gauges.forEach(function(g){
-    var arc = $(".mp-gauge-arc", g);
-    arc._C = 2 * Math.PI * 135.4;
-    arc.style.strokeDasharray = "0 " + arc._C;
+    g._fill = $(".mp-gauge-fill", g);
     g._v = parseFloat(g.getAttribute("data-v"));
     g._dec = parseInt(g.getAttribute("data-dec"), 10);
     g._val = $(".mp-gauge-val", g);
@@ -534,9 +590,8 @@
       var lt = ease(seg(gT, st, st + 0.4));
       g.style.opacity = String(lt);
       g.setAttribute("transform", g._xy + " scale(" + (0.9 + 0.1 * lt) + ")");
-      var arc = $(".mp-gauge-arc", g);
       var pct = (g._v / 100) * lt;
-      arc.style.strokeDasharray = (arc._C * pct) + " " + arc._C;
+      if (g._fill) g._fill.setAttribute("d", ringSectorPath(pct));
       g._val.textContent = fmt(g._v * lt, g._dec);
     });
 
