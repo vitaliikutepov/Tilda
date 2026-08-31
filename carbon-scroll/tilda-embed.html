@@ -495,7 +495,8 @@
 
     var routeT = ease(seg(p, P.holdGrid, P.routesEnd));
     var toCards = ease(seg(p, P.holdRoutes, P.cardsEnd));
-    var leaveCards = ease(seg(p, P.holdCards, P.gaugesEnd));
+    var leaveCards = ease(seg(p, P.holdCards, P.holdCards + 0.05));
+    var gT = ease(seg(p, P.holdCards + 0.05, P.gaugesEnd));
 
     routes.forEach(function(n, i){
       var st = i * 0.18;
@@ -528,7 +529,6 @@
       if (shimmers[i]) shimmers[i].setAttribute("opacity", vis > 0.65 ? String(0.22) : "0");
     });
 
-    var gT = ease(seg(p, P.holdCards, P.gaugesEnd));
     gauges.forEach(function(g, i){
       var st = i * 0.13;
       var lt = ease(seg(gT, st, st + 0.4));
