@@ -69,8 +69,17 @@ async function waitBannerReady(page) {
   );
 }
 
+async function clickEl(page, selector) {
+  await page.$eval(selector, (el) => {
+    el.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window }));
+  });
+}
+
 async function showBanner(page) {
-  await page.evaluate(() => window.scrollTo(0, 1800));
+  await page.evaluate(() => {
+    window.scrollTo(0, 1700);
+    window.dispatchEvent(new Event('scroll'));
+  });
   await page.waitForFunction(() =>
     document.getElementById('rec2643778101').classList.contains('banner-visible')
   );
@@ -98,7 +107,7 @@ async function run() {
       'desktop should not start collapsed'
     );
     await showBanner(desktop);
-    await desktop.click('.close-banner');
+    await clickEl(desktop, '.close-banner');
     await desktop.waitForFunction(() =>
       !document.getElementById('rec2643778101').classList.contains('banner-visible')
     );
@@ -123,7 +132,7 @@ async function run() {
       'collapsed hides banner-button'
     );
 
-    await mobile.click('.banner-header');
+    await clickEl(mobile, '.banner-header');
     await mobile.waitForFunction(() =>
       !document.getElementById('rec2643778101').classList.contains('banner-collapsed')
     );
@@ -140,7 +149,7 @@ async function run() {
     );
     assert(visibleAfterCardTap, 'expanded banner stays visible');
 
-    await mobile.click('.close-banner');
+    await clickEl(mobile, '.close-banner');
     await mobile.waitForFunction(() =>
       !document.getElementById('rec2643778101').classList.contains('banner-visible')
     );
@@ -152,7 +161,7 @@ async function run() {
     await mobile2.goto(url, { waitUntil: 'networkidle0' });
     await waitBannerReady(mobile2);
     await showBanner(mobile2);
-    await mobile2.click('.banner-image img');
+    await clickEl(mobile2, '.banner-image img');
     await mobile2.waitForFunction(() =>
       !document.getElementById('rec2643778101').classList.contains('banner-collapsed')
     );
@@ -181,7 +190,7 @@ async function run() {
     await mobile3.goto(url, { waitUntil: 'networkidle0' });
     await waitBannerReady(mobile3);
     await showBanner(mobile3);
-    await mobile3.click('.close-banner');
+    await clickEl(mobile3, '.close-banner');
     await mobile3.waitForFunction(() =>
       !document.getElementById('rec2643778101').classList.contains('banner-collapsed')
     );
