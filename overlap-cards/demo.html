@@ -32,6 +32,7 @@
       left: 0;
       width: 100%;
       height: 100%;
+      pointer-events: none;
     }
     .heading h1 { margin: 0 0 16px; font-size: 36px; font-weight: 700; line-height: 1.2; }
     .heading p { margin: 0; font-size: 18px; line-height: 1.4; color: #c8c8c8; }
@@ -138,6 +139,7 @@
   <p class="note">
     Демо логики сниппета для <code>#rec3354439901</code>.
     &gt;1366px — ховер, 1024–1366 — ховер и тап, ниже 1024 — только тап.
+    Сейчас: <span id="ocs-mode">…</span>.
     В Тильду вставляйте <code>tilda-embed.html</code>.
   </p>
 
@@ -214,6 +216,18 @@
 
   <div id="embed-slot"></div>
   <script>
+    (function showMode() {
+      var el = document.getElementById('ocs-mode');
+      if (!el) return;
+      function paint() {
+        var hover = window.matchMedia('(min-width: 1024px)').matches;
+        var tap = window.matchMedia('(max-width: 1366px)').matches;
+        var label = hover && tap ? 'ховер и тап' : hover ? 'только ховер' : 'только тап';
+        el.textContent = window.innerWidth + 'px · ' + label;
+      }
+      paint();
+      window.addEventListener('resize', paint);
+    })();
     fetch('tilda-embed.html')
       .then(function (r) { return r.text(); })
       .then(function (html) {
