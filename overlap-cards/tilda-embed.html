@@ -1,0 +1,387 @@
+<!-- ============================================================
+     Warning-карточки для Tilda Zero Block
+     Страница: https://form.ptsecurity.com/h1bg-special
+     Блок:     #rec3354439901
+
+     Как подключить:
+     1. В зеро-блоке уже есть группы .warningcard-1 … .warningcard-4
+        и тексты описаний (CTA не трогаем).
+     2. Вставьте ВЕСЬ этот файл в HTML-элемент страницы
+        (настройки страницы / T123 / HTML в этом же зеро-блоке).
+     3. Опубликуйте. В редакторе Тильда HTML не рисует.
+
+     Поведение:
+     - карточки остаются на местах и с высотами заготовки Тильды,
+       перекрывают друг друга как в макете;
+     - доп. текст всегда занимает своё место, но прозрачный:
+       появляется и пропадает фейдом 0.8s;
+     - при открытии карточки нижние сдвигаются вниз ровно на столько,
+       чтобы доп. текст был виден полностью + 8px зазора;
+     - >1366px — ховер;
+       1024–1366px — ховер и тап (аккордеон);
+       <1024px — только тап;
+     - CTA «Оставить заявку» не модифицируется;
+     - стиль: rgba(255,0,0,.1) + stroke 1px rgba(255,0,0,.1)
+       + backdrop-blur 150px, радиус 16 / 12;
+     - четвёртая карточка: высота заготовки (309), фейд заливки и обводки
+       через ::before-слой — текст в маску не попадает.
+============================================================ -->
+
+<style>
+  #rec3354439901 {
+    --ocs-radius: 16px;
+    --ocs-ease: ease-in-out;
+    --ocs-time: 0.8s;
+    --ocs-red: rgba(255, 0, 0, 0.1);
+  }
+  @media screen and (max-width: 767px) {
+    #rec3354439901 { --ocs-radius: 12px; }
+  }
+
+  /* Доп. текст занимает своё место в карточке, но прозрачен, пока закрыто.
+     Появление и исчезновение — фейдом. */
+  #rec3354439901 [data-elem-id="1787822252534000003"],
+  #rec3354439901 [data-elem-id="1787822370860000008"],
+  #rec3354439901 [data-elem-id="1787822403649000015"],
+  #rec3354439901 [data-elem-id="1787822418398000022"],
+  #rec3354439901 .ocs-body {
+    opacity: 0 !important;
+    pointer-events: none !important;
+    transition: opacity var(--ocs-time) var(--ocs-ease) !important;
+  }
+
+  @media screen and (min-width: 1024px) {
+    #rec3354439901 .ocs-card:hover .ocs-body {
+      opacity: 1 !important;
+      pointer-events: auto !important;
+    }
+    /* После тапа «закрыть» липкий :hover планшета не должен снова открыть карточку. */
+    #rec3354439901 .ocs-card.ocs-tap-closed:hover .ocs-body {
+      opacity: 0 !important;
+      pointer-events: none !important;
+    }
+  }
+  #rec3354439901 .ocs-card.is-open .ocs-body {
+    opacity: 1 !important;
+    pointer-events: auto !important;
+  }
+
+  /* Только внешний вид. top / left / width / height / zoom — как в заготовке.
+     Стек слоёв фиксированный: Хищение сзади, Массовая спереди. Не менять при ховере/тапе. */
+  #rec3354439901 .warningcard-1,
+  #rec3354439901 .warningcard-2,
+  #rec3354439901 .warningcard-3,
+  #rec3354439901 .warningcard-4 {
+    box-sizing: border-box;
+    border-radius: var(--ocs-radius);
+    border: 1px solid var(--ocs-red);
+    background: var(--ocs-red);
+    -webkit-backdrop-filter: blur(150px);
+    backdrop-filter: blur(150px);
+    overflow: hidden;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: transform var(--ocs-time) var(--ocs-ease);
+  }
+  /* Стек: Хищение сзади, Массовая спереди. Все карточки не ниже z-index 3 —
+     иначе 1 и 2 оказываются под свечением/заголовком Тильды и не кликаются.
+     3-я и 4-я как были: 3 и 4. */
+  #rec3354439901 .warningcard-1 { z-index: 3 !important; }
+  #rec3354439901 .warningcard-2 { z-index: 3 !important; }
+  #rec3354439901 .warningcard-3 { z-index: 3 !important; }
+  #rec3354439901 .warningcard-4 { z-index: 4 !important; }
+  /* CTA как в заготовке рисуется поверх фейда 4-й карточки */
+  #rec3354439901 [data-group-id="1787822608320000002"] { z-index: 5 !important; }
+
+  /* Четвёртая карточка: заливка, обводка и blur — на ::before с маской.
+     Сам текст в маску не попадает и остаётся читаемым. */
+  #rec3354439901 .warningcard-4 {
+    min-height: 309px;
+    background: transparent;
+    border-color: transparent;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    overflow: visible;
+  }
+  #rec3354439901 .warningcard-4::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    box-sizing: border-box;
+    border-radius: var(--ocs-radius);
+    border: 1px solid var(--ocs-red);
+    background: var(--ocs-red);
+    -webkit-backdrop-filter: blur(150px);
+    backdrop-filter: blur(150px);
+    -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 calc(100% - 180px), transparent 100%);
+    mask-image: linear-gradient(to bottom, #000 0%, #000 calc(100% - 180px), transparent 100%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  #rec3354439901 .warningcard-1 .tn-molecule,
+  #rec3354439901 .warningcard-2 .tn-molecule,
+  #rec3354439901 .warningcard-3 .tn-molecule,
+  #rec3354439901 .warningcard-4 .tn-molecule {
+    background: transparent !important;
+    background-image: none !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+  #rec3354439901 .warningcard-4 > .tn-molecule {
+    position: relative;
+    z-index: 1;
+  }
+
+  #rec3354439901 .warningcard-1 .tn-atom,
+  #rec3354439901 .warningcard-2 .tn-atom,
+  #rec3354439901 .warningcard-3 .tn-atom,
+  #rec3354439901 .warningcard-4 .tn-atom {
+    min-width: 0;
+    max-width: 100%;
+    white-space: normal !important;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    #rec3354439901 .warningcard-1,
+    #rec3354439901 .warningcard-2,
+    #rec3354439901 .warningcard-3,
+    #rec3354439901 .warningcard-4,
+    #rec3354439901 .ocs-body {
+      transition: none !important;
+    }
+  }
+</style>
+
+<script>
+(function () {
+  'use strict';
+  if (window.__ocsWarningCardsInit) return;
+  window.__ocsWarningCardsInit = true;
+
+  var REC_ID = '3354439901';
+  var HOVER_FROM = 1024;
+  var TAP_TO = 1366;
+  var GAP = 8; /* зазор под доп. текстом до следующей карточки */
+  var CARD_SEL = ['.warningcard-1', '.warningcard-2', '.warningcard-3', '.warningcard-4'];
+  var CARD_MATCH = '.warningcard-1, .warningcard-2, .warningcard-3, .warningcard-4';
+  var BODY_SEL = [
+    '[data-elem-id="1787822252534000003"]',
+    '[data-elem-id="1787822370860000008"]',
+    '[data-elem-id="1787822403649000015"]',
+    '[data-elem-id="1787822418398000022"]'
+  ];
+  var CTA_SEL = '[data-group-id="1787822608320000002"]';
+
+  function q(sel, root) {
+    return (root || document).querySelector(sel);
+  }
+
+  function canHover() {
+    return window.matchMedia('(min-width: ' + HOVER_FROM + 'px)').matches;
+  }
+
+  function canTap() {
+    return window.matchMedia('(max-width: ' + TAP_TO + 'px)').matches;
+  }
+
+  function cards(rec) {
+    return rec.querySelectorAll(CARD_MATCH);
+  }
+
+  function isCardOpen(card) {
+    if (card.classList.contains('is-open')) return true;
+    if (!canHover()) return false;
+    if (card.classList.contains('ocs-tap-closed')) return false;
+    return card.matches(':hover');
+  }
+
+  function nextTextSibling(header) {
+    var el = header.nextElementSibling;
+    while (el) {
+      if (el.closest(CTA_SEL)) return null;
+      if (el.matches('.t396__elem[data-elem-type="text"]')) return el;
+      if (CARD_SEL.some(function (s) { return el.matches(s); })) return null;
+      el = el.nextElementSibling;
+    }
+    return null;
+  }
+
+  function prepareBody(el) {
+    el.classList.add('ocs-body');
+    el.classList.remove('t-animate', 't396__elem--anim-hidden', 't-animate_paused');
+    el.style.opacity = '';
+    el.style.visibility = '';
+    el.style.transform = '';
+  }
+
+  /* Текущий translateY карточки в её локальных px (не зависит от zoom Тильды). */
+  function currentTy(el) {
+    var t = window.getComputedStyle(el).transform;
+    if (!t || t === 'none') return 0;
+    var m = t.match(/matrix\(([^)]+)\)/);
+    if (m) return parseFloat(m[1].split(',')[5]) || 0;
+    m = t.match(/matrix3d\(([^)]+)\)/);
+    if (m) return parseFloat(m[1].split(',')[13]) || 0;
+    return 0;
+  }
+
+  /* Сдвиг нижних карточек = сколько нужно, чтобы доп. текст открытой карточки
+     был виден полностью + GAP. Считается от фактической высоты текста. */
+  function applyShifts(rec) {
+    var list = Array.prototype.slice.call(cards(rec));
+    var shifts = [];
+    var pending = 0;
+
+    list.forEach(function (card, i) {
+      shifts[i] = pending;
+      var open = isCardOpen(card);
+      card.setAttribute('aria-expanded', open ? 'true' : 'false');
+      if (!open) return;
+      var body = card.__ocsBody || card.querySelector('.ocs-body');
+      var next = list[i + 1];
+      if (!body || !next) return;
+
+      var rect = card.getBoundingClientRect();
+      var scale = card.offsetWidth ? rect.width / card.offsetWidth : 1;
+      if (!scale || !isFinite(scale)) scale = 1;
+
+      var bodyBottom = body.getBoundingClientRect().bottom - currentTy(card) * scale;
+      var nextTop = next.getBoundingClientRect().top - currentTy(next) * scale;
+      var need = (bodyBottom + GAP * scale - nextTop) / scale;
+      if (need > 0) pending += need;
+    });
+
+    list.forEach(function (card, i) {
+      card.style.transform = shifts[i] ? 'translateY(' + shifts[i] + 'px)' : '';
+    });
+  }
+
+  function setOpen(rec, card, open) {
+    Array.prototype.forEach.call(cards(rec), function (c) {
+      var on = open && c === card;
+      var wasOn = c.classList.contains('is-open');
+      c.classList.toggle('is-open', on);
+      if (on) {
+        c.classList.remove('ocs-tap-closed');
+      } else if (wasOn && c === card) {
+        c.classList.add('ocs-tap-closed');
+      }
+    });
+    applyShifts(rec);
+  }
+
+  function bindRec(rec) {
+    if (rec.getAttribute('data-ocs-bound') === '1') return;
+    rec.setAttribute('data-ocs-bound', '1');
+
+    rec.addEventListener('click', function (e) {
+      if (!canTap()) return;
+      if (e.target.closest('a, button, .tn-atom__button-text, ' + CTA_SEL)) return;
+      var card = e.target.closest(CARD_MATCH);
+      if (!card || !rec.contains(card)) return;
+      setOpen(rec, card, !card.classList.contains('is-open'));
+    });
+
+    rec.addEventListener('keydown', function (e) {
+      if (e.key !== 'Enter' && e.key !== ' ') return;
+      var card = e.target.closest(CARD_MATCH);
+      if (!card || !rec.contains(card)) return;
+      e.preventDefault();
+      setOpen(rec, card, !card.classList.contains('is-open'));
+    });
+
+    rec.addEventListener('mouseover', function (e) {
+      if (!canHover()) return;
+      if (!e.target.closest(CARD_MATCH)) return;
+      applyShifts(rec);
+    });
+    rec.addEventListener('mouseout', function (e) {
+      if (!canHover()) return;
+      var card = e.target.closest(CARD_MATCH);
+      if (card && rec.contains(card) && !(e.relatedTarget && card.contains(e.relatedTarget))) {
+        card.classList.remove('ocs-tap-closed');
+      }
+      applyShifts(rec);
+    });
+  }
+
+  function wrapOnce(rec) {
+    if (rec.getAttribute('data-ocs-ready') === '1') return rec;
+    var headers = CARD_SEL.map(function (s) { return q(s, rec); });
+    if (headers.some(function (h) { return !h; })) return null;
+
+    headers.forEach(function (header, i) {
+      header.classList.add('ocs-card');
+      if (i === 3) header.classList.add('ocs-card--fade');
+      header.setAttribute('tabindex', '0');
+      header.setAttribute('aria-expanded', 'false');
+
+      var body = q(BODY_SEL[i], rec) || nextTextSibling(header);
+      if (body && body.closest(CTA_SEL)) body = null;
+      if (!body) return;
+
+      /* На проде описание уже лежит внутри группы — ничего не переносится. */
+      if (!header.contains(body)) {
+        var mol = header.querySelector('.tn-molecule') || header;
+        mol.appendChild(body);
+      }
+      prepareBody(body);
+      header.__ocsBody = body;
+    });
+
+    rec.setAttribute('data-ocs-ready', '1');
+    rec.classList.add('ocs-ready');
+    bindRec(rec);
+    return rec;
+  }
+
+  function boot() {
+    var rec = document.getElementById('rec' + REC_ID);
+    if (!rec) return;
+    wrapOnce(rec);
+  }
+
+  function start() {
+    boot();
+    if (!q('#rec' + REC_ID + ' .ocs-card')) {
+      var tries = 0;
+      var t = setInterval(function () {
+        tries += 1;
+        boot();
+        if (q('#rec' + REC_ID + ' .ocs-card') || tries > 40) clearInterval(t);
+      }, 100);
+    }
+    window.addEventListener('resize', function () {
+      var rec = document.getElementById('rec' + REC_ID);
+      if (!rec) return;
+      if (!canTap()) {
+        Array.prototype.forEach.call(cards(rec), function (c) {
+          c.classList.remove('is-open', 'ocs-tap-closed');
+          c.setAttribute('aria-expanded', 'false');
+        });
+      }
+      applyShifts(rec);
+    });
+  }
+
+  if (typeof t_onReady === 'function') {
+    t_onReady(function () {
+      if (typeof t_onFuncLoad === 'function') {
+        t_onFuncLoad('t396_init', function () { setTimeout(start, 60); });
+      } else {
+        setTimeout(start, 60);
+      }
+    });
+  } else if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', start);
+  } else {
+    start();
+  }
+})();
+</script>
