@@ -17,7 +17,9 @@
        появляется и пропадает фейдом 0.8s;
      - при открытии карточки нижние сдвигаются вниз ровно на столько,
        чтобы доп. текст был виден полностью + 8px зазора;
-     - ≥1366px — ховер, <1366px — аккордеон по тапу;
+     - >1366px — ховер;
+       1024–1366px — ховер и тап (аккордеон);
+       <1024px — только тап;
      - CTA «Оставить заявку» не модифицируется;
      - стиль: rgba(255,0,0,.1) + stroke 1px rgba(255,0,0,.1)
        + backdrop-blur 150px, радиус 16 / 12;
@@ -48,15 +50,20 @@
     transition: opacity var(--ocs-time) var(--ocs-ease) !important;
   }
 
-  #rec3354439901 .ocs-card.is-open .ocs-body {
-    opacity: 1 !important;
-    pointer-events: auto !important;
-  }
-  @media screen and (min-width: 1366px) {
+  @media screen and (min-width: 1024px) {
     #rec3354439901 .ocs-card:hover .ocs-body {
       opacity: 1 !important;
       pointer-events: auto !important;
     }
+    /* После тапа «закрыть» липкий :hover планшета не должен снова открыть карточку. */
+    #rec3354439901 .ocs-card.ocs-tap-closed:hover .ocs-body {
+      opacity: 0 !important;
+      pointer-events: none !important;
+    }
+  }
+  #rec3354439901 .ocs-card.is-open .ocs-body {
+    opacity: 1 !important;
+    pointer-events: auto !important;
   }
 
   /* Только внешний вид. top / left / width / height / zoom — как в заготовке.
@@ -158,9 +165,11 @@
   window.__ocsWarningCardsInit = true;
 
   var REC_ID = '3354439901';
-  var HOVER_BP = 1366;
+  var HOVER_FROM = 1024;
+  var TAP_TO = 1366;
   var GAP = 8; /* зазор под доп. текстом до следующей карточки */
   var CARD_SEL = ['.warningcard-1', '.warningcard-2', '.warningcard-3', '.warningcard-4'];
+  var CARD_MATCH = '.warningcard-1, .warningcard-2, .warningcard-3, .warningcard-4';
   var BODY_SEL = [
     '[data-elem-id="1787822252534000003"]',
     '[data-elem-id="1787822370860000008"]',
@@ -173,12 +182,23 @@
     return (root || document).querySelector(sel);
   }
 
-  function hoverMode() {
-    return window.matchMedia('(min-width: ' + HOVER_BP + 'px)').matches;
+  function canHover() {
+    return window.matchMedia('(min-width: ' + HOVER_FROM + 'px)').matches;
+  }
+
+  function canTap() {
+    return window.matchMedia('(max-width: ' + TAP_TO + 'px)').matches;
   }
 
   function cards(rec) {
-    return rec.querySelectorAll('.warningcard-1, .warningcard-2, .warningcard-3, .warningcard-4');
+    return rec.querySelectorAll(CARD_MATCH);
+  }
+
+  function isCardOpen(card) {
+    if (card.classList.contains('is-open')) return true;
+    if (!canHover()) return false;
+    if (card.classList.contains('ocs-tap-closed')) return false;
+    return card.matches(':hover');
   }
 
   function nextTextSibling(header) {
@@ -215,13 +235,13 @@
      был виден полностью + GAP. Считается от фактической высоты текста. */
   function applyShifts(rec) {
     var list = Array.prototype.slice.call(cards(rec));
-    var hover = hoverMode();
     var shifts = [];
     var pending = 0;
 
     list.forEach(function (card, i) {
       shifts[i] = pending;
-      var open = hover ? card.matches(':hover') : card.classList.contains('is-open');
+      var open = isCardOpen(card);
+      card.setAttribute('aria-expanded', open ? 'true' : 'false');
       if (!open) return;
       var body = card.__ocsBody || card.querySelector('.ocs-body');
       var next = list[i + 1];
@@ -245,8 +265,13 @@
   function setOpen(rec, card, open) {
     Array.prototype.forEach.call(cards(rec), function (c) {
       var on = open && c === card;
+      var wasOn = c.classList.contains('is-open');
       c.classList.toggle('is-open', on);
-      c.setAttribute('aria-expanded', on ? 'true' : 'false');
+      if (on) {
+        c.classList.remove('ocs-tap-closed');
+      } else if (wasOn && c === card) {
+        c.classList.add('ocs-tap-closed');
+      }
     });
     applyShifts(rec);
   }
@@ -256,28 +281,32 @@
     rec.setAttribute('data-ocs-bound', '1');
 
     rec.addEventListener('click', function (e) {
-      if (hoverMode()) return;
+      if (!canTap()) return;
       if (e.target.closest('a, button, .tn-atom__button-text, ' + CTA_SEL)) return;
-      var card = e.target.closest('.warningcard-1, .warningcard-2, .warningcard-3, .warningcard-4');
+      var card = e.target.closest(CARD_MATCH);
       if (!card || !rec.contains(card)) return;
       setOpen(rec, card, !card.classList.contains('is-open'));
     });
 
     rec.addEventListener('keydown', function (e) {
       if (e.key !== 'Enter' && e.key !== ' ') return;
-      var card = e.target.closest('.warningcard-1, .warningcard-2, .warningcard-3, .warningcard-4');
+      var card = e.target.closest(CARD_MATCH);
       if (!card || !rec.contains(card)) return;
       e.preventDefault();
       setOpen(rec, card, !card.classList.contains('is-open'));
     });
 
     rec.addEventListener('mouseover', function (e) {
-      if (!hoverMode()) return;
-      if (!e.target.closest('.warningcard-1, .warningcard-2, .warningcard-3, .warningcard-4')) return;
+      if (!canHover()) return;
+      if (!e.target.closest(CARD_MATCH)) return;
       applyShifts(rec);
     });
-    rec.addEventListener('mouseout', function () {
-      if (!hoverMode()) return;
+    rec.addEventListener('mouseout', function (e) {
+      if (!canHover()) return;
+      var card = e.target.closest(CARD_MATCH);
+      if (card && rec.contains(card) && !(e.relatedTarget && card.contains(e.relatedTarget))) {
+        card.classList.remove('ocs-tap-closed');
+      }
       applyShifts(rec);
     });
   }
@@ -331,9 +360,9 @@
     window.addEventListener('resize', function () {
       var rec = document.getElementById('rec' + REC_ID);
       if (!rec) return;
-      if (hoverMode()) {
+      if (!canTap()) {
         Array.prototype.forEach.call(cards(rec), function (c) {
-          c.classList.remove('is-open');
+          c.classList.remove('is-open', 'ocs-tap-closed');
           c.setAttribute('aria-expanded', 'false');
         });
       }
